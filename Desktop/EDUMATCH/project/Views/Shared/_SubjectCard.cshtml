@@ -1,0 +1,6 @@
+@model dynamic
+<div class="subject-card">
+    <div class="subject-icon">@((Model?.Icon) ?? "📘")</div>
+    <div class="subject-name">@((Model?.Name) ?? "Môn học")</div>
+    <div class="subject-count">@((Model?.Count) ?? "0 gia sư")</div>
+</div>
