@@ -227,3 +227,6 @@
 /Users/phamminhvu/EDUMATCH/Desktop/EDUMATCH/project/obj/Debug/net10.0/compressed/s0p5k38krv-{0}-5iu2cw4n0v-5iu2cw4n0v.gz
 /Users/phamminhvu/EDUMATCH/Desktop/EDUMATCH/project/obj/Debug/net10.0/compressed/o9z1dh0ml6-{0}-sljbsg4kj6-sljbsg4kj6.gz
 /Users/phamminhvu/EDUMATCH/Desktop/EDUMATCH/project/obj/Debug/net10.0/compressed/znloxukz6y-{0}-2gv15etyj1-2gv15etyj1.gz
+/Users/phamminhvu/EDUMATCH/Desktop/EDUMATCH/project/bin/Debug/net10.0/BouncyCastle.Cryptography.dll
+/Users/phamminhvu/EDUMATCH/Desktop/EDUMATCH/project/bin/Debug/net10.0/MailKit.dll
+/Users/phamminhvu/EDUMATCH/Desktop/EDUMATCH/project/bin/Debug/net10.0/MimeKit.dll

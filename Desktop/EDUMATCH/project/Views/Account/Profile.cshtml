@@ -90,12 +90,17 @@
             @if (Model.Roles.Contains("Tutor"))
             {
                 <div class="card shadow-sm mt-3">
-                    <div class="card-header bg-white">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
                         <h4 class="mb-0">Hồ sơ gia sư</h4>
+                        <a asp-controller="Tutor" asp-action="Posts" class="btn btn-primary btn-sm">
+                            <i class="bi bi-file-text"></i> Quản lý bài viết
+                        </a>
                     </div>
                     <div class="card-body">
-                        <p class="text-muted">Quản lý thông tin gia sư của bạn</p>
-                        <a href="#" class="btn btn-outline-primary">Xem hồ sơ gia sư</a>
+                        <p class="text-muted">Quản lý thông tin gia sư và bài viết của bạn</p>
+                        <a asp-controller="Tutor" asp-action="CreatePost" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-plus-circle"></i> Đăng bài viết mới
+                        </a>
                     </div>
                 </div>
             }

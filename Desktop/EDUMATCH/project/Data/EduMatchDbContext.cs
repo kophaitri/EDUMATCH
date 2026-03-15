@@ -15,6 +15,7 @@ public class EduMatchDbContext : IdentityDbContext<ApplicationUser, ApplicationR
     public DbSet<TutorCertificate> TutorCertificates { get; set; }
     public DbSet<TutorAvailability> TutorAvailabilities { get; set; }
     public DbSet<TutorMediaFile> TutorMediaFiles { get; set; }
+    public DbSet<TutorPost> TutorPosts { get; set; }
     public DbSet<Subject> Subjects { get; set; }
     public DbSet<GradeLevel> GradeLevels { get; set; }
     public DbSet<TeachingStyle> TeachingStyles { get; set; }
@@ -242,5 +243,11 @@ public class EduMatchDbContext : IdentityDbContext<ApplicationUser, ApplicationR
             .WithMany()
             .HasForeignKey(x => x.QuestionId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<TutorPost>()
+            .HasOne(x => x.Tutor)
+            .WithMany()
+            .HasForeignKey(x => x.TutorId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

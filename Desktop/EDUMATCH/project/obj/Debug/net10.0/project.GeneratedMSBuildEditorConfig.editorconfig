@@ -38,6 +38,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQWNjb3VudC9DaGFuZ2VQYXNzd29yZC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[/Users/phamminhvu/EDUMATCH/Desktop/EDUMATCH/project/Views/Account/ConfirmEmail.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQWNjb3VudC9Db25maXJtRW1haWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [/Users/phamminhvu/EDUMATCH/Desktop/EDUMATCH/project/Views/Account/EditProfile.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQWNjb3VudC9FZGl0UHJvZmlsZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
@@ -60,6 +64,10 @@ build_metadata.AdditionalFiles.CssScope =
 
 [/Users/phamminhvu/EDUMATCH/Desktop/EDUMATCH/project/Views/Account/Register.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQWNjb3VudC9SZWdpc3Rlci5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/phamminhvu/EDUMATCH/Desktop/EDUMATCH/project/Views/Account/RegisterConfirmation.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvQWNjb3VudC9SZWdpc3RlckNvbmZpcm1hdGlvbi5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
 [/Users/phamminhvu/EDUMATCH/Desktop/EDUMATCH/project/Views/Account/ResetPassword.cshtml]
@@ -136,6 +144,18 @@ build_metadata.AdditionalFiles.CssScope =
 
 [/Users/phamminhvu/EDUMATCH/Desktop/EDUMATCH/project/Views/Shared/_ValidationScriptsPartial.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3MvU2hhcmVkL19WYWxpZGF0aW9uU2NyaXB0c1BhcnRpYWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/phamminhvu/EDUMATCH/Desktop/EDUMATCH/project/Views/Tutor/CreatePost.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvVHV0b3IvQ3JlYXRlUG9zdC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/phamminhvu/EDUMATCH/Desktop/EDUMATCH/project/Views/Tutor/EditPost.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvVHV0b3IvRWRpdFBvc3QuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
+[/Users/phamminhvu/EDUMATCH/Desktop/EDUMATCH/project/Views/Tutor/Posts.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3MvVHV0b3IvUG9zdHMuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
 [/Users/phamminhvu/EDUMATCH/Desktop/EDUMATCH/project/Views/_ViewImports.cshtml]

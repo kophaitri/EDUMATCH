@@ -137,3 +137,17 @@ public class TutorMediaFile
 
     public TutorProfile Tutor { get; set; } = null!;
 }
+
+public class TutorPost
+{
+    public int Id { get; set; }
+    public string TutorId { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public string? ThumbnailUrl { get; set; }
+    public bool IsPublished { get; set; } = true;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    public ApplicationUser Tutor { get; set; } = null!;
+}
