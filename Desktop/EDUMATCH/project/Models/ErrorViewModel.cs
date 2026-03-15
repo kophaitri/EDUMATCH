@@ -1,4 +1,4 @@
-namespace project.Models;
+namespace EduMatch.Models;
 
 public class ErrorViewModel
 {

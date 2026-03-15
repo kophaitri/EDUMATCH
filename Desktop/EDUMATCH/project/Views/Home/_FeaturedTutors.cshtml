@@ -1,0 +1,18 @@
+@{
+    Layout = null; // partial
+}
+<section class="section-featured reveal">
+    <div class="section-header">
+        <div>
+            <div class="section-tag">Gia sư nổi bật</div>
+            <h2 class="section-title" style="max-width:none; font-size: clamp(28px,3vw,42px)">Được học viên<br><em>yêu thích nhất</em></h2>
+        </div>
+        <button class="btn-ghost">Xem tất cả gia sư →</button>
+    </div>
+    <div class="tutors-grid">
+        @await Html.PartialAsync("_TutorCard", new EduMatch.ViewModels.TutorCardViewModel { Name = "Nguyễn Thị Lan", Subject = "📐 Toán · Lớp 10–12", Avatar = "👩‍🏫", Desc = "Thạc sĩ Toán ĐH Bách Khoa, 8 năm kinh nghiệm, chuyên luyện thi THPT Quốc Gia.", Rating = "4.97", Price = "150.000đ", Verified = true })
+        @await Html.PartialAsync("_TutorCard", new EduMatch.ViewModels.TutorCardViewModel { Name = "Trần Minh Khoa", Subject = "⚛️ Vật lý · Đại học", Avatar = "👨‍🔬", Rating = "4.95", Price = "200.000đ", Verified = true })
+        @await Html.PartialAsync("_TutorCard", new EduMatch.ViewModels.TutorCardViewModel { Name = "Phạm Thu Hà", Subject = "🇬🇧 Tiếng Anh · IELTS", Avatar = "👩‍💻", Rating = "4.91", Price = "180.000đ" })
+        @await Html.PartialAsync("_TutorCard", new EduMatch.ViewModels.TutorCardViewModel { Name = "Lê Quang Hùng", Subject = "💻 Lập trình · Python", Avatar = "👨‍🎓", Rating = "4.88", Price = "250.000đ" })
+    </div>
+</section>

@@ -1,0 +1,51 @@
+@* Shared auth styles: fonts, Tailwind and small page styles *@
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet" />
+
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            black: '#0a0a0a',
+            white: '#fafafa',
+            gray: {
+              1: '#111111',
+              2: '#1c1c1c',
+              3: '#2e2e2e',
+              4: '#5a5a5a',
+              5: '#8a8a8a',
+              6: '#c4c4c4',
+              7: '#e8e8e8',
+              8: '#f4f4f4',
+            }
+          },
+          fontFamily: {
+            display: ['Playfair Display', 'Georgia', 'serif'],
+            body: ['Be Vietnam Pro', 'sans-serif'],
+          }
+        }
+      }
+    }
+</script>
+
+<style>
+  :root {
+    --black: #0a0a0a;
+    --white: #fafafa;
+    --gray-8: #f4f4f4;
+    --gray-5: #8a8a8a;
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'Be Vietnam Pro', sans-serif;
+    --ease-out: cubic-bezier(0.16,1,0.3,1);
+  }
+  body { font-family: var(--font-body); }
+  .playfair-heading { font-family: var(--font-display); letter-spacing: -1.5px; }
+  .section-tag { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2.5px; color: var(--gray-5); font-weight: 600; }
+  input:focus { border-color: var(--black) !important; outline: none !important; box-shadow: none !important; }
+  .btn-transition { transition: all 0.4s var(--ease-out); }
+  .card-fade-in { animation: fadeIn 1s var(--ease-out) forwards; }
+  @@keyframes fadeIn { from{opacity:0; transform:translateY(20px);} to{opacity:1; transform:translateY(0);} }
+</style>

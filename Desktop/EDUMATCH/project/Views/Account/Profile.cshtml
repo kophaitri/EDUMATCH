@@ -1,0 +1,122 @@
+@model ProfileViewModel
+@{
+    ViewData["Title"] = "Thông tin cá nhân";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    @if (!string.IsNullOrEmpty(Model.AvatarUrl))
+                    {
+                        <img src="@Model.AvatarUrl" alt="Avatar" class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;" />
+                    }
+                    else
+                    {
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 150px; height: 150px; font-size: 48px;">
+                            @Model.FullName.Substring(0, 1).ToUpper()
+                        </div>
+                    }
+                    <h5 class="mb-1">@Model.FullName</h5>
+                    <p class="text-muted mb-3">@string.Join(", ", Model.Roles)</p>
+                    <a asp-action="EditProfile" class="btn btn-primary btn-sm w-100 mb-2">
+                        <i class="bi bi-pencil"></i> Chỉnh sửa
+                    </a>
+                    <a asp-action="ChangePassword" class="btn btn-outline-secondary btn-sm w-100">
+                        <i class="bi bi-key"></i> Đổi mật khẩu
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-9">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Thông tin tài khoản</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Email:</div>
+                        <div class="col-md-8">
+                            @Model.Email
+                            @if (Model.EmailConfirmed)
+                            {
+                                <span class="badge bg-success ms-2">Đã xác minh</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning ms-2">Chưa xác minh</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Số điện thoại:</div>
+                        <div class="col-md-8">
+                            @(Model.PhoneNumber ?? "Chưa cập nhật")
+                            @if (!string.IsNullOrEmpty(Model.PhoneNumber) && Model.PhoneNumberConfirmed)
+                            {
+                                <span class="badge bg-success ms-2">Đã xác minh</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Vai trò:</div>
+                        <div class="col-md-8">
+                            @foreach (var role in Model.Roles)
+                            {
+                                <span class="badge bg-primary me-1">@role</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4 fw-bold">Ngày tạo tài khoản:</div>
+                        <div class="col-md-8">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                    </div>
+
+                    @if (Model.LastLoginAt.HasValue)
+                    {
+                        <div class="row mb-3">
+                            <div class="col-md-4 fw-bold">Đăng nhập lần cuối:</div>
+                            <div class="col-md-8">@Model.LastLoginAt.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @if (Model.Roles.Contains("Tutor"))
+            {
+                <div class="card shadow-sm mt-3">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0">Hồ sơ gia sư</h4>
+                        <a asp-controller="Tutor" asp-action="Posts" class="btn btn-primary btn-sm">
+                            <i class="bi bi-file-text"></i> Quản lý bài viết
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Quản lý thông tin gia sư và bài viết của bạn</p>
+                        <a asp-controller="Tutor" asp-action="CreatePost" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-plus-circle"></i> Đăng bài viết mới
+                        </a>
+                    </div>
+                </div>
+            }
+
+            @if (Model.Roles.Contains("Student"))
+            {
+                <div class="card shadow-sm mt-3">
+                    <div class="card-header bg-white">
+                        <h4 class="mb-0">Hồ sơ học sinh</h4>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted">Quản lý thông tin học tập của bạn</p>
+                        <a href="#" class="btn btn-outline-primary">Xem hồ sơ học sinh</a>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
