@@ -87,6 +87,10 @@ Use `[Authorize(Policy = "...")]` on controllers/actions.
 
 `GlobalUsings.cs` imports `EduMatch.Models`, `EduMatch.Models.Enums`, `EduMatch.Data`, and `Microsoft.EntityFrameworkCore` project-wide — no need to add these using statements in individual files.
 
+### CSS Convention
+
+All custom CSS must go in `project/wwwroot/css/edumatch.css`. When creating or editing `.cshtml` or `.html` files, **never write inline `<style>` blocks** — instead, add new CSS classes/rules to `edumatch.css` and reference them via class names in the markup.
+
 ### Key Patterns
 
 - Controllers inject `UserManager<ApplicationUser>`, `SignInManager<ApplicationUser>`, and `EduMatchDbContext` directly (no service layer yet)

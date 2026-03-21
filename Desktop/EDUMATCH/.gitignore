@@ -1,0 +1,52 @@
+## .NET / ASP.NET Core
+bin/
+obj/
+publish/
+out/
+
+## User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## VS / Rider / VSCode
+.vs/
+.vscode/
+.idea/
+*.swp
+*~
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+
+## NuGet
+*.nupkg
+**/packages/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+## OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## Uploads (user content)
+project/wwwroot/uploads/
+
+## Secrets
+*.pfx
+appsettings.*.json
+!appsettings.json
+!appsettings.Development.json
+
+## Logs
+logs/
+*.log

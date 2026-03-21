@@ -4,6 +4,7 @@ using EduMatch.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EduMatch.Migrations
 {
     [DbContext(typeof(EduMatchDbContext))]
-    partial class EduMatchDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260315111910_AddTutorPost")]
+    partial class AddTutorPost
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1413,31 +1416,6 @@ namespace EduMatch.Migrations
                     b.ToTable("TutorPosts");
                 });
 
-            modelBuilder.Entity("EduMatch.Models.TutorPostImage", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ImageUrl")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("PostId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PostId");
-
-                    b.ToTable("TutorPostImages");
-                });
-
             modelBuilder.Entity("EduMatch.Models.TutorProfile", b =>
                 {
                     b.Property<string>("Id")
@@ -2168,17 +2146,6 @@ namespace EduMatch.Migrations
                     b.Navigation("Tutor");
                 });
 
-            modelBuilder.Entity("EduMatch.Models.TutorPostImage", b =>
-                {
-                    b.HasOne("EduMatch.Models.TutorPost", "Post")
-                        .WithMany("Images")
-                        .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Post");
-                });
-
             modelBuilder.Entity("EduMatch.Models.TutorProfile", b =>
                 {
                     b.HasOne("EduMatch.Models.ApplicationUser", "User")
@@ -2391,11 +2358,6 @@ namespace EduMatch.Migrations
             modelBuilder.Entity("EduMatch.Models.TeachingStyle", b =>
                 {
                     b.Navigation("TutorTeachingStyles");
-                });
-
-            modelBuilder.Entity("EduMatch.Models.TutorPost", b =>
-                {
-                    b.Navigation("Images");
                 });
 
             modelBuilder.Entity("EduMatch.Models.TutorProfile", b =>

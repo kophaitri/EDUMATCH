@@ -112,6 +112,7 @@ public class ProfileViewModel
     public DateTime? LastLoginAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public List<string> Roles { get; set; } = new();
+    public List<TutorPostViewModel> TutorPosts { get; set; } = new();
 }
 
 public class EditProfileViewModel

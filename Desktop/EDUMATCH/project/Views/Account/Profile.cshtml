@@ -3,115 +3,364 @@
     ViewData["Title"] = "Thông tin cá nhân";
 }
 
-<div class="container mt-4">
-    <div class="row">
-        <div class="col-md-3">
-            <div class="card shadow-sm">
-                <div class="card-body text-center">
-                    @if (!string.IsNullOrEmpty(Model.AvatarUrl))
-                    {
-                        <img src="@Model.AvatarUrl" alt="Avatar" class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;" />
-                    }
-                    else
-                    {
-                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 150px; height: 150px; font-size: 48px;">
-                            @Model.FullName.Substring(0, 1).ToUpper()
-                        </div>
-                    }
-                    <h5 class="mb-1">@Model.FullName</h5>
-                    <p class="text-muted mb-3">@string.Join(", ", Model.Roles)</p>
-                    <a asp-action="EditProfile" class="btn btn-primary btn-sm w-100 mb-2">
-                        <i class="bi bi-pencil"></i> Chỉnh sửa
-                    </a>
-                    <a asp-action="ChangePassword" class="btn btn-outline-secondary btn-sm w-100">
-                        <i class="bi bi-key"></i> Đổi mật khẩu
-                    </a>
-                </div>
+@section Styles {
+    @await Html.PartialAsync("_AuthStyles")
+}
+
+<div class="min-h-screen max-w-[1200px] mx-auto px-6 py-12">
+    <!-- Header -->
+    <header class="mb-16">
+        <div class="flex items-center gap-2 mb-4">
+            <span class="text-[10px] tracking-[0.2em] font-bold uppercase text-gray-5">EDUMATCH / PROFILE</span>
+        </div>
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <h1 class="title-main text-6xl md:text-7xl leading-none">Thông tin cá nhân</h1>
+            <div class="flex gap-4">
+                <a asp-action="EditProfile" class="flex items-center justify-center rounded-full h-12 px-8 bg-black text-white text-sm font-semibold transition-all hover:opacity-90 no-underline btn-transition">
+                    Chỉnh sửa hồ sơ
+                </a>
+                <a asp-action="ChangePassword" class="flex items-center justify-center rounded-full h-12 px-8 border border-gray-6 text-sm font-semibold transition-all hover:bg-gray-8 no-underline btn-transition">
+                    Đổi mật khẩu
+                </a>
             </div>
         </div>
+    </header>
 
-        <div class="col-md-9">
-            <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <h4 class="mb-0">Thông tin tài khoản</h4>
-                </div>
-                <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Email:</div>
-                        <div class="col-md-8">
-                            @Model.Email
-                            @if (Model.EmailConfirmed)
+    <main class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <!-- Sidebar -->
+        <aside class="lg:col-span-4 flex flex-col gap-8">
+            <div class="bg-white rounded-[14px] p-8 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 card-fade-in">
+                <div class="flex flex-col items-center text-center">
+                    <!-- Avatar -->
+                    <div class="relative mb-6">
+                        <div class="w-40 h-40 rounded-full overflow-hidden bg-gray-7 border-4 border-white shadow-md">
+                            @if (!string.IsNullOrEmpty(Model.AvatarUrl))
                             {
-                                <span class="badge bg-success ms-2">Đã xác minh</span>
+                                <img src="@Model.AvatarUrl" alt="Avatar" class="w-full h-full object-cover" />
                             }
                             else
                             {
-                                <span class="badge bg-warning ms-2">Chưa xác minh</span>
+                                <div class="w-full h-full flex items-center justify-center bg-gray-7 text-gray-5">
+                                    <span class="text-5xl font-bold">@Model.FullName.Substring(0, 1).ToUpper()</span>
+                                </div>
                             }
                         </div>
                     </div>
+                    <h2 class="text-2xl font-bold mb-1 tracking-tight">@Model.FullName</h2>
+                    <p class="accent-italic text-lg mb-4">@string.Join(" & ", Model.Roles)</p>
 
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Số điện thoại:</div>
-                        <div class="col-md-8">
-                            @(Model.PhoneNumber ?? "Chưa cập nhật")
+                    <!-- Badges -->
+                    <div class="flex gap-2 mb-8">
+                        @if (Model.EmailConfirmed)
+                        {
+                            <span class="px-3 py-1 bg-gray-1 text-white text-[10px] font-bold tracking-widest uppercase rounded-full">VERIFIED</span>
+                        }
+                        else
+                        {
+                            <span class="px-3 py-1 bg-gray-6 text-gray-3 text-[10px] font-bold tracking-widest uppercase rounded-full">UNVERIFIED</span>
+                        }
+                        <span class="px-3 py-1 bg-gray-7 text-gray-4 text-[10px] font-bold tracking-widest uppercase rounded-full">MEMBER</span>
+                    </div>
+
+                    <!-- Info -->
+                    <div class="w-full space-y-4 pt-6 border-t border-gray-7">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-5 font-medium">Ngày tham gia</span>
+                            <span class="font-bold">@Model.CreatedAt.ToString("dd.MM.yyyy")</span>
+                        </div>
+                        @if (Model.LastLoginAt.HasValue)
+                        {
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="text-gray-5 font-medium">Đăng nhập cuối</span>
+                                <span class="font-bold">@Model.LastLoginAt.Value.ToString("dd.MM.yyyy")</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="p-4 flex flex-col gap-3">
+                <p class="text-xs font-bold uppercase tracking-widest text-gray-5 mb-2">Truy cập nhanh</p>
+                <a asp-action="EditProfile" class="flex items-center gap-3 text-sm font-medium hover:text-gray-5 transition-colors no-underline text-black">
+                    <span class="material-symbols-outlined text-lg">edit</span> Chỉnh sửa thông tin
+                </a>
+                <a asp-action="ChangePassword" class="flex items-center gap-3 text-sm font-medium hover:text-gray-5 transition-colors no-underline text-black">
+                    <span class="material-symbols-outlined text-lg">key</span> Đổi mật khẩu
+                </a>
+                @if (Model.Roles.Contains("Tutor"))
+                {
+                    <a asp-controller="Tutor" asp-action="Posts" class="flex items-center gap-3 text-sm font-medium hover:text-gray-5 transition-colors no-underline text-black">
+                        <span class="material-symbols-outlined text-lg">article</span> Quản lý bài viết
+                    </a>
+                }
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <section class="lg:col-span-8 flex flex-col gap-10">
+            <!-- Thông tin liên hệ -->
+            <div>
+                <h3 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-5 mb-8 flex items-center gap-4">
+                    Thông tin liên hệ
+                    <span class="h-px flex-grow bg-gray-7"></span>
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[11px] font-bold uppercase tracking-widest text-gray-5">Địa chỉ Email</label>
+                        <div class="flex items-center gap-2">
+                            <p class="text-lg font-medium m-0">@Model.Email</p>
+                            @if (Model.EmailConfirmed)
+                            {
+                                <span class="material-symbols-outlined text-green-600 text-sm">verified</span>
+                            }
+                            else
+                            {
+                                <span class="px-2 py-0.5 bg-amber-100 text-amber-700 text-[9px] font-bold tracking-widest uppercase rounded-full">CHƯA XÁC MINH</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[11px] font-bold uppercase tracking-widest text-gray-5">Số điện thoại</label>
+                        <div class="flex items-center gap-2">
+                            <p class="text-lg font-medium m-0">@(Model.PhoneNumber ?? "Chưa cập nhật")</p>
                             @if (!string.IsNullOrEmpty(Model.PhoneNumber) && Model.PhoneNumberConfirmed)
                             {
-                                <span class="badge bg-success ms-2">Đã xác minh</span>
+                                <span class="material-symbols-outlined text-green-600 text-sm">verified</span>
                             }
                         </div>
                     </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Vai trò:</div>
-                        <div class="col-md-8">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[11px] font-bold uppercase tracking-widest text-gray-5">Vai trò</label>
+                        <div class="flex gap-2">
                             @foreach (var role in Model.Roles)
                             {
-                                <span class="badge bg-primary me-1">@role</span>
+                                <span class="px-3 py-1 bg-gray-1 text-[10px] font-bold tracking-widest uppercase rounded-full">@role</span>
                             }
                         </div>
                     </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-4 fw-bold">Ngày tạo tài khoản:</div>
-                        <div class="col-md-8">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                    <div class="flex flex-col gap-1">
+                        <label class="text-[11px] font-bold uppercase tracking-widest text-gray-5">Trạng thái</label>
+                        <p class="text-lg font-medium m-0 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span> Đang hoạt động
+                        </p>
                     </div>
+                </div>
+            </div>
 
-                    @if (Model.LastLoginAt.HasValue)
+            <!-- Hồ sơ chuyên môn -->
+            <div class="pt-6">
+                <h3 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-5 mb-8 flex items-center gap-4">
+                    Hồ sơ chuyên môn
+                    <span class="h-px flex-grow bg-gray-7"></span>
+                </h3>
+                <div class="space-y-6">
+                    @if (Model.Roles.Contains("Tutor"))
                     {
-                        <div class="row mb-3">
-                            <div class="col-md-4 fw-bold">Đăng nhập lần cuối:</div>
-                            <div class="col-md-8">@Model.LastLoginAt.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                        <div class="bg-white rounded-[14px] p-8 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 relative overflow-hidden card-fade-in">
+                            <div class="flex justify-between items-start mb-6">
+                                <div>
+                                    <h4 class="text-xl font-bold mb-1">Hồ sơ gia sư</h4>
+                                    <p class="accent-italic text-sm m-0">Quản lý thông tin gia sư và bài viết của bạn</p>
+                                </div>
+                                <span class="px-3 py-1 bg-gray-1 text-white text-[9px] font-bold tracking-widest uppercase rounded-full">ACTIVE</span>
+                            </div>
+                            <div class="flex flex-wrap gap-3">
+                                <a asp-controller="Tutor" asp-action="Posts" class="flex items-center gap-2 px-5 py-2.5 bg-black text-white rounded-full text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-all no-underline btn-transition">
+                                    <span class="material-symbols-outlined text-sm">article</span> Quản lý bài viết
+                                </a>
+                                <a asp-controller="Tutor" asp-action="CreatePost" class="flex items-center gap-2 px-5 py-2.5 border border-gray-4 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-gray-8 transition-all no-underline btn-transition">
+                                    <span class="material-symbols-outlined text-sm">add</span> Đăng bài mới
+                                </a>
+                            </div>
+                        </div>
+                    }
+
+                    @if (Model.Roles.Contains("Student"))
+                    {
+                        <div class="bg-white rounded-[14px] p-8 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 relative overflow-hidden card-fade-in">
+                            <div class="flex justify-between items-start mb-6">
+                                <div>
+                                    <h4 class="text-xl font-bold mb-1">Hồ sơ học sinh</h4>
+                                    <p class="accent-italic text-sm m-0">Quản lý thông tin học tập của bạn</p>
+                                </div>
+                                <span class="px-3 py-1 bg-gray-1 text-white text-[9px] font-bold tracking-widest uppercase rounded-full">ACTIVE</span>
+                            </div>
+                            <button class="flex items-center gap-2 px-5 py-2.5 border border-gray-4 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-all btn-transition">
+                                <span class="material-symbols-outlined text-sm">school</span> Xem hồ sơ học sinh
+                            </button>
                         </div>
                     }
                 </div>
             </div>
 
+            <!-- Bài viết gia sư -->
             @if (Model.Roles.Contains("Tutor"))
             {
-                <div class="card shadow-sm mt-3">
-                    <div class="card-header bg-white">
-                        <h4 class="mb-0">Hồ sơ gia sư</h4>
-                    </div>
-                    <div class="card-body">
-                        <p class="text-muted">Quản lý thông tin gia sư của bạn</p>
-                        <a href="#" class="btn btn-outline-primary">Xem hồ sơ gia sư</a>
-                    </div>
+                <div class="pt-6">
+                    <h3 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-5 mb-8 flex items-center gap-4">
+                        Bài viết của tôi
+                        <span class="h-px flex-grow bg-gray-7"></span>
+                    </h3>
+
+                    @if (Model.TutorPosts.Any())
+                    {
+                        <div class="space-y-6">
+                            @foreach (var post in Model.TutorPosts)
+                            {
+                                <div class="bg-white rounded-[14px] shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 overflow-hidden card-fade-in">
+                                    <!-- Post Header: Avatar + Name + Time + Actions -->
+                                    <div class="flex items-center justify-between p-5 pb-0">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-7 flex-shrink-0">
+                                                @if (!string.IsNullOrEmpty(post.TutorAvatarUrl))
+                                                {
+                                                    <img src="@post.TutorAvatarUrl" alt="" class="w-full h-full object-cover" />
+                                                }
+                                                else
+                                                {
+                                                    <div class="w-full h-full flex items-center justify-center bg-gray-7 text-gray-5 text-sm font-bold">
+                                                        @post.TutorName.Substring(0, 1).ToUpper()
+                                                    </div>
+                                                }
+                                            </div>
+                                            <div>
+                                                <p class="font-bold text-sm m-0 leading-tight">@post.TutorName</p>
+                                                <p class="text-[11px] text-gray-5 m-0">
+                                                    @{
+                                                        var timeAgo = DateTime.UtcNow - post.CreatedAt;
+                                                        string timeText;
+                                                        if (timeAgo.TotalMinutes < 60) timeText = $"{(int)timeAgo.TotalMinutes} phút trước";
+                                                        else if (timeAgo.TotalHours < 24) timeText = $"{(int)timeAgo.TotalHours} giờ trước";
+                                                        else if (timeAgo.TotalDays < 7) timeText = $"{(int)timeAgo.TotalDays} ngày trước";
+                                                        else timeText = post.CreatedAt.ToString("dd/MM/yyyy");
+                                                    }
+                                                    @timeText
+                                                    @if (!post.IsPublished)
+                                                    {
+                                                        <span class="ml-1 text-gray-5">· Nháp</span>
+                                                    }
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <a asp-controller="Tutor" asp-action="EditPost" asp-route-id="@post.Id" class="text-gray-5 hover:text-black transition-colors no-underline p-1">
+                                            <span class="material-symbols-outlined text-xl">more_horiz</span>
+                                        </a>
+                                    </div>
+
+                                    <!-- Post Content -->
+                                    <a asp-controller="Tutor" asp-action="PostDetail" asp-route-id="@post.Id" class="block px-5 py-3 no-underline text-inherit hover:bg-gray-8/50 transition-colors">
+                                        <h4 class="font-bold text-base mb-1">@post.Title</h4>
+                                        <p class="text-sm text-gray-3 leading-relaxed m-0 whitespace-pre-line line-clamp-3">@post.Content</p>
+                                    </a>
+
+                                    <!-- Post Images Gallery -->
+                                    @if (post.ImageUrls.Any())
+                                    {
+                                        var images = post.ImageUrls;
+                                        var count = images.Count;
+
+                                        <a asp-controller="Tutor" asp-action="PostDetail" asp-route-id="@post.Id" class="block no-underline post-gallery cursor-pointer">
+                                            @if (count == 1)
+                                            {
+                                                <div class="max-h-[500px] overflow-hidden">
+                                                    <img src="@images[0]" alt="" class="w-full h-full object-cover" />
+                                                </div>
+                                            }
+                                            else if (count == 2)
+                                            {
+                                                <div class="grid grid-cols-2 gap-0.5">
+                                                    @foreach (var img in images)
+                                                    {
+                                                        <div class="aspect-square overflow-hidden">
+                                                            <img src="@img" alt="" class="w-full h-full object-cover" />
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                            else if (count == 3)
+                                            {
+                                                <div class="grid grid-cols-2 gap-0.5" style="max-height:500px">
+                                                    <div class="row-span-2 overflow-hidden">
+                                                        <img src="@images[0]" alt="" class="w-full h-full object-cover" />
+                                                    </div>
+                                                    <div class="overflow-hidden">
+                                                        <img src="@images[1]" alt="" class="w-full h-full object-cover" />
+                                                    </div>
+                                                    <div class="overflow-hidden">
+                                                        <img src="@images[2]" alt="" class="w-full h-full object-cover" />
+                                                    </div>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="grid grid-cols-2 gap-0.5" style="max-height:500px">
+                                                    <div class="row-span-2 overflow-hidden">
+                                                        <img src="@images[0]" alt="" class="w-full h-full object-cover" />
+                                                    </div>
+                                                    <div class="overflow-hidden">
+                                                        <img src="@images[1]" alt="" class="w-full h-full object-cover" />
+                                                    </div>
+                                                    <div class="overflow-hidden relative">
+                                                        <img src="@images[2]" alt="" class="w-full h-full object-cover" />
+                                                        @if (count > 3)
+                                                        {
+                                                            <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                                                <span class="text-white text-2xl font-bold">+@(count - 3)</span>
+                                                            </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            }
+                                        </a>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="bg-white rounded-[14px] shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 border-dashed flex flex-col items-center justify-center py-16 card-fade-in">
+                            <div class="w-14 h-14 rounded-full bg-gray-8 flex items-center justify-center mb-4">
+                                <span class="material-symbols-outlined text-gray-5 text-2xl">edit_note</span>
+                            </div>
+                            <h4 class="text-lg font-bold mb-2">Chưa có bài viết</h4>
+                            <p class="text-gray-5 text-sm mb-6 text-center max-w-xs">Hãy chia sẻ kiến thức và kinh nghiệm giảng dạy của bạn.</p>
+                            <a asp-controller="Tutor" asp-action="CreatePost" class="px-6 py-2 bg-black text-white rounded-full text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-all no-underline btn-transition">
+                                Viết bài đầu tiên
+                            </a>
+                        </div>
+                    }
                 </div>
             }
 
-            @if (Model.Roles.Contains("Student"))
-            {
-                <div class="card shadow-sm mt-3">
-                    <div class="card-header bg-white">
-                        <h4 class="mb-0">Hồ sơ học sinh</h4>
+            <!-- Thống kê -->
+            <div class="pt-6">
+                <h3 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-5 mb-8 flex items-center gap-4">
+                    Thống kê hoạt động
+                    <span class="h-px flex-grow bg-gray-7"></span>
+                </h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="p-6 rounded-[14px] bg-gray-8 border border-transparent hover:border-gray-6 transition-all">
+                        <span class="block text-3xl font-display font-black mb-1 stat-number">0</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-gray-5">Lớp đã học</span>
                     </div>
-                    <div class="card-body">
-                        <p class="text-muted">Quản lý thông tin học tập của bạn</p>
-                        <a href="#" class="btn btn-outline-primary">Xem hồ sơ học sinh</a>
+                    <div class="p-6 rounded-[14px] bg-gray-8 border border-transparent hover:border-gray-6 transition-all">
+                        <span class="block text-3xl font-display font-black mb-1 stat-number">0.0</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-gray-5">Đánh giá</span>
+                    </div>
+                    <div class="p-6 rounded-[14px] bg-gray-8 border border-transparent hover:border-gray-6 transition-all">
+                        <span class="block text-3xl font-display font-black mb-1 stat-number">0%</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-gray-5">Phản hồi</span>
+                    </div>
+                    <div class="p-6 rounded-[14px] bg-gray-8 border border-transparent hover:border-gray-6 transition-all">
+                        <span class="block text-3xl font-display font-black mb-1 stat-number">0</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-gray-5">Badge</span>
                     </div>
                 </div>
-            }
-        </div>
-    </div>
+            </div>
+        </section>
+    </main>
+
+    
 </div>

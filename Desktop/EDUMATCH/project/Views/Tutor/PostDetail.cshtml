@@ -1,0 +1,155 @@
+@model TutorPostViewModel
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+@section Styles {
+    @await Html.PartialAsync("_AuthStyles")
+}
+
+<main class="flex-grow px-4 py-12 md:py-20">
+    <div class="max-w-3xl mx-auto">
+        <!-- Back -->
+        <a href="javascript:history.back()" class="inline-flex items-center gap-2 text-gray-5 text-sm font-medium hover:text-black transition-colors group no-underline mb-8">
+            <span class="material-symbols-outlined text-sm group-hover:-translate-x-1 transition-transform">arrow_back</span>
+            <span>Quay lại</span>
+        </a>
+
+        <!-- Post Card -->
+        <article class="bg-white rounded-[14px] editorial-shadow border border-gray-7 overflow-hidden card-fade-in">
+            <!-- Header -->
+            <div class="flex items-center justify-between p-6 pb-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-full overflow-hidden bg-gray-7 flex-shrink-0">
+                        @if (!string.IsNullOrEmpty(Model.TutorAvatarUrl))
+                        {
+                            <img src="@Model.TutorAvatarUrl" alt="" class="w-full h-full object-cover" />
+                        }
+                        else
+                        {
+                            <div class="w-full h-full flex items-center justify-center bg-gray-7 text-gray-5 text-base font-bold">
+                                @Model.TutorName.Substring(0, 1).ToUpper()
+                            </div>
+                        }
+                    </div>
+                    <div>
+                        <p class="font-bold text-sm m-0 leading-tight">@Model.TutorName</p>
+                        <p class="text-[11px] text-gray-5 m-0">
+                            @{
+                                var timeAgo = DateTime.UtcNow - Model.CreatedAt;
+                                string timeText;
+                                if (timeAgo.TotalMinutes < 60) timeText = $"{(int)timeAgo.TotalMinutes} phút trước";
+                                else if (timeAgo.TotalHours < 24) timeText = $"{(int)timeAgo.TotalHours} giờ trước";
+                                else if (timeAgo.TotalDays < 7) timeText = $"{(int)timeAgo.TotalDays} ngày trước";
+                                else timeText = Model.CreatedAt.ToString("dd/MM/yyyy");
+                            }
+                            @timeText
+                            @if (!Model.IsPublished)
+                            {
+                                <span class="ml-1 text-gray-5">· Nháp</span>
+                            }
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="px-6 py-4">
+                <h1 class="editorial-title text-2xl md:text-3xl font-black mb-4 leading-tight">@Model.Title</h1>
+                <div class="text-sm text-gray-3 leading-relaxed whitespace-pre-line">@Model.Content</div>
+            </div>
+
+            <!-- Image Gallery -->
+            @if (Model.ImageUrls.Any())
+            {
+                var images = Model.ImageUrls;
+                var count = images.Count;
+
+                <div class="px-6 pb-6">
+                    <div class="post-detail-gallery">
+                        @for (int i = 0; i < count; i++)
+                        {
+                            <div class="post-detail-gallery-item" onclick="openLightbox(@i)">
+                                <img src="@images[i]" alt="Ảnh @(i + 1)" class="w-full h-full object-cover" />
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Footer -->
+            <div class="px-6 py-4 border-t border-gray-7 flex items-center justify-between">
+                <p class="text-[11px] text-gray-5 m-0">
+                    <span class="material-symbols-outlined text-[13px] align-middle mr-1">schedule</span>
+                    Đăng lúc @Model.CreatedAt.ToString("HH:mm · dd/MM/yyyy")
+                    @if (Model.UpdatedAt != Model.CreatedAt)
+                    {
+                        <span class="ml-2">· Chỉnh sửa @Model.UpdatedAt.ToString("dd/MM/yyyy")</span>
+                    }
+                </p>
+                @if (User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value == Model.TutorId)
+                {
+                    <a asp-action="EditPost" asp-route-id="@Model.Id" class="text-gray-5 hover:text-black transition-colors no-underline text-xs font-bold uppercase tracking-widest">
+                        <span class="material-symbols-outlined text-sm align-middle mr-1">edit</span>Chỉnh sửa
+                    </a>
+                }
+            </div>
+        </article>
+    </div>
+</main>
+
+<!-- Lightbox -->
+@if (Model.ImageUrls.Any())
+{
+    <div id="lightbox" class="lightbox" onclick="closeLightbox(event)">
+        <button class="lightbox-close" onclick="closeLightbox(event)">&times;</button>
+        <button class="lightbox-nav lightbox-prev" onclick="navigateLightbox(event, -1)">
+            <span class="material-symbols-outlined">chevron_left</span>
+        </button>
+        <div class="lightbox-content">
+            <img id="lightbox-img" src="" alt="" />
+            <p id="lightbox-counter" class="lightbox-counter"></p>
+        </div>
+        <button class="lightbox-nav lightbox-next" onclick="navigateLightbox(event, 1)">
+            <span class="material-symbols-outlined">chevron_right</span>
+        </button>
+    </div>
+
+    <script>
+        const images = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.ImageUrls));
+        let currentIndex = 0;
+
+        function openLightbox(index) {
+            currentIndex = index;
+            updateLightbox();
+            document.getElementById('lightbox').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox(e) {
+            if (e.target === document.getElementById('lightbox') || e.currentTarget.classList.contains('lightbox-close')) {
+                document.getElementById('lightbox').classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        function navigateLightbox(e, direction) {
+            e.stopPropagation();
+            currentIndex = (currentIndex + direction + images.length) % images.length;
+            updateLightbox();
+        }
+
+        function updateLightbox() {
+            document.getElementById('lightbox-img').src = images[currentIndex];
+            document.getElementById('lightbox-counter').textContent = `${currentIndex + 1} / ${images.length}`;
+        }
+
+        document.addEventListener('keydown', function (e) {
+            const lb = document.getElementById('lightbox');
+            if (!lb.classList.contains('active')) return;
+            if (e.key === 'Escape') { lb.classList.remove('active'); document.body.style.overflow = ''; }
+            if (e.key === 'ArrowLeft') navigateLightbox(e, -1);
+            if (e.key === 'ArrowRight') navigateLightbox(e, 1);
+        });
+    </script>
+}

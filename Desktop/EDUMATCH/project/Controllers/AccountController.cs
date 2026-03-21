@@ -1,27 +1,20 @@
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
+using EduMatch.Services;
 using EduMatch.ViewModels;
 
 namespace EduMatch.Controllers;
 
 public class AccountController : Controller
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly SignInManager<ApplicationUser> _signInManager;
-    private readonly EduMatchDbContext _context;
-    private readonly ILogger<AccountController> _logger;
+    private readonly IAccountService _accountService;
+    private readonly ITutorService _tutorService;
 
-    public AccountController(
-        UserManager<ApplicationUser> userManager,
-        SignInManager<ApplicationUser> signInManager,
-        EduMatchDbContext context,
-        ILogger<AccountController> logger)
+    public AccountController(IAccountService accountService, ITutorService tutorService)
     {
-        _userManager = userManager;
-        _signInManager = signInManager;
-        _context = context;
-        _logger = logger;
+        _accountService = accountService;
+        _tutorService = tutorService;
     }
 
     // GET: /Account/Register
@@ -45,82 +38,43 @@ public class AccountController : Controller
         if (!ModelState.IsValid)
             return View(model);
 
-        // Validate role
         if (model.Role != "Tutor" && model.Role != "Student")
         {
             ModelState.AddModelError("Role", "Vai trò không hợp lệ");
             return View(model);
         }
 
-        var user = new ApplicationUser
-        {
-            UserName = model.Email,
-            Email = model.Email,
-            FullName = model.FullName,
-            PhoneNumber = model.PhoneNumber,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
+        var callbackUrl = Url.Action(nameof(ConfirmEmail), "Account", null, Request.Scheme)!;
+        var (success, errors) = await _accountService.RegisterAsync(model, callbackUrl);
 
-        var result = await _userManager.CreateAsync(user, model.Password);
+        if (success)
+            return RedirectToAction(nameof(RegisterConfirmation), new { email = model.Email });
 
-        if (result.Succeeded)
-        {
-            _logger.LogInformation("User created a new account with password.");
-
-            // Assign role
-            await _userManager.AddToRoleAsync(user, model.Role);
-
-            // Create profile based on role
-            if (model.Role == "Tutor")
-            {
-                _context.TutorProfiles.Add(new TutorProfile
-                {
-                    UserId = user.Id,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                });
-            }
-            else
-            {
-                _context.StudentProfiles.Add(new StudentProfile
-                {
-                    UserId = user.Id,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                });
-            }
-
-            // Create wallet
-            _context.Wallets.Add(new Wallet
-            {
-                UserId = user.Id,
-                Balance = 0,
-                TotalEarned = 0,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            });
-
-            await _context.SaveChangesAsync();
-
-            // Sign in user
-            await _signInManager.SignInAsync(user, isPersistent: false);
-
-            TempData["SuccessMessage"] = "Đăng ký thành công! Chào mừng bạn đến với EduMatch.";
-
-            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
-                return Redirect(returnUrl);
-
-            return RedirectToAction("Index", "Home");
-        }
-
-        foreach (var error in result.Errors)
-        {
-            ModelState.AddModelError(string.Empty, error.Description);
-        }
+        foreach (var error in errors)
+            ModelState.AddModelError(string.Empty, error);
 
         return View(model);
+    }
+
+    // GET: /Account/RegisterConfirmation
+    [HttpGet]
+    public IActionResult RegisterConfirmation(string email)
+    {
+        ViewData["Email"] = email;
+        return View();
+    }
+
+    // GET: /Account/ConfirmEmail
+    [HttpGet]
+    public async Task<IActionResult> ConfirmEmail(string? userId, string? token)
+    {
+        if (userId == null || token == null)
+            return BadRequest("Liên kết xác minh không hợp lệ.");
+
+        var (success, message) = await _accountService.ConfirmEmailAsync(userId, token);
+        ViewData["Success"] = success;
+        ViewData["Message"] = message;
+        return View();
     }
 
     // GET: /Account/Login
@@ -142,32 +96,11 @@ public class AccountController : Controller
         if (!ModelState.IsValid)
             return View(model);
 
-        var user = await _userManager.FindByEmailAsync(model.Email);
+        var (success, isLockedOut, isNotAllowed, fullName) = await _accountService.LoginAsync(model);
 
-        if (user == null)
+        if (success)
         {
-            ModelState.AddModelError(string.Empty, "Email hoặc mật khẩu không đúng.");
-            return View(model);
-        }
-
-        if (!user.IsActive)
-        {
-            ModelState.AddModelError(string.Empty, "Tài khoản của bạn đã bị vô hiệu hóa.");
-            return View(model);
-        }
-
-        var result = await _signInManager.PasswordSignInAsync(
-            user, model.Password, model.RememberMe, lockoutOnFailure: true);
-
-        if (result.Succeeded)
-        {
-            _logger.LogInformation("User logged in.");
-
-            // Update last login
-            user.LastLoginAt = DateTime.UtcNow;
-            await _userManager.UpdateAsync(user);
-
-            TempData["SuccessMessage"] = $"Chào mừng trở lại, {user.FullName}!";
+            TempData["SuccessMessage"] = $"Chào mừng trở lại, {fullName}!";
 
             if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
                 return Redirect(model.ReturnUrl);
@@ -175,10 +108,15 @@ public class AccountController : Controller
             return RedirectToAction("Index", "Home");
         }
 
-        if (result.IsLockedOut)
+        if (isLockedOut)
         {
-            _logger.LogWarning("User account locked out.");
             ModelState.AddModelError(string.Empty, "Tài khoản đã bị khóa do đăng nhập sai quá nhiều lần.");
+            return View(model);
+        }
+
+        if (isNotAllowed)
+        {
+            ModelState.AddModelError(string.Empty, "Vui lòng xác nhận email trước khi đăng nhập. Kiểm tra hộp thư của bạn.");
             return View(model);
         }
 
@@ -191,8 +129,7 @@ public class AccountController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()
     {
-        await _signInManager.SignOutAsync();
-        _logger.LogInformation("User logged out.");
+        await _accountService.LogoutAsync();
         TempData["SuccessMessage"] = "Đăng xuất thành công!";
         return RedirectToAction("Index", "Home");
     }
@@ -202,25 +139,16 @@ public class AccountController : Controller
     [HttpGet]
     public async Task<IActionResult> Profile()
     {
-        var user = await _userManager.GetUserAsync(User);
-        if (user == null)
-            return NotFound();
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return NotFound();
 
-        var roles = await _userManager.GetRolesAsync(user);
+        var model = await _accountService.GetProfileAsync(userId);
+        if (model == null) return NotFound();
 
-        var model = new ProfileViewModel
+        if (model.Roles.Contains("Tutor"))
         {
-            Id = user.Id,
-            Email = user.Email!,
-            FullName = user.FullName,
-            PhoneNumber = user.PhoneNumber,
-            AvatarUrl = user.AvatarUrl,
-            EmailConfirmed = user.EmailConfirmed,
-            PhoneNumberConfirmed = user.PhoneNumberConfirmed,
-            LastLoginAt = user.LastLoginAt,
-            CreatedAt = user.CreatedAt,
-            Roles = roles.ToList()
-        };
+            model.TutorPosts = await _tutorService.GetPostsByTutorAsync(userId);
+        }
 
         return View(model);
     }
@@ -230,15 +158,17 @@ public class AccountController : Controller
     [HttpGet]
     public async Task<IActionResult> EditProfile()
     {
-        var user = await _userManager.GetUserAsync(User);
-        if (user == null)
-            return NotFound();
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return NotFound();
+
+        var profile = await _accountService.GetProfileAsync(userId);
+        if (profile == null) return NotFound();
 
         var model = new EditProfileViewModel
         {
-            FullName = user.FullName,
-            PhoneNumber = user.PhoneNumber,
-            CurrentAvatarUrl = user.AvatarUrl
+            FullName = profile.FullName,
+            PhoneNumber = profile.PhoneNumber,
+            CurrentAvatarUrl = profile.AvatarUrl
         };
 
         return View(model);
@@ -253,43 +183,19 @@ public class AccountController : Controller
         if (!ModelState.IsValid)
             return View(model);
 
-        var user = await _userManager.GetUserAsync(User);
-        if (user == null)
-            return NotFound();
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return NotFound();
 
-        user.FullName = model.FullName;
-        user.PhoneNumber = model.PhoneNumber;
-        user.UpdatedAt = DateTime.UtcNow;
+        var (success, errors) = await _accountService.UpdateProfileAsync(userId, model);
 
-        // Handle avatar upload
-        if (model.AvatarFile != null && model.AvatarFile.Length > 0)
-        {
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "avatars");
-            Directory.CreateDirectory(uploadsFolder);
-
-            var uniqueFileName = $"{user.Id}_{Guid.NewGuid()}{Path.GetExtension(model.AvatarFile.FileName)}";
-            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-            using (var fileStream = new FileStream(filePath, FileMode.Create))
-            {
-                await model.AvatarFile.CopyToAsync(fileStream);
-            }
-
-            user.AvatarUrl = $"/uploads/avatars/{uniqueFileName}";
-        }
-
-        var result = await _userManager.UpdateAsync(user);
-
-        if (result.Succeeded)
+        if (success)
         {
             TempData["SuccessMessage"] = "Cập nhật thông tin thành công!";
             return RedirectToAction(nameof(Profile));
         }
 
-        foreach (var error in result.Errors)
-        {
-            ModelState.AddModelError(string.Empty, error.Description);
-        }
+        foreach (var error in errors)
+            ModelState.AddModelError(string.Empty, error);
 
         return View(model);
     }
@@ -297,10 +203,7 @@ public class AccountController : Controller
     // GET: /Account/ChangePassword
     [Authorize]
     [HttpGet]
-    public IActionResult ChangePassword()
-    {
-        return View();
-    }
+    public IActionResult ChangePassword() => View();
 
     // POST: /Account/ChangePassword
     [Authorize]
@@ -311,34 +214,26 @@ public class AccountController : Controller
         if (!ModelState.IsValid)
             return View(model);
 
-        var user = await _userManager.GetUserAsync(User);
-        if (user == null)
-            return NotFound();
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null) return NotFound();
 
-        var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
+        var (success, errors) = await _accountService.ChangePasswordAsync(userId, model);
 
-        if (result.Succeeded)
+        if (success)
         {
-            await _signInManager.RefreshSignInAsync(user);
-            _logger.LogInformation("User changed their password successfully.");
             TempData["SuccessMessage"] = "Đổi mật khẩu thành công!";
             return RedirectToAction(nameof(Profile));
         }
 
-        foreach (var error in result.Errors)
-        {
-            ModelState.AddModelError(string.Empty, error.Description);
-        }
+        foreach (var error in errors)
+            ModelState.AddModelError(string.Empty, error);
 
         return View(model);
     }
 
     // GET: /Account/ForgotPassword
     [HttpGet]
-    public IActionResult ForgotPassword()
-    {
-        return View();
-    }
+    public IActionResult ForgotPassword() => View();
 
     // POST: /Account/ForgotPassword
     [HttpPost]
@@ -348,50 +243,24 @@ public class AccountController : Controller
         if (!ModelState.IsValid)
             return View(model);
 
-        var user = await _userManager.FindByEmailAsync(model.Email);
-        
-        // Don't reveal that the user does not exist
-        if (user == null)
-        {
-            return RedirectToAction(nameof(ForgotPasswordConfirmation));
-        }
-
-        var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-        var callbackUrl = Url.Action(
-            nameof(ResetPassword),
-            "Account",
-            new { token, email = user.Email },
-            protocol: Request.Scheme);
-
-        // TODO: Send email with callbackUrl
-        _logger.LogInformation($"Password reset link: {callbackUrl}");
+        var callbackBaseUrl = Url.Action(nameof(ResetPassword), "Account", null, Request.Scheme)!;
+        await _accountService.GeneratePasswordResetLinkAsync(model.Email, callbackBaseUrl);
 
         return RedirectToAction(nameof(ForgotPasswordConfirmation));
     }
 
     // GET: /Account/ForgotPasswordConfirmation
     [HttpGet]
-    public IActionResult ForgotPasswordConfirmation()
-    {
-        return View();
-    }
+    public IActionResult ForgotPasswordConfirmation() => View();
 
     // GET: /Account/ResetPassword
     [HttpGet]
     public IActionResult ResetPassword(string? token = null, string? email = null)
     {
         if (token == null || email == null)
-        {
             return BadRequest("Token hoặc email không hợp lệ.");
-        }
 
-        var model = new ResetPasswordViewModel
-        {
-            Token = token,
-            Email = email
-        };
-
-        return View(model);
+        return View(new ResetPasswordViewModel { Token = token, Email = email });
     }
 
     // POST: /Account/ResetPassword
@@ -402,38 +271,22 @@ public class AccountController : Controller
         if (!ModelState.IsValid)
             return View(model);
 
-        var user = await _userManager.FindByEmailAsync(model.Email);
-        if (user == null)
-        {
+        var (success, errors) = await _accountService.ResetPasswordAsync(model);
+
+        if (success)
             return RedirectToAction(nameof(ResetPasswordConfirmation));
-        }
 
-        var result = await _userManager.ResetPasswordAsync(user, model.Token, model.Password);
-
-        if (result.Succeeded)
-        {
-            return RedirectToAction(nameof(ResetPasswordConfirmation));
-        }
-
-        foreach (var error in result.Errors)
-        {
-            ModelState.AddModelError(string.Empty, error.Description);
-        }
+        foreach (var error in errors)
+            ModelState.AddModelError(string.Empty, error);
 
         return View(model);
     }
 
     // GET: /Account/ResetPasswordConfirmation
     [HttpGet]
-    public IActionResult ResetPasswordConfirmation()
-    {
-        return View();
-    }
+    public IActionResult ResetPasswordConfirmation() => View();
 
     // GET: /Account/AccessDenied
     [HttpGet]
-    public IActionResult AccessDenied()
-    {
-        return View();
-    }
+    public IActionResult AccessDenied() => View();
 }
