@@ -113,6 +113,12 @@ public class ProfileViewModel
     public DateTime CreatedAt { get; set; }
     public List<string> Roles { get; set; } = new();
     public List<TutorPostViewModel> TutorPosts { get; set; } = new();
+
+    // Stats
+    public int TotalContracts { get; set; }
+    public int PendingBookings { get; set; }
+    public int CompletedSessions { get; set; }
+    public decimal WalletBalance { get; set; }
 }
 
 public class EditProfileViewModel

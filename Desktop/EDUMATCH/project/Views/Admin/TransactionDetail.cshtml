@@ -1,0 +1,60 @@
+@model Transaction
+@{ ViewData["Title"] = "Chi tiết giao dịch"; }
+
+<h4 class="mb-3">Chi tiết giao dịch #@Model.Id</h4>
+<a asp-action="Transactions" class="btn btn-outline-secondary btn-sm mb-3">← Quay lại</a>
+@if (TempData["SuccessMessage"] != null) { <div class="alert alert-success">@TempData["SuccessMessage"]</div> }
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header"><strong>Thông tin giao dịch</strong></div>
+            <div class="card-body">
+                <p><strong>Người dùng:</strong> @Model.Wallet.User.FullName</p>
+                <p><strong>Email:</strong> @Model.Wallet.User.Email</p>
+                <p><strong>Loại:</strong>
+                    @switch (Model.Type)
+                    {
+                        case TransactionType.Deposit: <span class="badge bg-success">Nạp tiền</span> break;
+                        case TransactionType.Withdrawal: <span class="badge bg-danger">Rút tiền</span> break;
+                        case TransactionType.Payment: <span class="badge bg-warning text-dark">Thanh toán</span> break;
+                        case TransactionType.Earning: <span class="badge bg-primary">Thu nhập</span> break;
+                        default: <span class="badge bg-info text-dark">Hoàn tiền</span> break;
+                    }
+                </p>
+                <p><strong>Số tiền:</strong> <span class="text-primary fw-bold">@Model.Amount.ToString("N0") VNĐ</span></p>
+                <p><strong>Số dư trước:</strong> @Model.BalanceBefore.ToString("N0") VNĐ</p>
+                <p><strong>Số dư sau:</strong> @Model.BalanceAfter.ToString("N0") VNĐ</p>
+                <p><strong>Mô tả:</strong> @Model.Description</p>
+                <p><strong>Ngày tạo:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                <p><strong>Trạng thái:</strong>
+                    @switch (Model.Status)
+                    {
+                        case TransactionStatus.Completed: <span class="badge bg-success fs-6">Thành công</span> break;
+                        case TransactionStatus.Pending: <span class="badge bg-warning text-dark fs-6">Đang xử lý</span> break;
+                        case TransactionStatus.Cancelled: <span class="badge bg-secondary fs-6">Đã huỷ</span> break;
+                        default: <span class="badge bg-danger fs-6">Thất bại</span> break;
+                    }
+                </p>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Status == TransactionStatus.Pending)
+    {
+        <div class="col-md-6">
+            <div class="card shadow-sm border-warning">
+                <div class="card-header bg-warning text-dark"><strong>Xử lý giao dịch</strong></div>
+                <div class="card-body">
+                    <p>Giao dịch đang chờ xử lý. Chọn hành động:</p>
+                    <form asp-action="UpdateTransactionStatus" method="post" class="d-flex gap-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.Id" />
+                        <button name="status" value="Completed" class="btn btn-success" onclick="return confirm('Duyệt giao dịch này?')">Duyệt</button>
+                        <button name="status" value="Failed" class="btn btn-danger" onclick="return confirm('Từ chối giao dịch? (Tiền rút sẽ được hoàn lại)')">Từ chối</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+</div>

@@ -1,6 +1,9 @@
 @model ProfileViewModel
 @{
     ViewData["Title"] = "Thông tin cá nhân";
+    var isTutor = Model.Roles.Contains("Tutor");
+    var isStudent = Model.Roles.Contains("Student");
+    var isAdmin = Model.Roles.Contains("Admin");
 }
 
 @section Styles {
@@ -59,7 +62,10 @@
                         {
                             <span class="px-3 py-1 bg-gray-6 text-gray-3 text-[10px] font-bold tracking-widest uppercase rounded-full">UNVERIFIED</span>
                         }
-                        <span class="px-3 py-1 bg-gray-7 text-gray-4 text-[10px] font-bold tracking-widest uppercase rounded-full">MEMBER</span>
+                        @foreach (var role in Model.Roles)
+                        {
+                            <span class="px-3 py-1 bg-gray-7 text-gray-4 text-[10px] font-bold tracking-widest uppercase rounded-full">@role</span>
+                        }
                     </div>
 
                     <!-- Info -->
@@ -75,11 +81,15 @@
                                 <span class="font-bold">@Model.LastLoginAt.Value.ToString("dd.MM.yyyy")</span>
                             </div>
                         }
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-5 font-medium">Số dư ví</span>
+                            <span class="font-bold" style="color: #16a34a;">@Model.WalletBalance.ToString("N0") VNĐ</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Quick Links -->
+            <!-- Quick Links by Role -->
             <div class="p-4 flex flex-col gap-3">
                 <p class="text-xs font-bold uppercase tracking-widest text-gray-5 mb-2">Truy cập nhanh</p>
                 <a asp-action="EditProfile" class="flex items-center gap-3 text-sm font-medium hover:text-gray-5 transition-colors no-underline text-black">
@@ -88,10 +98,31 @@
                 <a asp-action="ChangePassword" class="flex items-center gap-3 text-sm font-medium hover:text-gray-5 transition-colors no-underline text-black">
                     <span class="material-symbols-outlined text-lg">key</span> Đổi mật khẩu
                 </a>
-                @if (Model.Roles.Contains("Tutor"))
+                @if (isTutor)
                 {
+                    <a asp-controller="Tutor" asp-action="Wallet" class="flex items-center gap-3 text-sm font-medium hover:text-gray-5 transition-colors no-underline text-black">
+                        <span class="material-symbols-outlined text-lg">account_balance_wallet</span> Ví tiền
+                    </a>
                     <a asp-controller="Tutor" asp-action="Posts" class="flex items-center gap-3 text-sm font-medium hover:text-gray-5 transition-colors no-underline text-black">
                         <span class="material-symbols-outlined text-lg">article</span> Quản lý bài viết
+                    </a>
+                }
+                @if (isStudent)
+                {
+                    <a asp-controller="Student" asp-action="Wallet" class="flex items-center gap-3 text-sm font-medium hover:text-gray-5 transition-colors no-underline text-black">
+                        <span class="material-symbols-outlined text-lg">account_balance_wallet</span> Ví tiền
+                    </a>
+                    <a asp-controller="Student" asp-action="Search" class="flex items-center gap-3 text-sm font-medium hover:text-gray-5 transition-colors no-underline text-black">
+                        <span class="material-symbols-outlined text-lg">search</span> Tìm gia sư
+                    </a>
+                }
+                @if (isAdmin)
+                {
+                    <a asp-controller="Admin" asp-action="Wallets" class="flex items-center gap-3 text-sm font-medium hover:text-gray-5 transition-colors no-underline text-black">
+                        <span class="material-symbols-outlined text-lg">admin_panel_settings</span> Quản lý ví
+                    </a>
+                    <a asp-controller="Admin" asp-action="Transactions" class="flex items-center gap-3 text-sm font-medium hover:text-gray-5 transition-colors no-underline text-black">
+                        <span class="material-symbols-outlined text-lg">receipt_long</span> Giao dịch
                     </a>
                 }
             </div>
@@ -135,7 +166,7 @@
                         <div class="flex gap-2">
                             @foreach (var role in Model.Roles)
                             {
-                                <span class="px-3 py-1 bg-gray-1 text-[10px] font-bold tracking-widest uppercase rounded-full">@role</span>
+                                <span class="px-3 py-1 bg-gray-1 text-white text-[10px] font-bold tracking-widest uppercase rounded-full">@role</span>
                             }
                         </div>
                     </div>
@@ -148,55 +179,111 @@
                 </div>
             </div>
 
-            <!-- Hồ sơ chuyên môn -->
-            <div class="pt-6">
-                <h3 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-5 mb-8 flex items-center gap-4">
-                    Hồ sơ chuyên môn
-                    <span class="h-px flex-grow bg-gray-7"></span>
-                </h3>
-                <div class="space-y-6">
-                    @if (Model.Roles.Contains("Tutor"))
-                    {
-                        <div class="bg-white rounded-[14px] p-8 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 relative overflow-hidden card-fade-in">
-                            <div class="flex justify-between items-start mb-6">
-                                <div>
-                                    <h4 class="text-xl font-bold mb-1">Hồ sơ gia sư</h4>
-                                    <p class="accent-italic text-sm m-0">Quản lý thông tin gia sư và bài viết của bạn</p>
-                                </div>
-                                <span class="px-3 py-1 bg-gray-1 text-white text-[9px] font-bold tracking-widest uppercase rounded-full">ACTIVE</span>
-                            </div>
-                            <div class="flex flex-wrap gap-3">
-                                <a asp-controller="Tutor" asp-action="Posts" class="flex items-center gap-2 px-5 py-2.5 bg-black text-white rounded-full text-xs font-bold uppercase tracking-widest hover:opacity-90 transition-all no-underline btn-transition">
-                                    <span class="material-symbols-outlined text-sm">article</span> Quản lý bài viết
-                                </a>
-                                <a asp-controller="Tutor" asp-action="CreatePost" class="flex items-center gap-2 px-5 py-2.5 border border-gray-4 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-gray-8 transition-all no-underline btn-transition">
-                                    <span class="material-symbols-outlined text-sm">add</span> Đăng bài mới
-                                </a>
-                            </div>
-                        </div>
-                    }
-
-                    @if (Model.Roles.Contains("Student"))
-                    {
-                        <div class="bg-white rounded-[14px] p-8 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 relative overflow-hidden card-fade-in">
-                            <div class="flex justify-between items-start mb-6">
-                                <div>
-                                    <h4 class="text-xl font-bold mb-1">Hồ sơ học sinh</h4>
-                                    <p class="accent-italic text-sm m-0">Quản lý thông tin học tập của bạn</p>
-                                </div>
-                                <span class="px-3 py-1 bg-gray-1 text-white text-[9px] font-bold tracking-widest uppercase rounded-full">ACTIVE</span>
-                            </div>
-                            <button class="flex items-center gap-2 px-5 py-2.5 border border-gray-4 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-all btn-transition">
-                                <span class="material-symbols-outlined text-sm">school</span> Xem hồ sơ học sinh
-                            </button>
-                        </div>
-                    }
-                </div>
-            </div>
-
-            <!-- Bài viết gia sư -->
-            @if (Model.Roles.Contains("Tutor"))
+            <!-- Thống kê -->
+            @if (!isAdmin)
             {
+                <div class="pt-6">
+                    <h3 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-5 mb-8 flex items-center gap-4">
+                        Thống kê hoạt động
+                        <span class="h-px flex-grow bg-gray-7"></span>
+                    </h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="p-6 rounded-[14px] bg-gray-8 border border-transparent hover:border-gray-6 transition-all">
+                            <span class="block text-3xl font-display font-black mb-1 stat-number">@Model.TotalContracts</span>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-5">Hợp đồng</span>
+                        </div>
+                        <div class="p-6 rounded-[14px] bg-gray-8 border border-transparent hover:border-gray-6 transition-all">
+                            <span class="block text-3xl font-display font-black mb-1 stat-number">@Model.PendingBookings</span>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-5">Đang chờ</span>
+                        </div>
+                        <div class="p-6 rounded-[14px] bg-gray-8 border border-transparent hover:border-gray-6 transition-all">
+                            <span class="block text-3xl font-display font-black mb-1 stat-number">@Model.CompletedSessions</span>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-5">Buổi hoàn thành</span>
+                        </div>
+                        <div class="p-6 rounded-[14px] bg-gray-8 border border-transparent hover:border-gray-6 transition-all">
+                            <span class="block text-3xl font-display font-black mb-1 stat-number" style="color: #16a34a;">@Model.WalletBalance.ToString("N0")</span>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-5">Số dư (VNĐ)</span>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- ═══════════ TUTOR ACTIONS ═══════════ -->
+            @if (isTutor)
+            {
+                <div class="pt-6">
+                    <h3 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-5 mb-8 flex items-center gap-4">
+                        <span class="material-symbols-outlined text-sm">school</span>
+                        Tác vụ gia sư
+                        <span class="h-px flex-grow bg-gray-7"></span>
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <a asp-controller="Tutor" asp-action="Bookings" class="bg-white rounded-[14px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 no-underline text-inherit hover:border-gray-4 transition-all card-fade-in block">
+                            <div class="flex items-center gap-4 mb-3">
+                                <div class="w-10 h-10 rounded-full bg-gray-8 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-gray-3">inbox</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-base font-bold m-0">Yêu cầu dạy</h4>
+                                    <p class="text-[11px] text-gray-5 m-0">Xem và phản hồi yêu cầu từ học sinh</p>
+                                </div>
+                            </div>
+                            @if (Model.PendingBookings > 0)
+                            {
+                                <span class="px-3 py-1 bg-amber-100 text-amber-700 text-[10px] font-bold tracking-widest uppercase rounded-full">@Model.PendingBookings ĐANG CHỜ</span>
+                            }
+                        </a>
+                        <a asp-controller="Tutor" asp-action="Contracts" class="bg-white rounded-[14px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 no-underline text-inherit hover:border-gray-4 transition-all card-fade-in block">
+                            <div class="flex items-center gap-4 mb-3">
+                                <div class="w-10 h-10 rounded-full bg-gray-8 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-gray-3">description</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-base font-bold m-0">Hợp đồng</h4>
+                                    <p class="text-[11px] text-gray-5 m-0">Quản lý hợp đồng và tạo buổi học</p>
+                                </div>
+                            </div>
+                            <span class="text-sm font-bold">@Model.TotalContracts hợp đồng</span>
+                        </a>
+                        <a asp-controller="Tutor" asp-action="ManageSubjects" class="bg-white rounded-[14px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 no-underline text-inherit hover:border-gray-4 transition-all card-fade-in block">
+                            <div class="flex items-center gap-4 mb-3">
+                                <div class="w-10 h-10 rounded-full bg-gray-8 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-gray-3">menu_book</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-base font-bold m-0">Môn dạy</h4>
+                                    <p class="text-[11px] text-gray-5 m-0">Quản lý môn học & cấp độ</p>
+                                </div>
+                            </div>
+                        </a>
+                        <a asp-controller="Tutor" asp-action="Posts" class="bg-white rounded-[14px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 no-underline text-inherit hover:border-gray-4 transition-all card-fade-in block">
+                            <div class="flex items-center gap-4 mb-3">
+                                <div class="w-10 h-10 rounded-full bg-gray-8 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-gray-3">article</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-base font-bold m-0">Bài viết</h4>
+                                    <p class="text-[11px] text-gray-5 m-0">Đăng bài, chia sẻ kiến thức</p>
+                                </div>
+                            </div>
+                            <span class="text-sm font-bold">@Model.TutorPosts.Count bài viết</span>
+                        </a>
+                        <a asp-controller="Tutor" asp-action="Wallet" class="bg-white rounded-[14px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 no-underline text-inherit hover:border-gray-4 transition-all card-fade-in block">
+                            <div class="flex items-center gap-4 mb-3">
+                                <div class="w-10 h-10 rounded-full bg-gray-8 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-gray-3">account_balance_wallet</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-base font-bold m-0">Ví & Rút tiền</h4>
+                                    <p class="text-[11px] text-gray-5 m-0">Xem số dư và yêu cầu rút tiền</p>
+                                </div>
+                            </div>
+                            <span class="text-sm font-bold" style="color: #16a34a;">@Model.WalletBalance.ToString("N0") VNĐ</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Bài viết gia sư -->
                 <div class="pt-6">
                     <h3 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-5 mb-8 flex items-center gap-4">
                         Bài viết của tôi
@@ -206,10 +293,9 @@
                     @if (Model.TutorPosts.Any())
                     {
                         <div class="space-y-6">
-                            @foreach (var post in Model.TutorPosts)
+                            @foreach (var post in Model.TutorPosts.Take(3))
                             {
                                 <div class="bg-white rounded-[14px] shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 overflow-hidden card-fade-in">
-                                    <!-- Post Header: Avatar + Name + Time + Actions -->
                                     <div class="flex items-center justify-between p-5 pb-0">
                                         <div class="flex items-center gap-3">
                                             <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-7 flex-shrink-0">
@@ -247,76 +333,29 @@
                                             <span class="material-symbols-outlined text-xl">more_horiz</span>
                                         </a>
                                     </div>
-
-                                    <!-- Post Content -->
                                     <a asp-controller="Tutor" asp-action="PostDetail" asp-route-id="@post.Id" class="block px-5 py-3 no-underline text-inherit hover:bg-gray-8/50 transition-colors">
                                         <h4 class="font-bold text-base mb-1">@post.Title</h4>
                                         <p class="text-sm text-gray-3 leading-relaxed m-0 whitespace-pre-line line-clamp-3">@post.Content</p>
                                     </a>
-
-                                    <!-- Post Images Gallery -->
                                     @if (post.ImageUrls.Any())
                                     {
-                                        var images = post.ImageUrls;
-                                        var count = images.Count;
-
                                         <a asp-controller="Tutor" asp-action="PostDetail" asp-route-id="@post.Id" class="block no-underline post-gallery cursor-pointer">
-                                            @if (count == 1)
-                                            {
-                                                <div class="max-h-[500px] overflow-hidden">
-                                                    <img src="@images[0]" alt="" class="w-full h-full object-cover" />
-                                                </div>
-                                            }
-                                            else if (count == 2)
-                                            {
-                                                <div class="grid grid-cols-2 gap-0.5">
-                                                    @foreach (var img in images)
-                                                    {
-                                                        <div class="aspect-square overflow-hidden">
-                                                            <img src="@img" alt="" class="w-full h-full object-cover" />
-                                                        </div>
-                                                    }
-                                                </div>
-                                            }
-                                            else if (count == 3)
-                                            {
-                                                <div class="grid grid-cols-2 gap-0.5" style="max-height:500px">
-                                                    <div class="row-span-2 overflow-hidden">
-                                                        <img src="@images[0]" alt="" class="w-full h-full object-cover" />
-                                                    </div>
-                                                    <div class="overflow-hidden">
-                                                        <img src="@images[1]" alt="" class="w-full h-full object-cover" />
-                                                    </div>
-                                                    <div class="overflow-hidden">
-                                                        <img src="@images[2]" alt="" class="w-full h-full object-cover" />
-                                                    </div>
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                <div class="grid grid-cols-2 gap-0.5" style="max-height:500px">
-                                                    <div class="row-span-2 overflow-hidden">
-                                                        <img src="@images[0]" alt="" class="w-full h-full object-cover" />
-                                                    </div>
-                                                    <div class="overflow-hidden">
-                                                        <img src="@images[1]" alt="" class="w-full h-full object-cover" />
-                                                    </div>
-                                                    <div class="overflow-hidden relative">
-                                                        <img src="@images[2]" alt="" class="w-full h-full object-cover" />
-                                                        @if (count > 3)
-                                                        {
-                                                            <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
-                                                                <span class="text-white text-2xl font-bold">+@(count - 3)</span>
-                                                            </div>
-                                                        }
-                                                    </div>
-                                                </div>
-                                            }
+                                            <div class="max-h-[300px] overflow-hidden">
+                                                <img src="@post.ImageUrls[0]" alt="" class="w-full h-full object-cover" />
+                                            </div>
                                         </a>
                                     }
                                 </div>
                             }
                         </div>
+                        @if (Model.TutorPosts.Count > 3)
+                        {
+                            <div class="text-center mt-6">
+                                <a asp-controller="Tutor" asp-action="Posts" class="px-6 py-2 border border-gray-4 rounded-full text-xs font-bold uppercase tracking-widest hover:bg-black hover:text-white transition-all no-underline btn-transition">
+                                    Xem tất cả bài viết
+                                </a>
+                            </div>
+                        }
                     }
                     else
                     {
@@ -334,33 +373,139 @@
                 </div>
             }
 
-            <!-- Thống kê -->
-            <div class="pt-6">
-                <h3 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-5 mb-8 flex items-center gap-4">
-                    Thống kê hoạt động
-                    <span class="h-px flex-grow bg-gray-7"></span>
-                </h3>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div class="p-6 rounded-[14px] bg-gray-8 border border-transparent hover:border-gray-6 transition-all">
-                        <span class="block text-3xl font-display font-black mb-1 stat-number">0</span>
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-gray-5">Lớp đã học</span>
-                    </div>
-                    <div class="p-6 rounded-[14px] bg-gray-8 border border-transparent hover:border-gray-6 transition-all">
-                        <span class="block text-3xl font-display font-black mb-1 stat-number">0.0</span>
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-gray-5">Đánh giá</span>
-                    </div>
-                    <div class="p-6 rounded-[14px] bg-gray-8 border border-transparent hover:border-gray-6 transition-all">
-                        <span class="block text-3xl font-display font-black mb-1 stat-number">0%</span>
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-gray-5">Phản hồi</span>
-                    </div>
-                    <div class="p-6 rounded-[14px] bg-gray-8 border border-transparent hover:border-gray-6 transition-all">
-                        <span class="block text-3xl font-display font-black mb-1 stat-number">0</span>
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-gray-5">Badge</span>
+            <!-- ═══════════ STUDENT ACTIONS ═══════════ -->
+            @if (isStudent)
+            {
+                <div class="pt-6">
+                    <h3 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-5 mb-8 flex items-center gap-4">
+                        <span class="material-symbols-outlined text-sm">person</span>
+                        Tác vụ học sinh
+                        <span class="h-px flex-grow bg-gray-7"></span>
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <a asp-controller="Student" asp-action="Search" class="bg-white rounded-[14px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 no-underline text-inherit hover:border-gray-4 transition-all card-fade-in block">
+                            <div class="flex items-center gap-4 mb-3">
+                                <div class="w-10 h-10 rounded-full bg-gray-8 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-gray-3">search</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-base font-bold m-0">Tìm gia sư</h4>
+                                    <p class="text-[11px] text-gray-5 m-0">Tìm kiếm và đặt lịch học với gia sư</p>
+                                </div>
+                            </div>
+                        </a>
+                        <a asp-controller="Student" asp-action="Bookings" class="bg-white rounded-[14px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 no-underline text-inherit hover:border-gray-4 transition-all card-fade-in block">
+                            <div class="flex items-center gap-4 mb-3">
+                                <div class="w-10 h-10 rounded-full bg-gray-8 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-gray-3">send</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-base font-bold m-0">Yêu cầu học</h4>
+                                    <p class="text-[11px] text-gray-5 m-0">Xem trạng thái yêu cầu đã gửi</p>
+                                </div>
+                            </div>
+                            @if (Model.PendingBookings > 0)
+                            {
+                                <span class="px-3 py-1 bg-amber-100 text-amber-700 text-[10px] font-bold tracking-widest uppercase rounded-full">@Model.PendingBookings ĐANG CHỜ</span>
+                            }
+                        </a>
+                        <a asp-controller="Student" asp-action="Contracts" class="bg-white rounded-[14px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 no-underline text-inherit hover:border-gray-4 transition-all card-fade-in block">
+                            <div class="flex items-center gap-4 mb-3">
+                                <div class="w-10 h-10 rounded-full bg-gray-8 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-gray-3">description</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-base font-bold m-0">Hợp đồng</h4>
+                                    <p class="text-[11px] text-gray-5 m-0">Xem hợp đồng học tập hiện tại</p>
+                                </div>
+                            </div>
+                            <span class="text-sm font-bold">@Model.TotalContracts hợp đồng</span>
+                        </a>
+                        <a asp-controller="Student" asp-action="Schedule" class="bg-white rounded-[14px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 no-underline text-inherit hover:border-gray-4 transition-all card-fade-in block">
+                            <div class="flex items-center gap-4 mb-3">
+                                <div class="w-10 h-10 rounded-full bg-gray-8 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-gray-3">calendar_month</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-base font-bold m-0">Lịch học</h4>
+                                    <p class="text-[11px] text-gray-5 m-0">Xem lịch học và buổi sắp tới</p>
+                                </div>
+                            </div>
+                            <span class="text-sm font-bold">@Model.CompletedSessions buổi hoàn thành</span>
+                        </a>
+                        <a asp-controller="Student" asp-action="Wallet" class="bg-white rounded-[14px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 no-underline text-inherit hover:border-gray-4 transition-all card-fade-in block">
+                            <div class="flex items-center gap-4 mb-3">
+                                <div class="w-10 h-10 rounded-full bg-gray-8 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-gray-3">account_balance_wallet</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-base font-bold m-0">Ví & Nạp tiền</h4>
+                                    <p class="text-[11px] text-gray-5 m-0">Nạp tiền và xem lịch sử giao dịch</p>
+                                </div>
+                            </div>
+                            <span class="text-sm font-bold" style="color: #16a34a;">@Model.WalletBalance.ToString("N0") VNĐ</span>
+                        </a>
+                        <a asp-controller="Student" asp-action="Subjects" class="bg-white rounded-[14px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 no-underline text-inherit hover:border-gray-4 transition-all card-fade-in block">
+                            <div class="flex items-center gap-4 mb-3">
+                                <div class="w-10 h-10 rounded-full bg-gray-8 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-gray-3">menu_book</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-base font-bold m-0">Môn học</h4>
+                                    <p class="text-[11px] text-gray-5 m-0">Duyệt danh sách môn học</p>
+                                </div>
+                            </div>
+                        </a>
                     </div>
                 </div>
-            </div>
+            }
+
+            <!-- ═══════════ ADMIN ACTIONS ═══════════ -->
+            @if (isAdmin)
+            {
+                <div class="pt-6">
+                    <h3 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-5 mb-8 flex items-center gap-4">
+                        <span class="material-symbols-outlined text-sm">admin_panel_settings</span>
+                        Quản trị hệ thống
+                        <span class="h-px flex-grow bg-gray-7"></span>
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <a asp-controller="Admin" asp-action="Transactions" class="bg-white rounded-[14px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 no-underline text-inherit hover:border-gray-4 transition-all card-fade-in block">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-full bg-gray-8 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-gray-3">receipt_long</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-base font-bold m-0">Quản lý giao dịch</h4>
+                                    <p class="text-[11px] text-gray-5 m-0">Duyệt và quản lý tất cả giao dịch</p>
+                                </div>
+                            </div>
+                        </a>
+                        <a asp-controller="Admin" asp-action="Wallets" class="bg-white rounded-[14px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 no-underline text-inherit hover:border-gray-4 transition-all card-fade-in block">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-full bg-gray-8 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-gray-3">account_balance</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-base font-bold m-0">Quản lý ví</h4>
+                                    <p class="text-[11px] text-gray-5 m-0">Xem số dư và thông tin ví người dùng</p>
+                                </div>
+                            </div>
+                        </a>
+                        <a asp-controller="Admin" asp-action="Payments" class="bg-white rounded-[14px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 no-underline text-inherit hover:border-gray-4 transition-all card-fade-in block">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-full bg-gray-8 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-gray-3">payments</span>
+                                </div>
+                                <div>
+                                    <h4 class="text-base font-bold m-0">Thanh toán</h4>
+                                    <p class="text-[11px] text-gray-5 m-0">Theo dõi đơn thanh toán qua cổng</p>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            }
         </section>
     </main>
-
-    
 </div>

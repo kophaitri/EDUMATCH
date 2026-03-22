@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using EduMatch.Services;
@@ -10,10 +11,14 @@ namespace EduMatch.Controllers;
 public class TutorController : Controller
 {
     private readonly ITutorService _tutorService;
+    private readonly EduMatchDbContext _db;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public TutorController(ITutorService tutorService)
+    public TutorController(ITutorService tutorService, EduMatchDbContext db, UserManager<ApplicationUser> userManager)
     {
         _tutorService = tutorService;
+        _db = db;
+        _userManager = userManager;
     }
 
     // GET: /Tutor/Posts
@@ -131,5 +136,382 @@ public class TutorController : Controller
             TempData["ErrorMessage"] = error;
 
         return RedirectToAction(nameof(Posts));
+    }
+
+    // ============================================================
+    // Subject Management
+    // ============================================================
+
+    // GET: /Tutor/ManageSubjects
+    public async Task<IActionResult> ManageSubjects()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var profile = await _db.TutorProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (profile == null) return NotFound();
+
+        var tutorSubjects = await _db.TutorSubjects
+            .Include(ts => ts.Subject)
+            .Include(ts => ts.GradeLevel)
+            .Where(ts => ts.TutorId == profile.Id)
+            .OrderBy(ts => ts.Subject.Name)
+            .ThenBy(ts => ts.GradeLevel.DisplayOrder)
+            .ToListAsync();
+
+        ViewBag.TutorSubjects = tutorSubjects;
+        ViewBag.Subjects = await _db.Subjects.Where(s => s.IsActive).OrderBy(s => s.Name).ToListAsync();
+        ViewBag.GradeLevels = await _db.GradeLevels.OrderBy(g => g.DisplayOrder).ToListAsync();
+
+        return View();
+    }
+
+    // POST: /Tutor/AddSubject
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddSubject(int subjectId, int gradeLevelId, decimal hourlyRate)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var profile = await _db.TutorProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (profile == null) return NotFound();
+
+        // Check duplicate
+        var exists = await _db.TutorSubjects.AnyAsync(ts =>
+            ts.TutorId == profile.Id && ts.SubjectId == subjectId && ts.GradeLevelId == gradeLevelId);
+
+        if (exists)
+        {
+            TempData["ErrorMessage"] = "Bạn đã đăng ký môn này với cấp độ này rồi.";
+            return RedirectToAction("ManageSubjects");
+        }
+
+        if (hourlyRate <= 0)
+        {
+            TempData["ErrorMessage"] = "Giá/giờ phải lớn hơn 0.";
+            return RedirectToAction("ManageSubjects");
+        }
+
+        _db.TutorSubjects.Add(new TutorSubject
+        {
+            TutorId = profile.Id,
+            SubjectId = subjectId,
+            GradeLevelId = gradeLevelId,
+            HourlyRate = hourlyRate
+        });
+        await _db.SaveChangesAsync();
+
+        // Update min/max rates on TutorProfile
+        await UpdateHourlyRateRange(profile);
+
+        TempData["SuccessMessage"] = "Thêm môn dạy thành công!";
+        return RedirectToAction("ManageSubjects");
+    }
+
+    // POST: /Tutor/RemoveSubject
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveSubject(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var profile = await _db.TutorProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (profile == null) return NotFound();
+
+        var tutorSubject = await _db.TutorSubjects
+            .FirstOrDefaultAsync(ts => ts.Id == id && ts.TutorId == profile.Id);
+
+        if (tutorSubject == null) return NotFound();
+
+        _db.TutorSubjects.Remove(tutorSubject);
+        await _db.SaveChangesAsync();
+
+        await UpdateHourlyRateRange(profile);
+
+        TempData["SuccessMessage"] = "Đã xóa môn dạy.";
+        return RedirectToAction("ManageSubjects");
+    }
+
+    // POST: /Tutor/UpdateSubjectRate
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateSubjectRate(int id, decimal hourlyRate)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var profile = await _db.TutorProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (profile == null) return NotFound();
+
+        var tutorSubject = await _db.TutorSubjects
+            .FirstOrDefaultAsync(ts => ts.Id == id && ts.TutorId == profile.Id);
+
+        if (tutorSubject == null) return NotFound();
+
+        if (hourlyRate <= 0)
+        {
+            TempData["ErrorMessage"] = "Giá/giờ phải lớn hơn 0.";
+            return RedirectToAction("ManageSubjects");
+        }
+
+        tutorSubject.HourlyRate = hourlyRate;
+        await _db.SaveChangesAsync();
+
+        await UpdateHourlyRateRange(profile);
+
+        TempData["SuccessMessage"] = "Cập nhật giá thành công!";
+        return RedirectToAction("ManageSubjects");
+    }
+
+    private async Task UpdateHourlyRateRange(TutorProfile profile)
+    {
+        var rates = await _db.TutorSubjects
+            .Where(ts => ts.TutorId == profile.Id)
+            .Select(ts => ts.HourlyRate)
+            .ToListAsync();
+
+        if (rates.Any())
+        {
+            profile.HourlyRateMin = rates.Min();
+            profile.HourlyRateMax = rates.Max();
+        }
+        else
+        {
+            profile.HourlyRateMin = 0;
+            profile.HourlyRateMax = 0;
+        }
+
+        profile.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+    }
+
+    // ============================================================
+    // Booking Management
+    // ============================================================
+
+    // GET: /Tutor/Bookings
+    public async Task<IActionResult> Bookings()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        var bookings = await _db.BookingRequests
+            .Include(b => b.Student)
+            .Include(b => b.Subject)
+            .Where(b => b.TutorId == userId)
+            .OrderByDescending(b => b.CreatedAt)
+            .ToListAsync();
+
+        return View(bookings);
+    }
+
+    // GET: /Tutor/BookingDetail/{id}
+    public async Task<IActionResult> BookingDetail(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        var booking = await _db.BookingRequests
+            .Include(b => b.Student)
+            .Include(b => b.Subject)
+            .Include(b => b.GradeLevel)
+            .FirstOrDefaultAsync(b => b.Id == id && b.TutorId == userId);
+
+        if (booking == null) return NotFound();
+
+        return View(booking);
+    }
+
+    // POST: /Tutor/AcceptBooking
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AcceptBooking(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        var booking = await _db.BookingRequests
+            .Include(b => b.Subject)
+            .FirstOrDefaultAsync(b => b.Id == id && b.TutorId == userId && b.Status == BookingStatus.Pending);
+
+        if (booking == null) return NotFound();
+
+        booking.Status = BookingStatus.Accepted;
+        booking.RespondedAt = DateTime.UtcNow;
+
+        // Lấy hourly rate từ TutorSubject
+        var tutorSubject = await _db.TutorSubjects
+            .FirstOrDefaultAsync(ts => ts.TutorId == userId && ts.SubjectId == booking.SubjectId && ts.GradeLevelId == booking.GradeLevelId);
+
+        var hourlyRate = tutorSubject?.HourlyRate ?? 0;
+
+        // Tự động tạo hợp đồng
+        var contract = new Contract
+        {
+            BookingRequestId = booking.Id,
+            StudentId = booking.StudentId,
+            TutorId = userId,
+            SubjectId = booking.SubjectId,
+            GradeLevelId = booking.GradeLevelId,
+            HourlyRate = hourlyRate,
+            TotalSessions = booking.SessionsPerWeek * booking.DurationWeeks,
+            StartDate = booking.PreferredStartDate,
+            EndDate = booking.PreferredStartDate.AddDays(booking.DurationWeeks * 7),
+            Status = ContractStatus.Active
+        };
+        _db.Contracts.Add(contract);
+
+        await _db.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Đã chấp nhận booking và tạo hợp đồng thành công!";
+        return RedirectToAction("Bookings");
+    }
+
+    // POST: /Tutor/RejectBooking
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RejectBooking(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        var booking = await _db.BookingRequests
+            .FirstOrDefaultAsync(b => b.Id == id && b.TutorId == userId && b.Status == BookingStatus.Pending);
+
+        if (booking == null) return NotFound();
+
+        booking.Status = BookingStatus.Rejected;
+        booking.RespondedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Đã từ chối booking.";
+        return RedirectToAction("Bookings");
+    }
+
+    // ============================================================
+    // Contract Management
+    // ============================================================
+
+    // GET: /Tutor/Contracts
+    public async Task<IActionResult> Contracts()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        var contracts = await _db.Contracts
+            .Include(c => c.Student)
+            .Include(c => c.Subject)
+            .Include(c => c.Sessions)
+            .Where(c => c.TutorId == userId)
+            .OrderByDescending(c => c.CreatedAt)
+            .ToListAsync();
+
+        return View(contracts);
+    }
+
+    // GET: /Tutor/ContractDetail/{id}
+    public async Task<IActionResult> ContractDetail(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        var contract = await _db.Contracts
+            .Include(c => c.Student)
+            .Include(c => c.Subject)
+            .Include(c => c.Sessions)
+            .FirstOrDefaultAsync(c => c.Id == id && c.TutorId == userId);
+
+        if (contract == null) return NotFound();
+
+        return View(contract);
+    }
+
+    // POST: /Tutor/AddSession
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddSession(int contractId, DateTime scheduledAt, int durationMinutes)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        var contract = await _db.Contracts.FirstOrDefaultAsync(c => c.Id == contractId && c.TutorId == userId);
+        if (contract == null) return NotFound();
+
+        _db.Sessions.Add(new Session
+        {
+            ContractId = contractId,
+            ScheduledAt = scheduledAt,
+            DurationMinutes = durationMinutes,
+            Status = SessionStatus.Scheduled
+        });
+        await _db.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Đã thêm buổi học thành công!";
+        return RedirectToAction("ContractDetail", new { id = contractId });
+    }
+
+    // ============================================================
+    // Wallet Management
+    // ============================================================
+
+    // GET: /Tutor/Wallet
+    public async Task<IActionResult> Wallet()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        var wallet = await _db.Wallets
+            .Include(w => w.Transactions)
+            .FirstOrDefaultAsync(w => w.UserId == userId);
+
+        return View(wallet);
+    }
+
+    // GET: /Tutor/WalletTransactions
+    public async Task<IActionResult> WalletTransactions()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var wallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == userId);
+        if (wallet == null) return NotFound();
+
+        var transactions = await _db.Transactions
+            .Where(t => t.WalletId == wallet.Id)
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync();
+
+        ViewBag.Wallet = wallet;
+        return View(transactions);
+    }
+
+    // GET: /Tutor/Withdraw
+    public async Task<IActionResult> Withdraw()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var wallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == userId);
+        ViewBag.Balance = wallet?.Balance ?? 0;
+        return View();
+    }
+
+    // POST: /Tutor/Withdraw
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Withdraw(decimal amount, string bankAccount, string bankName)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var wallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == userId);
+        if (wallet == null) return NotFound();
+
+        if (amount <= 0 || amount > wallet.Balance)
+        {
+            TempData["ErrorMessage"] = "Số tiền rút không hợp lệ hoặc vượt quá số dư";
+            ViewBag.Balance = wallet.Balance;
+            return View();
+        }
+
+        var transaction = new Transaction
+        {
+            WalletId = wallet.Id,
+            Amount = amount,
+            Type = TransactionType.Withdrawal,
+            Status = TransactionStatus.Pending,
+            Description = $"Rút tiền về {bankName} - {bankAccount}",
+            BalanceBefore = wallet.Balance,
+            BalanceAfter = wallet.Balance - amount
+        };
+        _db.Transactions.Add(transaction);
+
+        wallet.Balance -= amount;
+        wallet.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = $"Yêu cầu rút {amount:N0} VNĐ đã được ghi nhận. Tiền sẽ về trong 1-3 ngày làm việc.";
+        return RedirectToAction("Wallet");
     }
 }

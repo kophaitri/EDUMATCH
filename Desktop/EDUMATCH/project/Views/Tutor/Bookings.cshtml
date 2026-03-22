@@ -1,0 +1,42 @@
+@model List<BookingRequest>
+@{ ViewData["Title"] = "Booking đến"; }
+
+<h4 class="mb-4">Danh sách booking đến</h4>
+@if (TempData["SuccessMessage"] != null) { <div class="alert alert-success">@TempData["SuccessMessage"]</div> }
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Chưa có yêu cầu booking nào.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr><th>Học viên</th><th>Môn học</th><th>Ngày bắt đầu</th><th>Ngày gửi</th><th>Trạng thái</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var b in Model)
+                {
+                    <tr>
+                        <td>@b.Student.FullName</td>
+                        <td>@b.Subject.Name</td>
+                        <td>@b.PreferredStartDate.ToString("dd/MM/yyyy")</td>
+                        <td>@b.CreatedAt.ToString("dd/MM/yyyy")</td>
+                        <td>
+                            @switch (b.Status)
+                            {
+                                case BookingStatus.Pending: <span class="badge bg-warning text-dark">Chờ xử lý</span> break;
+                                case BookingStatus.Accepted: <span class="badge bg-success">Đã chấp nhận</span> break;
+                                case BookingStatus.Rejected: <span class="badge bg-danger">Đã từ chối</span> break;
+                                case BookingStatus.Expired: <span class="badge bg-dark">Hết hạn</span> break;
+                                default: <span class="badge bg-secondary">Đã huỷ</span> break;
+                            }
+                        </td>
+                        <td><a asp-action="BookingDetail" asp-route-id="@b.Id" class="btn btn-sm btn-outline-primary">Chi tiết</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

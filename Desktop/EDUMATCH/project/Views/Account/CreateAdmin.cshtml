@@ -1,0 +1,36 @@
+@{ ViewData["Title"] = "Tạo tài khoản Admin"; }
+
+<div class="row justify-content-center mt-5">
+    <div class="col-md-5">
+        <div class="card shadow border-danger">
+            <div class="card-header bg-danger text-white">
+                <strong>Tạo tài khoản Admin</strong>
+                <small class="d-block">Chỉ hoạt động khi chưa có admin nào trong hệ thống</small>
+            </div>
+            <div class="card-body p-4">
+                @if (ViewBag.Error != null)
+                {
+                    <div class="alert alert-danger">@ViewBag.Error</div>
+                }
+                <form asp-action="CreateAdmin" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label">Họ và tên</label>
+                        <input type="text" name="fullName" class="form-control" placeholder="Admin EduMatch" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" class="form-control" placeholder="admin@edumatch.vn" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Mật khẩu</label>
+                        <input type="password" name="password" class="form-control" placeholder="Tối thiểu 8 ký tự" minlength="8" required />
+                    </div>
+                    <button type="submit" class="btn btn-danger w-100">Tạo tài khoản Admin</button>
+                </form>
+                <hr />
+                <p class="text-center mb-0 small text-muted">Sau khi tạo xong, link này sẽ bị vô hiệu hoá.</p>
+            </div>
+        </div>
+    </div>
+</div>

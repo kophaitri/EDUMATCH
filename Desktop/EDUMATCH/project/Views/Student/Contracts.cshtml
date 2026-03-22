@@ -1,0 +1,57 @@
+@model List<Contract>
+@{ ViewData["Title"] = "Hợp đồng của tôi"; }
+
+<h4 class="mb-4">Hợp đồng của tôi</h4>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Chưa có hợp đồng nào.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Gia sư</th>
+                    <th>Môn học</th>
+                    <th>Học phí/giờ</th>
+                    <th>Tổng buổi</th>
+                    <th>Bắt đầu</th>
+                    <th>Trạng thái</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model)
+                {
+                    <tr>
+                        <td>@c.Tutor.FullName</td>
+                        <td>@c.Subject.Name</td>
+                        <td>@c.HourlyRate.ToString("N0") VNĐ</td>
+                        <td>@c.TotalSessions</td>
+                        <td>@c.StartDate.ToString("dd/MM/yyyy")</td>
+                        <td>
+                            @switch (c.Status)
+                            {
+                                case ContractStatus.Active:
+                                    <span class="badge bg-success">Đang hoạt động</span>
+                                    break;
+                                case ContractStatus.Completed:
+                                    <span class="badge bg-primary">Hoàn thành</span>
+                                    break;
+                                case ContractStatus.Disputed:
+                                    <span class="badge bg-danger">Tranh chấp</span>
+                                    break;
+                                default:
+                                    <span class="badge bg-secondary">Đã huỷ</span>
+                                    break;
+                            }
+                        </td>
+                        <td><a asp-action="ContractDetail" asp-route-id="@c.Id" class="btn btn-sm btn-outline-primary">Chi tiết</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

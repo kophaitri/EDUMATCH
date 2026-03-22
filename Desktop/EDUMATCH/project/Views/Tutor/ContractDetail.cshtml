@@ -1,0 +1,85 @@
+@model Contract
+@{ ViewData["Title"] = "Chi tiết hợp đồng"; }
+
+<h4 class="mb-3">Chi tiết hợp đồng</h4>
+<a asp-action="Contracts" class="btn btn-outline-secondary btn-sm mb-3">← Quay lại</a>
+@if (TempData["SuccessMessage"] != null) { <div class="alert alert-success">@TempData["SuccessMessage"]</div> }
+
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <div class="card shadow-sm">
+            <div class="card-header"><strong>Thông tin hợp đồng</strong></div>
+            <div class="card-body">
+                <p><strong>Học viên:</strong> @Model.Student.FullName</p>
+                <p><strong>Môn học:</strong> @Model.Subject.Name</p>
+                <p><strong>Học phí:</strong> @Model.HourlyRate.ToString("N0") VNĐ/giờ</p>
+                <p><strong>Tổng số buổi:</strong> @Model.TotalSessions</p>
+                <p><strong>Đã hoàn thành:</strong> @Model.CompletedSessions buổi</p>
+                <p><strong>Ngày bắt đầu:</strong> @Model.StartDate.ToString("dd/MM/yyyy")</p>
+                <p><strong>Ngày kết thúc:</strong> @Model.EndDate.ToString("dd/MM/yyyy")</p>
+            </div>
+        </div>
+
+        @if (Model.Status == ContractStatus.Active)
+        {
+            <div class="card shadow-sm mt-3">
+                <div class="card-header"><strong>Thêm buổi học</strong></div>
+                <div class="card-body">
+                    <form asp-action="AddSession" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="contractId" value="@Model.Id" />
+                        <div class="mb-2">
+                            <label class="form-label small">Thời gian</label>
+                            <input type="datetime-local" name="scheduledAt" class="form-control form-control-sm" required />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label small">Thời lượng (phút)</label>
+                            <input type="number" name="durationMinutes" value="90" class="form-control form-control-sm" min="30" required />
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm w-100">Thêm buổi học</button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header"><strong>Danh sách buổi học (@Model.Sessions.Count buổi)</strong></div>
+            @if (!Model.Sessions.Any())
+            {
+                <div class="card-body text-muted">Chưa có buổi học nào.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr><th>Thời gian</th><th>Thời lượng</th><th>Ghi chú</th><th>Trạng thái</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in Model.Sessions.OrderBy(x => x.ScheduledAt))
+                            {
+                                <tr>
+                                    <td>@s.ScheduledAt.ToString("dd/MM HH:mm")</td>
+                                    <td>@s.DurationMinutes phút</td>
+                                    <td>@s.Notes</td>
+                                    <td>
+                                        @switch (s.Status)
+                                        {
+                                            case SessionStatus.Scheduled: <span class="badge bg-info text-dark">Sắp tới</span> break;
+                                            case SessionStatus.InProgress: <span class="badge bg-primary">Đang diễn ra</span> break;
+                                            case SessionStatus.Completed: <span class="badge bg-success">Hoàn thành</span> break;
+                                            case SessionStatus.NoShow: <span class="badge bg-dark">Vắng mặt</span> break;
+                                            default: <span class="badge bg-secondary">Đã huỷ</span> break;
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

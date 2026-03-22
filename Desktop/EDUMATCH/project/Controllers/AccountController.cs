@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using EduMatch.Services;
@@ -10,11 +11,19 @@ public class AccountController : Controller
 {
     private readonly IAccountService _accountService;
     private readonly ITutorService _tutorService;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly RoleManager<ApplicationRole> _roleManager;
+    private readonly EduMatchDbContext _db;
 
-    public AccountController(IAccountService accountService, ITutorService tutorService)
+    public AccountController(IAccountService accountService, ITutorService tutorService,
+        UserManager<ApplicationUser> userManager, RoleManager<ApplicationRole> roleManager,
+        EduMatchDbContext db)
     {
         _accountService = accountService;
         _tutorService = tutorService;
+        _userManager = userManager;
+        _roleManager = roleManager;
+        _db = db;
     }
 
     // GET: /Account/Register
@@ -105,6 +114,17 @@ public class AccountController : Controller
             if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
                 return Redirect(model.ReturnUrl);
 
+            // Redirect theo role
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user != null)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+                if (roles.Contains("Admin"))
+                    return RedirectToAction("Transactions", "Admin");
+                if (roles.Contains("Tutor"))
+                    return RedirectToAction("Profile", "Account");
+            }
+
             return RedirectToAction("Index", "Home");
         }
 
@@ -148,7 +168,20 @@ public class AccountController : Controller
         if (model.Roles.Contains("Tutor"))
         {
             model.TutorPosts = await _tutorService.GetPostsByTutorAsync(userId);
+            model.TotalContracts = await _db.Contracts.CountAsync(c => c.TutorId == userId);
+            model.PendingBookings = await _db.BookingRequests.CountAsync(b => b.TutorId == userId && b.Status == BookingStatus.Pending);
+            model.CompletedSessions = await _db.Sessions.CountAsync(s => s.Contract.TutorId == userId && s.Status == SessionStatus.Completed);
         }
+
+        if (model.Roles.Contains("Student"))
+        {
+            model.TotalContracts = await _db.Contracts.CountAsync(c => c.StudentId == userId);
+            model.PendingBookings = await _db.BookingRequests.CountAsync(b => b.StudentId == userId && b.Status == BookingStatus.Pending);
+            model.CompletedSessions = await _db.Sessions.CountAsync(s => s.Contract.StudentId == userId && s.Status == SessionStatus.Completed);
+        }
+
+        var wallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == userId);
+        model.WalletBalance = wallet?.Balance ?? 0;
 
         return View(model);
     }
@@ -289,4 +322,49 @@ public class AccountController : Controller
     // GET: /Account/AccessDenied
     [HttpGet]
     public IActionResult AccessDenied() => View();
+
+    // GET: /Account/CreateAdmin
+    [HttpGet]
+    public IActionResult CreateAdmin() => View();
+
+    // POST: /Account/CreateAdmin
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateAdmin(string fullName, string email, string password)
+    {
+        // Chỉ cho tạo nếu chưa có admin nào
+        var admins = await _userManager.GetUsersInRoleAsync("Admin");
+        if (admins.Any())
+        {
+            TempData["ErrorMessage"] = "Đã có admin trong hệ thống. Không thể tạo thêm qua đây.";
+            return RedirectToAction("Login");
+        }
+
+        var existingUser = await _userManager.FindByEmailAsync(email);
+        if (existingUser != null)
+        {
+            ViewBag.Error = "Email này đã tồn tại!";
+            return View();
+        }
+
+        var admin = new ApplicationUser
+        {
+            FullName = fullName,
+            Email = email,
+            UserName = email,
+            EmailConfirmed = true
+        };
+
+        var result = await _userManager.CreateAsync(admin, password);
+        if (!result.Succeeded)
+        {
+            ViewBag.Error = string.Join(", ", result.Errors.Select(e => e.Description));
+            return View();
+        }
+
+        await _userManager.AddToRoleAsync(admin, "Admin");
+
+        TempData["SuccessMessage"] = $"Tạo admin '{fullName}' thành công! Hãy đăng nhập.";
+        return RedirectToAction("Login");
+    }
 }

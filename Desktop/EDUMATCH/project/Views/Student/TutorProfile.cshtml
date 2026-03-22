@@ -1,0 +1,306 @@
+@model TutorProfile
+@{
+    ViewData["Title"] = Model.User.FullName + " — Hồ sơ gia sư";
+    var reviews = ViewBag.Reviews as List<Review> ?? new List<Review>();
+    var posts = ViewBag.Posts as List<TutorPostViewModel> ?? new List<TutorPostViewModel>();
+    int totalContracts = ViewBag.TotalContracts ?? 0;
+    int completedSessions = ViewBag.CompletedSessions ?? 0;
+}
+
+@section Styles {
+    @await Html.PartialAsync("_AuthStyles")
+}
+
+<div class="min-h-screen max-w-[1200px] mx-auto px-6 py-12">
+    <!-- Header -->
+    <header class="mb-16">
+        <div class="flex items-center gap-2 mb-4">
+            <a asp-action="Search" class="text-[10px] tracking-[0.2em] font-bold uppercase text-gray-5 no-underline hover:text-black transition-colors">EDUMATCH / TIM GIA SU</a>
+            <span class="text-[10px] text-gray-5">/</span>
+            <span class="text-[10px] tracking-[0.2em] font-bold uppercase text-gray-5">PROFILE</span>
+        </div>
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <h1 class="title-main text-5xl md:text-6xl leading-none">@Model.User.FullName</h1>
+            @if (User.IsInRole("Student"))
+            {
+                <a asp-action="CreateBooking" asp-route-tutorId="@Model.UserId"
+                   class="flex items-center justify-center rounded-full h-12 px-8 bg-black text-white text-sm font-semibold transition-all hover:opacity-90 no-underline btn-transition">
+                    Gửi yêu cầu học
+                </a>
+            }
+        </div>
+    </header>
+
+    <main class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <!-- Sidebar -->
+        <aside class="lg:col-span-4 flex flex-col gap-8">
+            <!-- Avatar Card -->
+            <div class="bg-white rounded-[14px] p-8 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 card-fade-in">
+                <div class="flex flex-col items-center text-center">
+                    <div class="relative mb-6">
+                        <div class="w-40 h-40 rounded-full overflow-hidden bg-gray-7 border-4 border-white shadow-md">
+                            @if (!string.IsNullOrEmpty(Model.User.AvatarUrl))
+                            {
+                                <img src="@Model.User.AvatarUrl" alt="Avatar" class="w-full h-full object-cover" />
+                            }
+                            else
+                            {
+                                <div class="w-full h-full flex items-center justify-center bg-gray-7 text-gray-5">
+                                    <span class="text-5xl font-bold">@Model.User.FullName.Substring(0, 1).ToUpper()</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <h2 class="text-2xl font-bold mb-1 tracking-tight">@Model.User.FullName</h2>
+                    <p class="accent-italic text-lg mb-2">@Model.Education</p>
+
+                    <!-- Badges -->
+                    <div class="flex gap-2 mb-6 flex-wrap justify-center">
+                        @if (Model.IsVerified)
+                        {
+                            <span class="px-3 py-1 bg-gray-1 text-white text-[10px] font-bold tracking-widest uppercase rounded-full">VERIFIED</span>
+                        }
+                        <span class="px-3 py-1 bg-gray-7 text-gray-4 text-[10px] font-bold tracking-widest uppercase rounded-full">TUTOR</span>
+                        @if (Model.YearsOfExperience > 0)
+                        {
+                            <span class="px-3 py-1 bg-gray-7 text-gray-4 text-[10px] font-bold tracking-widest uppercase rounded-full">@Model.YearsOfExperience NAM</span>
+                        }
+                    </div>
+
+                    <!-- Price -->
+                    <div class="w-full py-4 border-t border-b border-gray-7 mb-4">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-gray-5 block mb-1">Học phí</span>
+                        <span class="text-2xl font-black" style="color: #16a34a;">@Model.HourlyRateMin.ToString("N0") - @Model.HourlyRateMax.ToString("N0")</span>
+                        <span class="text-sm text-gray-5"> VNĐ/giờ</span>
+                    </div>
+
+                    <!-- Stats -->
+                    <div class="w-full space-y-4 pt-4">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-5 font-medium">Đánh giá</span>
+                            <span class="font-bold">
+                                <span style="color: #f5a623;">&#9733;</span> @Model.AvgRating.ToString("0.0")
+                                <span class="text-gray-5 font-normal">(@Model.TotalReviews)</span>
+                            </span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-5 font-medium">Hợp đồng</span>
+                            <span class="font-bold">@totalContracts</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-5 font-medium">Buổi hoàn thành</span>
+                            <span class="font-bold">@completedSessions</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-5 font-medium">Tham gia</span>
+                            <span class="font-bold">@Model.CreatedAt.ToString("dd.MM.yyyy")</span>
+                        </div>
+                    </div>
+
+                    <!-- CTA -->
+                    @if (User.IsInRole("Student"))
+                    {
+                        <a asp-action="CreateBooking" asp-route-tutorId="@Model.UserId"
+                           class="w-full mt-6 flex items-center justify-center rounded-full h-12 bg-black text-white text-sm font-semibold transition-all hover:opacity-90 no-underline btn-transition">
+                            Gửi yêu cầu học
+                        </a>
+                    }
+                </div>
+            </div>
+
+            <!-- Môn học & Cấp độ -->
+            <div class="bg-white rounded-[14px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 card-fade-in">
+                <p class="text-xs font-bold uppercase tracking-widest text-gray-5 mb-4">Môn học & Cấp độ</p>
+                @if (Model.TutorSubjects.Any())
+                {
+                    <div class="space-y-3">
+                        @foreach (var ts in Model.TutorSubjects)
+                        {
+                            <div class="flex justify-between items-center text-sm">
+                                <span class="font-medium">@ts.Subject.Name</span>
+                                <span class="px-3 py-1 bg-gray-8 text-gray-4 text-[10px] font-bold tracking-widest uppercase rounded-full">@ts.GradeLevel.Name</span>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-gray-5 text-sm m-0">Chưa cập nhật</p>
+                }
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <section class="lg:col-span-8 flex flex-col gap-10">
+            <!-- Giới thiệu -->
+            <div>
+                <h3 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-5 mb-8 flex items-center gap-4">
+                    Giới thiệu
+                    <span class="h-px flex-grow bg-gray-7"></span>
+                </h3>
+                <div class="bg-white rounded-[14px] p-8 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 card-fade-in">
+                    @if (!string.IsNullOrEmpty(Model.Bio))
+                    {
+                        <p class="text-base leading-relaxed whitespace-pre-line m-0">@Model.Bio</p>
+                    }
+                    else
+                    {
+                        <p class="text-gray-5 m-0">Chưa có giới thiệu.</p>
+                    }
+                </div>
+            </div>
+
+            <!-- Chứng chỉ -->
+            @if (Model.Certificates.Any())
+            {
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-5 mb-8 flex items-center gap-4">
+                        Chứng chỉ
+                        <span class="h-px flex-grow bg-gray-7"></span>
+                    </h3>
+                    <div class="space-y-3">
+                        @foreach (var cert in Model.Certificates)
+                        {
+                            <div class="bg-white rounded-[14px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 card-fade-in">
+                                <div class="flex items-start gap-4">
+                                    <div class="w-10 h-10 rounded-full bg-gray-8 flex items-center justify-center flex-shrink-0">
+                                        <span class="material-symbols-outlined text-gray-3">workspace_premium</span>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-base font-bold m-0">@cert.Title</h4>
+                                        <p class="text-sm text-gray-5 m-0">
+                                            @cert.Issuer
+                                            @if (cert.IssueDate.HasValue)
+                                            {
+                                                <span> · @cert.IssueDate.Value.Year</span>
+                                            }
+                                            @if (cert.IsVerified)
+                                            {
+                                                <span class="material-symbols-outlined text-green-600" style="font-size: 14px; vertical-align: middle; margin-left: 4px;">verified</span>
+                                            }
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Đánh giá -->
+            <div>
+                <h3 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-5 mb-8 flex items-center gap-4">
+                    Đánh giá
+                    @if (Model.TotalReviews > 0)
+                    {
+                        <span class="text-xs font-bold text-gray-4 normal-case tracking-normal">
+                            <span style="color: #f5a623;">&#9733;</span> @Model.AvgRating.ToString("0.0") · @Model.TotalReviews đánh giá
+                        </span>
+                    }
+                    <span class="h-px flex-grow bg-gray-7"></span>
+                </h3>
+
+                @if (!reviews.Any())
+                {
+                    <div class="bg-white rounded-[14px] p-8 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 border-dashed text-center card-fade-in">
+                        <span class="material-symbols-outlined text-gray-5 text-3xl mb-2">rate_review</span>
+                        <p class="text-gray-5 m-0">Chưa có đánh giá nào.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="space-y-4">
+                        @foreach (var r in reviews)
+                        {
+                            <div class="bg-white rounded-[14px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 card-fade-in">
+                                <div class="flex items-start gap-4">
+                                    <div class="w-10 h-10 rounded-full bg-gray-7 flex items-center justify-center flex-shrink-0 text-sm font-bold text-gray-5">
+                                        @if (r.IsAnonymous)
+                                        {
+                                            <span class="material-symbols-outlined text-gray-5">person_off</span>
+                                        }
+                                        else
+                                        {
+                                            @r.Reviewer.FullName.Substring(0, 1).ToUpper()
+                                        }
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2 mb-1">
+                                            <span class="font-bold text-sm">@(r.IsAnonymous ? "Ẩn danh" : r.Reviewer.FullName)</span>
+                                            <span style="color: #f5a623; font-size: 13px;">
+                                                @for (int i = 0; i < r.Rating; i++) { <span>&#9733;</span> }
+                                                @for (int i = r.Rating; i < 5; i++) { <span style="color: var(--gray-6);">&#9733;</span> }
+                                            </span>
+                                        </div>
+                                        <p class="text-sm leading-relaxed m-0 mb-1">@r.Comment</p>
+                                        <span class="text-[11px] text-gray-5">@r.CreatedAt.ToString("dd/MM/yyyy")</span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- Bài viết -->
+            @if (posts.Any())
+            {
+                <div>
+                    <h3 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-5 mb-8 flex items-center gap-4">
+                        Bài viết
+                        <span class="h-px flex-grow bg-gray-7"></span>
+                    </h3>
+                    <div class="space-y-6">
+                        @foreach (var post in posts)
+                        {
+                            <div class="bg-white rounded-[14px] shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 overflow-hidden card-fade-in">
+                                <div class="flex items-center justify-between p-5 pb-0">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-7 flex-shrink-0">
+                                            @if (!string.IsNullOrEmpty(post.TutorAvatarUrl))
+                                            {
+                                                <img src="@post.TutorAvatarUrl" alt="" class="w-full h-full object-cover" />
+                                            }
+                                            else
+                                            {
+                                                <div class="w-full h-full flex items-center justify-center bg-gray-7 text-gray-5 text-sm font-bold">
+                                                    @post.TutorName.Substring(0, 1).ToUpper()
+                                                </div>
+                                            }
+                                        </div>
+                                        <div>
+                                            <p class="font-bold text-sm m-0 leading-tight">@post.TutorName</p>
+                                            <p class="text-[11px] text-gray-5 m-0">
+                                                @{
+                                                    var timeAgo = DateTime.UtcNow - post.CreatedAt;
+                                                    string timeText;
+                                                    if (timeAgo.TotalMinutes < 60) timeText = $"{(int)timeAgo.TotalMinutes} phút trước";
+                                                    else if (timeAgo.TotalHours < 24) timeText = $"{(int)timeAgo.TotalHours} giờ trước";
+                                                    else if (timeAgo.TotalDays < 7) timeText = $"{(int)timeAgo.TotalDays} ngày trước";
+                                                    else timeText = post.CreatedAt.ToString("dd/MM/yyyy");
+                                                }
+                                                @timeText
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <a asp-controller="Tutor" asp-action="PostDetail" asp-route-id="@post.Id" class="block px-5 py-3 no-underline text-inherit hover:bg-gray-8/50 transition-colors">
+                                    <h4 class="font-bold text-base mb-1">@post.Title</h4>
+                                    <p class="text-sm text-gray-3 leading-relaxed m-0 whitespace-pre-line line-clamp-3">@post.Content</p>
+                                </a>
+                                @if (post.ImageUrls.Any())
+                                {
+                                    <a asp-controller="Tutor" asp-action="PostDetail" asp-route-id="@post.Id" class="block no-underline">
+                                        <div class="max-h-[300px] overflow-hidden">
+                                            <img src="@post.ImageUrls[0]" alt="" class="w-full h-full object-cover" />
+                                        </div>
+                                    </a>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </section>
+    </main>
+</div>

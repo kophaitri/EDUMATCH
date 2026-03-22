@@ -1,0 +1,60 @@
+@{ ViewData["Title"] = "Gửi yêu cầu học"; var tutor = (TutorProfile)ViewBag.Tutor; }
+
+<h4 class="mb-3">Gửi yêu cầu học</h4>
+<div class="row">
+    <div class="col-md-4 mb-3">
+        <div class="card shadow-sm">
+            <div class="card-body text-center">
+                <h5>@tutor.User.FullName</h5>
+                <h5 class="text-success">@tutor.HourlyRateMin.ToString("N0") - @tutor.HourlyRateMax.ToString("N0") VNĐ/giờ</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form asp-action="CreateBooking" asp-route-tutorId="@tutor.UserId" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label">Môn học</label>
+                        <select name="subjectId" class="form-select" required>
+                            @foreach (var s in (IEnumerable<Subject>)ViewBag.Subjects)
+                            {
+                                <option value="@s.Id">@s.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cấp độ</label>
+                        <select name="gradeLevelId" class="form-select" required>
+                            @foreach (var g in (IEnumerable<GradeLevel>)ViewBag.GradeLevels)
+                            {
+                                <option value="@g.Id">@g.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ngày bắt đầu mong muốn</label>
+                        <input type="date" name="preferredStartDate" class="form-control" value="@DateTime.Today.AddDays(7).ToString("yyyy-MM-dd")" required />
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Số buổi mỗi tuần</label>
+                            <input type="number" name="sessionsPerWeek" value="2" class="form-control" min="1" max="7" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Số tuần học</label>
+                            <input type="number" name="durationWeeks" value="4" class="form-control" min="1" max="52" required />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Lời nhắn gửi gia sư</label>
+                        <textarea name="message" class="form-control" rows="4" placeholder="Giới thiệu bản thân, mục tiêu học tập..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Gửi yêu cầu</button>
+                    <a asp-action="TutorProfile" asp-route-id="@tutor.UserId" class="btn btn-outline-secondary ms-2">Huỷ</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

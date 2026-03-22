@@ -1,0 +1,79 @@
+@model List<Transaction>
+@{ ViewData["Title"] = "Quản lý giao dịch"; }
+
+<h4 class="mb-3">Tất cả giao dịch</h4>
+
+<form method="get" class="row g-2 mb-4">
+    <div class="col-md-3">
+        <select name="type" class="form-select">
+            <option value="">-- Loại giao dịch --</option>
+            <option value="Deposit" selected="@(ViewBag.FilterType == "Deposit")">Nạp tiền</option>
+            <option value="Withdrawal" selected="@(ViewBag.FilterType == "Withdrawal")">Rút tiền</option>
+            <option value="Payment" selected="@(ViewBag.FilterType == "Payment")">Thanh toán</option>
+            <option value="Refund" selected="@(ViewBag.FilterType == "Refund")">Hoàn tiền</option>
+            <option value="Earning" selected="@(ViewBag.FilterType == "Earning")">Thu nhập</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select name="status" class="form-select">
+            <option value="">-- Trạng thái --</option>
+            <option value="Pending" selected="@(ViewBag.FilterStatus == "Pending")">Đang xử lý</option>
+            <option value="Completed" selected="@(ViewBag.FilterStatus == "Completed")">Thành công</option>
+            <option value="Failed" selected="@(ViewBag.FilterStatus == "Failed")">Thất bại</option>
+            <option value="Cancelled" selected="@(ViewBag.FilterStatus == "Cancelled")">Đã huỷ</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Lọc</button>
+        <a asp-action="Transactions" class="btn btn-outline-secondary">Xoá lọc</a>
+    </div>
+</form>
+
+<div class="row mb-3">
+    <div class="col-md-4">
+        <div class="card bg-info text-white text-center p-3">
+            <div>Tổng giao dịch thành công</div>
+            <h4>@((decimal)ViewBag.TotalAmount).ToString("N0") VNĐ</h4>
+        </div>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-dark">
+            <tr><th>#</th><th>Người dùng</th><th>Loại</th><th>Số tiền</th><th>Mô tả</th><th>Ngày tạo</th><th>Trạng thái</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var t in Model)
+            {
+                <tr>
+                    <td>@t.Id</td>
+                    <td>@t.Wallet.User.FullName<br /><small class="text-muted">@t.Wallet.User.Email</small></td>
+                    <td>
+                        @switch (t.Type)
+                        {
+                            case TransactionType.Deposit: <span class="badge bg-success">Nạp tiền</span> break;
+                            case TransactionType.Withdrawal: <span class="badge bg-danger">Rút tiền</span> break;
+                            case TransactionType.Payment: <span class="badge bg-warning text-dark">Thanh toán</span> break;
+                            case TransactionType.Earning: <span class="badge bg-primary">Thu nhập</span> break;
+                            default: <span class="badge bg-info text-dark">Hoàn tiền</span> break;
+                        }
+                    </td>
+                    <td class="fw-bold">@t.Amount.ToString("N0") VNĐ</td>
+                    <td>@t.Description</td>
+                    <td>@t.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>
+                        @switch (t.Status)
+                        {
+                            case TransactionStatus.Completed: <span class="badge bg-success">Thành công</span> break;
+                            case TransactionStatus.Pending: <span class="badge bg-warning text-dark">Đang xử lý</span> break;
+                            case TransactionStatus.Cancelled: <span class="badge bg-secondary">Đã huỷ</span> break;
+                            default: <span class="badge bg-danger">Thất bại</span> break;
+                        }
+                    </td>
+                    <td><a asp-action="TransactionDetail" asp-route-id="@t.Id" class="btn btn-sm btn-outline-primary">Chi tiết</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
