@@ -1,0 +1,82 @@
+@model ReportListDto
+@{ ViewData["Title"] = "Chi tiết báo cáo"; }
+
+<h4 class="mb-1">Báo cáo vi phạm #@Model.Id</h4>
+<a asp-action="Reports" class="btn btn-outline-secondary btn-sm mb-3">← Quay lại</a>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header"><strong>Thông tin báo cáo</strong></div>
+            <div class="card-body">
+                <p><strong>Người báo cáo:</strong>
+                    <a asp-action="UserDetail" asp-route-userId="@Model.ReporterId">@Model.ReporterFullName</a>
+                </p>
+                <p><strong>Người bị báo cáo:</strong>
+                    <a asp-action="UserDetail" asp-route-userId="@Model.ReportedUserId">@Model.ReportedUserFullName</a>
+                </p>
+                <p><strong>Lý do:</strong> @Model.Reason</p>
+                @if (Model.Details != null)
+                {
+                    <p><strong>Chi tiết:</strong><br /><em>@Model.Details</em></p>
+                }
+                <p><strong>Ngày báo cáo:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                @if (Model.ResolvedAt.HasValue)
+                {
+                    <p><strong>Ngày xử lý:</strong> @Model.ResolvedAt.Value.ToString("dd/MM/yyyy HH:mm")</p>
+                }
+                @if (Model.AdminNote != null)
+                {
+                    <p><strong>Ghi chú admin:</strong> @Model.AdminNote</p>
+                }
+                <p><strong>Trạng thái:</strong>
+                    @switch (Model.Status)
+                    {
+                        case ReportStatus.Pending:     <span class="badge bg-warning text-dark fs-6">Chờ xử lý</span> break;
+                        case ReportStatus.UnderReview: <span class="badge bg-info text-dark fs-6">Đang xem xét</span> break;
+                        case ReportStatus.Resolved:    <span class="badge bg-success fs-6">Đã xử lý</span> break;
+                        case ReportStatus.Rejected:    <span class="badge bg-secondary fs-6">Đã từ chối</span> break;
+                    }
+                </p>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Status == ReportStatus.Pending || Model.Status == ReportStatus.UnderReview)
+    {
+        <div class="col-md-6">
+            <div class="card shadow-sm border-warning">
+                <div class="card-header bg-warning text-dark"><strong>Xử lý báo cáo</strong></div>
+                <div class="card-body">
+                    <form asp-action="HandleReport" asp-route-id="@Model.Id" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Quyết định <span class="text-danger">*</span></label>
+                            <select name="Status" class="form-select" required>
+                                <option value="">-- Chọn --</option>
+                                <option value="UnderReview">Đang xem xét</option>
+                                <option value="Resolved">Xử lý — vi phạm có thật</option>
+                                <option value="Rejected">Từ chối — không vi phạm</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Ghi chú admin</label>
+                            <textarea name="AdminNote" class="form-control" rows="3">@Model.AdminNote</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" name="LockReportedUser" value="true" class="form-check-input" id="lockUser" />
+                                <label class="form-check-label text-danger fw-semibold" for="lockUser">
+                                    Khoá tài khoản <strong>@Model.ReportedUserFullName</strong>
+                                </label>
+                                <div class="form-text">Chỉ áp dụng khi quyết định là "Đã xử lý"</div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-warning fw-bold"
+                                onclick="return confirm('Xác nhận xử lý báo cáo này?')">Xác nhận</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+</div>

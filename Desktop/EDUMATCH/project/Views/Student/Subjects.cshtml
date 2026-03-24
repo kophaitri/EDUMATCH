@@ -1,0 +1,22 @@
+@model List<Subject>
+@{ ViewData["Title"] = "Danh sách môn học"; }
+
+<h4 class="mb-4">Danh sách môn học</h4>
+
+<div class="row row-cols-2 row-cols-md-4 g-3">
+    @foreach (var subject in Model)
+    {
+        <div class="col">
+            <a asp-action="SubjectTutors" asp-route-subjectId="@subject.Id" class="text-decoration-none">
+                <div class="card h-100 shadow-sm text-center p-3">
+                    @if (!string.IsNullOrEmpty(subject.IconUrl))
+                    {
+                        <img src="@subject.IconUrl" class="mx-auto mb-2" style="width:40px;height:40px" />
+                    }
+                    <h5>@subject.Name</h5>
+                    <p class="text-muted small mb-0">@subject.TutorSubjects.Count gia sư</p>
+                </div>
+            </a>
+        </div>
+    }
+</div>

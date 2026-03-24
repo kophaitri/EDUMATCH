@@ -1,0 +1,186 @@
+@{
+    ViewData["Title"] = "Quản lý môn dạy";
+    var tutorSubjects = ViewBag.TutorSubjects as List<TutorSubject> ?? new List<TutorSubject>();
+    var subjects = ViewBag.Subjects as List<Subject> ?? new List<Subject>();
+    var gradeLevels = ViewBag.GradeLevels as List<GradeLevel> ?? new List<GradeLevel>();
+}
+
+@section Styles {
+    @await Html.PartialAsync("_AuthStyles")
+}
+
+<div class="min-h-screen max-w-[1200px] mx-auto px-6 py-12 font-body">
+    <!-- Header -->
+    <header class="mb-16">
+        <div class="flex items-center gap-2 mb-4">
+            <a asp-controller="Account" asp-action="Profile" class="text-[10px] tracking-[0.2em] font-bold uppercase text-gray-5 no-underline hover:text-black transition-colors">EDUMATCH / TAI KHOAN</a>
+            <span class="text-[10px] text-gray-5">/</span>
+            <span class="text-[10px] tracking-[0.2em] font-bold uppercase text-gray-5">MON DAY</span>
+        </div>
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+                <h1 class="title-main text-5xl md:text-6xl leading-none mb-2">Môn dạy</h1>
+                <p class="accent-italic text-lg text-gray-5">Quản lý các môn học và cấp độ bạn giảng dạy</p>
+            </div>
+            <span class="px-4 py-2 bg-gray-8 text-gray-4 text-[10px] font-bold tracking-widest uppercase rounded-full">
+                @tutorSubjects.Count môn đã đăng ký
+            </span>
+        </div>
+    </header>
+
+    <!-- Flash messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="mb-8 p-4 rounded-[14px] bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium">
+            <span class="material-symbols-outlined text-sm align-middle mr-1">check_circle</span>
+            @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="mb-8 p-4 rounded-[14px] bg-red-50 border border-red-200 text-red-800 text-sm font-medium">
+            <span class="material-symbols-outlined text-sm align-middle mr-1">error</span>
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <main class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <!-- Sidebar: Add Subject Form -->
+        <aside class="lg:col-span-4">
+            <div class="bg-white rounded-[14px] p-8 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 card-fade-in sticky top-8">
+                <h3 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-5 mb-6 flex items-center gap-3">
+                    <span class="material-symbols-outlined text-sm">add_circle</span>
+                    Thêm môn dạy
+                </h3>
+
+                <form asp-action="AddSubject" method="post" class="space-y-5">
+                    @Html.AntiForgeryToken()
+
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-5 mb-2">Môn học</label>
+                        <select name="subjectId" required
+                                class="w-full h-12 px-4 rounded-[10px] border border-gray-7 bg-gray-8 text-sm font-medium focus:outline-none focus:border-gray-4 transition-colors appearance-none">
+                            <option value="">— Chọn môn học —</option>
+                            @foreach (var s in subjects)
+                            {
+                                <option value="@s.Id">@s.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-5 mb-2">Cấp độ</label>
+                        <select name="gradeLevelId" required
+                                class="w-full h-12 px-4 rounded-[10px] border border-gray-7 bg-gray-8 text-sm font-medium focus:outline-none focus:border-gray-4 transition-colors appearance-none">
+                            <option value="">— Chọn cấp độ —</option>
+                            @foreach (var g in gradeLevels)
+                            {
+                                <option value="@g.Id">@g.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-5 mb-2">Giá / giờ (VNĐ)</label>
+                        <input type="number" name="hourlyRate" min="1000" step="1000" required placeholder="150000"
+                               class="w-full h-12 px-4 rounded-[10px] border border-gray-7 bg-gray-8 text-sm font-medium focus:outline-none focus:border-gray-4 transition-colors" />
+                    </div>
+
+                    <button type="submit"
+                            class="w-full flex items-center justify-center rounded-full h-12 bg-black text-white text-sm font-semibold transition-all hover:opacity-90 btn-transition">
+                        <span class="material-symbols-outlined text-sm mr-2">add</span>
+                        Thêm môn dạy
+                    </button>
+                </form>
+            </div>
+        </aside>
+
+        <!-- Main Content: Current Subjects -->
+        <section class="lg:col-span-8">
+            <h3 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-5 mb-8 flex items-center gap-4">
+                Môn đang dạy
+                <span class="h-px flex-grow bg-gray-7"></span>
+            </h3>
+
+            @if (!tutorSubjects.Any())
+            {
+                <div class="bg-white rounded-[14px] p-12 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 border-dashed text-center card-fade-in">
+                    <span class="material-symbols-outlined text-gray-6 text-5xl mb-4 block">menu_book</span>
+                    <p class="text-gray-5 text-lg mb-1">Chưa có môn dạy nào</p>
+                    <p class="text-gray-5 text-sm">Hãy thêm môn dạy đầu tiên bằng form bên trái.</p>
+                </div>
+            }
+            else
+            {
+                <!-- Group by subject -->
+                @foreach (var group in tutorSubjects.GroupBy(ts => ts.Subject.Name))
+                {
+                    <div class="mb-6">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-8 h-8 rounded-full bg-gray-1 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-white text-sm">school</span>
+                            </div>
+                            <h4 class="text-lg font-bold m-0">@group.Key</h4>
+                            <span class="px-2 py-0.5 bg-gray-8 text-gray-5 text-[10px] font-bold tracking-widest rounded-full">@group.Count()</span>
+                        </div>
+
+                        <div class="space-y-3">
+                            @foreach (var ts in group)
+                            {
+                                <div class="bg-white rounded-[14px] p-5 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 card-fade-in">
+                                    <div class="flex items-center justify-between flex-wrap gap-4">
+                                        <div class="flex items-center gap-4">
+                                            <span class="px-3 py-1 bg-gray-8 text-gray-4 text-[10px] font-bold tracking-widest uppercase rounded-full">@ts.GradeLevel.Name</span>
+                                            <span class="text-base font-bold" style="color: #16a34a;">@ts.HourlyRate.ToString("N0") <span class="text-sm text-gray-5 font-normal">VNĐ/giờ</span></span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <!-- Update Rate -->
+                                            <form asp-action="UpdateSubjectRate" method="post" class="flex items-center gap-2">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@ts.Id" />
+                                                <input type="number" name="hourlyRate" value="@ts.HourlyRate" min="1000" step="1000"
+                                                       class="w-28 h-9 px-3 rounded-lg border border-gray-7 bg-gray-8 text-sm text-right focus:outline-none focus:border-gray-4 transition-colors" />
+                                                <button type="submit" title="Cập nhật giá"
+                                                        class="w-9 h-9 rounded-lg bg-gray-8 hover:bg-gray-7 flex items-center justify-center transition-colors border border-gray-7">
+                                                    <span class="material-symbols-outlined text-gray-4 text-sm">save</span>
+                                                </button>
+                                            </form>
+                                            <!-- Remove -->
+                                            <form asp-action="RemoveSubject" method="post"
+                                                  onsubmit="return confirm('Xóa môn này?')">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@ts.Id" />
+                                                <button type="submit" title="Xóa môn dạy"
+                                                        class="w-9 h-9 rounded-lg bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors border border-red-200">
+                                                    <span class="material-symbols-outlined text-red-500 text-sm">delete</span>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Summary -->
+                <div class="mt-8 p-6 rounded-[14px] bg-gray-8 border border-gray-7">
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                            <span class="block text-2xl font-display font-black stat-number">@tutorSubjects.Count</span>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-5">Tổng</span>
+                        </div>
+                        <div>
+                            <span class="block text-2xl font-display font-black stat-number" style="color: #16a34a;">@tutorSubjects.Min(ts => ts.HourlyRate).ToString("N0")</span>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-5">Giá thấp nhất</span>
+                        </div>
+                        <div>
+                            <span class="block text-2xl font-display font-black stat-number" style="color: #16a34a;">@tutorSubjects.Max(ts => ts.HourlyRate).ToString("N0")</span>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-5">Giá cao nhất</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </section>
+    </main>
+</div>

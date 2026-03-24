@@ -1,0 +1,64 @@
+@model BookingRequest
+@{ ViewData["Title"] = "Chi tiết booking"; }
+
+<h4 class="mb-3">Chi tiết booking</h4>
+<a asp-action="Bookings" class="btn btn-outline-secondary btn-sm mb-3">← Quay lại</a>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h5>Thông tin gia sư</h5>
+                <p><strong>Tên:</strong> @Model.Tutor.FullName</p>
+                <p><strong>Môn học:</strong> @Model.Subject.Name</p>
+                <p><strong>Cấp độ:</strong> @Model.GradeLevel.Name</p>
+            </div>
+            <div class="col-md-6">
+                <h5>Thông tin lịch học</h5>
+                <p><strong>Ngày bắt đầu:</strong> @Model.PreferredStartDate.ToString("dd/MM/yyyy")</p>
+                <p><strong>Số buổi/tuần:</strong> @Model.SessionsPerWeek buổi</p>
+                <p><strong>Thời gian học:</strong> @Model.DurationWeeks tuần</p>
+                <p><strong>Ngày gửi:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                @if (Model.RespondedAt.HasValue)
+                {
+                    <p><strong>Ngày phản hồi:</strong> @Model.RespondedAt.Value.ToString("dd/MM/yyyy HH:mm")</p>
+                }
+            </div>
+        </div>
+        @if (!string.IsNullOrEmpty(Model.Message))
+        {
+            <hr />
+            <h5>Lời nhắn</h5>
+            <p>@Model.Message</p>
+        }
+        @if (!string.IsNullOrEmpty(Model.RejectionReason))
+        {
+            <hr />
+            <h5>Lý do từ chối</h5>
+            <p class="text-danger">@Model.RejectionReason</p>
+        }
+        <hr />
+        <div>
+            <strong>Trạng thái: </strong>
+            @switch (Model.Status)
+            {
+                case BookingStatus.Pending:
+                    <span class="badge bg-warning text-dark fs-6">Chờ phản hồi</span>
+                    break;
+                case BookingStatus.Accepted:
+                    <span class="badge bg-success fs-6">Đã chấp nhận</span>
+                    <div class="mt-2"><a asp-action="Contracts" class="btn btn-success btn-sm">Xem hợp đồng</a></div>
+                    break;
+                case BookingStatus.Rejected:
+                    <span class="badge bg-danger fs-6">Đã từ chối</span>
+                    break;
+                case BookingStatus.Expired:
+                    <span class="badge bg-dark fs-6">Hết hạn</span>
+                    break;
+                default:
+                    <span class="badge bg-secondary fs-6">Đã huỷ</span>
+                    break;
+            }
+        </div>
+    </div>
+</div>

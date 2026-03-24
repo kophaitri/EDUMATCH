@@ -1,0 +1,90 @@
+@model List<TutorProfile>
+@{ ViewData["Title"] = "Quản lý gia sư"; }
+
+<h4 class="mb-3">Quản lý gia sư</h4>
+@if (TempData["SuccessMessage"] != null) { <div class="alert alert-success">@TempData["SuccessMessage"]</div> }
+
+<p class="text-muted mb-3">
+    Tổng: <strong>@Model.Count</strong> gia sư |
+    Đã xác minh: <strong class="text-success">@Model.Count(t => t.IsVerified)</strong> |
+    Chưa xác minh: <strong class="text-warning">@Model.Count(t => !t.IsVerified)</strong>
+</p>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Gia sư</th>
+                <th>Môn dạy</th>
+                <th>Giá/giờ</th>
+                <th>Đánh giá</th>
+                <th>Trạng thái</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var t in Model)
+            {
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width:36px;height:36px;border-radius:50%;background:#e8e8e8;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;overflow:hidden;">
+                                @if (!string.IsNullOrEmpty(t.User.AvatarUrl))
+                                {
+                                    <img src="@t.User.AvatarUrl" style="width:100%;height:100%;object-fit:cover;" />
+                                }
+                                else
+                                {
+                                    @t.User.FullName.Substring(0, 1).ToUpper()
+                                }
+                            </div>
+                            <div>
+                                <strong>@t.User.FullName</strong>
+                                <br /><small class="text-muted">@t.User.Email</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        @foreach (var ts in t.TutorSubjects.Take(3))
+                        {
+                            <span class="badge bg-info text-dark me-1">@ts.Subject.Name</span>
+                        }
+                        @if (t.TutorSubjects.Count > 3)
+                        {
+                            <span class="text-muted small">+@(t.TutorSubjects.Count - 3)</span>
+                        }
+                    </td>
+                    <td>@t.HourlyRateMin.ToString("N0") - @t.HourlyRateMax.ToString("N0")</td>
+                    <td>
+                        <span class="text-warning">&#9733;</span> @t.AvgRating.ToString("0.0")
+                        <small class="text-muted">(@t.TotalReviews)</small>
+                    </td>
+                    <td>
+                        @if (t.IsVerified)
+                        {
+                            <span class="badge bg-success">Đã xác minh</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-warning text-dark">Chưa xác minh</span>
+                        }
+                    </td>
+                    <td>
+                        <form asp-action="ToggleVerify" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@t.UserId" />
+                            @if (t.IsVerified)
+                            {
+                                <button type="submit" class="btn btn-outline-warning btn-sm">Huỷ xác minh</button>
+                            }
+                            else
+                            {
+                                <button type="submit" class="btn btn-success btn-sm">Xác minh</button>
+                            }
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

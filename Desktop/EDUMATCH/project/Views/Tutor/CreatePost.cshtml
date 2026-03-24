@@ -1,0 +1,125 @@
+@model CreateTutorPostViewModel
+@{
+    ViewData["Title"] = "Đăng bài viết mới";
+}
+
+@section Styles {
+    @await Html.PartialAsync("_AuthStyles")
+}
+
+<main class="max-w-3xl mx-auto py-[120px] px-6">
+    <div class="mb-16">
+        <p class="text-xs font-bold tracking-[0.2em] text-gray-5 mb-4 uppercase">EDUMATCH / BÀI VIẾT</p>
+        <h1 class="playfair-heading text-5xl md:text-6xl mb-6">Đăng bài viết mới</h1>
+    </div>
+
+    <div class="bg-white rounded-[14px] shadow-[0_4px_40px_rgba(0,0,0,0.07)] p-10 border border-gray-7 card-fade-in">
+        <form asp-action="CreatePost" method="post" enctype="multipart/form-data" class="space-y-8">
+            @Html.AntiForgeryToken()
+            <div asp-validation-summary="ModelOnly" class="bg-red-50 text-red-700 px-4 py-3 rounded-lg text-sm border border-red-200"></div>
+
+            <div class="flex flex-col gap-2">
+                <label asp-for="Title" class="text-xs font-bold uppercase tracking-wider text-gray-4"></label>
+                <input asp-for="Title" class="w-full px-4 py-3 bg-transparent border border-gray-4 rounded-lg focus:ring-1 focus:ring-black focus:border-black transition-all outline-none" placeholder="Nhập tiêu đề bài viết..." />
+                <span asp-validation-for="Title" class="text-red-500 text-sm"></span>
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <label asp-for="Content" class="text-xs font-bold uppercase tracking-wider text-gray-4"></label>
+                <textarea asp-for="Content" rows="8" class="w-full px-4 py-3 bg-transparent border border-gray-4 rounded-lg focus:ring-1 focus:ring-black focus:border-black transition-all outline-none resize-y" placeholder="Chia sẻ kiến thức, kinh nghiệm giảng dạy..."></textarea>
+                <span asp-validation-for="Content" class="text-red-500 text-sm"></span>
+            </div>
+
+            <!-- Multi Image Upload -->
+            <div class="flex flex-col gap-3">
+                <label class="text-xs font-bold uppercase tracking-wider text-gray-4">Hình ảnh</label>
+                <div id="imageDropZone" class="border-2 border-dashed border-gray-6 rounded-lg p-8 text-center cursor-pointer hover:border-gray-4 transition-colors">
+                    <span class="material-symbols-outlined text-gray-5 text-4xl mb-2 block">add_photo_alternate</span>
+                    <p class="text-sm text-gray-5 mb-1">Nhấp hoặc kéo thả ảnh vào đây</p>
+                    <p class="text-xs text-gray-6">Hỗ trợ JPG, PNG, GIF. Tối đa 10 ảnh.</p>
+                    <input name="ImageFiles" type="file" accept="image/*" multiple id="imageInput" class="hidden" />
+                </div>
+                <div id="imagePreview" class="grid grid-cols-2 md:grid-cols-4 gap-3"></div>
+            </div>
+
+            <!-- Published Toggle -->
+            <div class="flex items-center gap-3 pt-4 border-t border-gray-7">
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input asp-for="IsPublished" type="checkbox" checked class="sr-only peer" />
+                    <div class="w-11 h-6 bg-gray-6 rounded-full peer peer-checked:bg-black transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full"></div>
+                </label>
+                <span class="text-sm font-medium">Đăng công khai</span>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center justify-end gap-4 pt-6 border-t border-gray-7">
+                <a asp-action="Posts" class="w-full sm:w-auto px-10 py-3 border border-gray-4 rounded-xl text-gray-4 hover:bg-gray-8 transition-colors font-semibold text-center btn-transition no-underline">
+                    Hủy
+                </a>
+                <button type="submit" class="w-full sm:w-auto px-10 py-3 bg-black text-white rounded-xl hover:opacity-80 transition-colors font-semibold shadow-md btn-transition">
+                    <span class="material-symbols-outlined text-sm align-middle mr-1">send</span> Đăng bài
+                </button>
+            </div>
+        </form>
+    </div>
+</main>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const dropZone = document.getElementById('imageDropZone');
+        const input = document.getElementById('imageInput');
+        const preview = document.getElementById('imagePreview');
+        let selectedFiles = new DataTransfer();
+
+        dropZone.addEventListener('click', () => input.click());
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('border-black'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-black'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.classList.remove('border-black');
+            addFiles(e.dataTransfer.files);
+        });
+        input.addEventListener('change', e => addFiles(e.target.files));
+
+        function addFiles(files) {
+            for (const file of files) {
+                if (selectedFiles.files.length >= 10) break;
+                if (!file.type.startsWith('image/')) continue;
+                selectedFiles.items.add(file);
+            }
+            input.files = selectedFiles.files;
+            renderPreviews();
+        }
+
+        function removeFile(index) {
+            const dt = new DataTransfer();
+            for (let i = 0; i < selectedFiles.files.length; i++) {
+                if (i !== index) dt.items.add(selectedFiles.files[i]);
+            }
+            selectedFiles = dt;
+            input.files = selectedFiles.files;
+            renderPreviews();
+        }
+
+        function renderPreviews() {
+            preview.innerHTML = '';
+            for (let i = 0; i < selectedFiles.files.length; i++) {
+                const file = selectedFiles.files[i];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const div = document.createElement('div');
+                    div.className = 'relative group rounded-lg overflow-hidden aspect-square';
+                    div.innerHTML = `
+                        <img src="${e.target.result}" class="w-full h-full object-cover" />
+                        <button type="button" onclick="removeFile(${i})"
+                            class="absolute top-1 right-1 bg-black/70 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span class="material-symbols-outlined" style="font-size:14px">close</span>
+                        </button>
+                    `;
+                    preview.appendChild(div);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+    </script>
+}

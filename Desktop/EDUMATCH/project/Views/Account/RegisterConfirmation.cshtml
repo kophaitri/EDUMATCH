@@ -1,0 +1,28 @@
+@{
+    ViewData["Title"] = "Xác minh email";
+    var email = ViewData["Email"] as string;
+}
+
+<div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4">
+    <div class="max-w-md w-full text-center">
+        <div class="bg-white rounded-2xl shadow-lg p-8">
+            <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">Kiểm tra email của bạn</h1>
+            <p class="text-gray-600 mb-2">
+                Chúng tôi đã gửi email xác minh đến
+            </p>
+            <p class="font-semibold text-indigo-600 mb-4">@email</p>
+            <p class="text-gray-500 text-sm mb-6">
+                Nhấn vào liên kết trong email để kích hoạt tài khoản. Nếu không thấy email, hãy kiểm tra thư mục spam.
+            </p>
+            <a asp-action="Login" class="text-indigo-600 hover:underline text-sm font-medium">
+                Quay lại đăng nhập
+            </a>
+        </div>
+    </div>
+</div>

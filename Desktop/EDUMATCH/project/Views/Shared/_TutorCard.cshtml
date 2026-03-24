@@ -1,0 +1,22 @@
+@model EduMatch.ViewModels.TutorCardViewModel
+
+<div class="tutor-item">
+    <div class="tutor-cover">
+        <div class="tutor-cover-pattern"></div>
+        @if (Model?.Verified == true) { <span class="verified-tag">✓ Đã xác minh</span> }
+        <div class="tutor-cover-avatar">@(string.IsNullOrEmpty(Model?.Avatar) ? "👩‍🏫" : Model.Avatar)</div>
+    </div>
+    <div class="tutor-body">
+        <div class="tutor-name">@(string.IsNullOrEmpty(Model?.Name) ? "Gia sư mẫu" : Model.Name)</div>
+        @if (!string.IsNullOrEmpty(Model?.Subject)) {
+            <span class="tutor-subject-tag">@Model.Subject</span>
+        }
+        @if (!string.IsNullOrEmpty(Model?.Desc)) {
+            <p style="font-size:13px;color:#5a5a5a;line-height:1.6;">@Model.Desc</p>
+        }
+        <div class="tutor-footer">
+            <div class="tutor-rating"><span class="tutor-rating-star">★</span> @(string.IsNullOrEmpty(Model?.Rating) ? "4.9" : Model.Rating)</div>
+            <div class="tutor-price">@(string.IsNullOrEmpty(Model?.Price) ? "150.000đ" : Model.Price) <span>/ giờ</span></div>
+        </div>
+    </div>
+</div>

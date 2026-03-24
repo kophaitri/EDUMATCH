@@ -1,0 +1,32 @@
+@model List<TutorProfile>
+@{ ViewData["Title"] = "Gia sư môn " + ((Subject)ViewBag.Subject).Name; }
+
+<h4 class="mb-4">Gia sư môn: <span class="text-primary">@((Subject)ViewBag.Subject).Name</span></h4>
+<a asp-action="Subjects" class="btn btn-outline-secondary btn-sm mb-3">← Quay lại</a>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Chưa có gia sư nào dạy môn này.</div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        @foreach (var tutor in Model)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5>@tutor.User.FullName</h5>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <strong class="text-success">@tutor.HourlyRateMin.ToString("N0") - @tutor.HourlyRateMax.ToString("N0") VNĐ/h</strong>
+                            <span class="text-warning small">★ @tutor.AvgRating.ToString("0.0") (@tutor.TotalReviews)</span>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a asp-action="TutorProfile" asp-route-id="@tutor.UserId" class="btn btn-outline-primary btn-sm w-100">Xem hồ sơ</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

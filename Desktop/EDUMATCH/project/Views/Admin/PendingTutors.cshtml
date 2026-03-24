@@ -1,0 +1,59 @@
+@model List<PendingTutorDto>
+@{ ViewData["Title"] = "Gia sư chờ xác minh"; }
+
+<h4 class="mb-3">Gia sư chờ xác minh <span class="badge bg-warning text-dark">@Model.Count</span></h4>
+<a asp-action="Users" class="btn btn-outline-secondary btn-sm mb-3">← Danh sách user</a>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-success"><i class="bi bi-check-circle"></i> Không có gia sư nào chờ xác minh.</div>
+}
+else
+{
+    @foreach (var t in Model)
+    {
+        <div class="card shadow-sm mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-2">
+                    @if (t.AvatarUrl != null)
+                    {
+                        <img src="@t.AvatarUrl" class="rounded-circle" width="40" height="40" style="object-fit:cover" alt="" />
+                    }
+                    <div>
+                        <strong>@t.FullName</strong>
+                        <div class="text-muted small">@t.Email</div>
+                    </div>
+                </div>
+                <div class="text-muted small">Đăng ký: @t.CreatedAt.ToString("dd/MM/yyyy")</div>
+            </div>
+            <div class="card-body row g-2">
+                <div class="col-md-3"><strong>Kinh nghiệm:</strong> @t.YearsOfExperience năm</div>
+                <div class="col-md-3"><strong>Học phí:</strong> @t.HourlyRateMin.ToString("N0")–@t.HourlyRateMax.ToString("N0") VNĐ/h</div>
+                <div class="col-md-3"><strong>Chứng chỉ chờ duyệt:</strong> @t.PendingCertificates</div>
+                @if (t.Bio != null) { <div class="col-12"><strong>Bio:</strong> @t.Bio</div> }
+                @if (t.Education != null) { <div class="col-12"><strong>Học vấn:</strong> @t.Education</div> }
+            </div>
+            <div class="card-footer d-flex gap-2">
+                <form asp-action="VerifyTutor" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="tutorUserId" value="@t.UserId" />
+                    <input type="hidden" name="approve" value="true" />
+                    <button class="btn btn-success btn-sm"
+                            onclick="return confirm('Xác minh gia sư @t.FullName?')">
+                        <i class="bi bi-check-lg"></i> Duyệt
+                    </button>
+                </form>
+                <form asp-action="VerifyTutor" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="tutorUserId" value="@t.UserId" />
+                    <input type="hidden" name="approve" value="false" />
+                    <button class="btn btn-danger btn-sm"
+                            onclick="return confirm('Từ chối gia sư @t.FullName?')">
+                        <i class="bi bi-x-lg"></i> Từ chối
+                    </button>
+                </form>
+                <a asp-action="UserDetail" asp-route-userId="@t.UserId" class="btn btn-outline-primary btn-sm">Xem hồ sơ đầy đủ</a>
+            </div>
+        </div>
+    }
+}

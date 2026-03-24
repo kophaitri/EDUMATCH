@@ -1,0 +1,52 @@
+@model Session
+@{ ViewData["Title"] = "Chi tiết buổi học"; }
+
+<h4 class="mb-3">Chi tiết buổi học</h4>
+<a asp-action="Schedule" class="btn btn-outline-secondary btn-sm mb-3">← Quay lại lịch học</a>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Gia sư:</strong> @Model.Contract.Tutor.FullName</p>
+                <p><strong>Môn học:</strong> @Model.Contract.Subject.Name</p>
+                <p><strong>Thời gian:</strong> @Model.ScheduledAt.ToString("HH:mm - dd/MM/yyyy")</p>
+                <p><strong>Thời lượng:</strong> @Model.DurationMinutes phút</p>
+                <p><strong>Trạng thái:</strong>
+                    @switch (Model.Status)
+                    {
+                        case SessionStatus.Scheduled: <span class="badge bg-info text-dark">Sắp tới</span> break;
+                        case SessionStatus.InProgress: <span class="badge bg-primary">Đang diễn ra</span> break;
+                        case SessionStatus.Completed: <span class="badge bg-success">Hoàn thành</span> break;
+                        case SessionStatus.NoShow: <span class="badge bg-dark">Vắng mặt</span> break;
+                        default: <span class="badge bg-secondary">Đã huỷ</span> break;
+                    }
+                </p>
+                @if (Model.StartedAt.HasValue)
+                {
+                    <p><strong>Bắt đầu lúc:</strong> @Model.StartedAt.Value.ToString("HH:mm dd/MM/yyyy")</p>
+                }
+                @if (Model.EndedAt.HasValue)
+                {
+                    <p><strong>Kết thúc lúc:</strong> @Model.EndedAt.Value.ToString("HH:mm dd/MM/yyyy")</p>
+                }
+            </div>
+            <div class="col-md-6">
+                @if (!string.IsNullOrEmpty(Model.Notes))
+                {
+                    <div class="mb-3">
+                        <strong>Ghi chú:</strong>
+                        <div class="border rounded p-2 mt-1 bg-light">@Model.Notes</div>
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(Model.CancellationReason))
+                {
+                    <div>
+                        <strong>Lý do huỷ:</strong>
+                        <div class="border rounded p-2 mt-1 bg-light text-danger">@Model.CancellationReason</div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

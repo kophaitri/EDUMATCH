@@ -1,0 +1,61 @@
+@model BookingRequest
+@{ ViewData["Title"] = "Chi tiết booking"; }
+
+<h4 class="mb-3">Chi tiết booking</h4>
+<a asp-action="Bookings" class="btn btn-outline-secondary btn-sm mb-3">← Quay lại</a>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h5>Thông tin học viên</h5>
+                <p><strong>Tên:</strong> @Model.Student.FullName</p>
+                <p><strong>Email:</strong> @Model.Student.Email</p>
+                <p><strong>Môn học:</strong> @Model.Subject.Name</p>
+                <p><strong>Cấp độ:</strong> @Model.GradeLevel.Name</p>
+            </div>
+            <div class="col-md-6">
+                <h5>Lịch học đề xuất</h5>
+                <p><strong>Ngày bắt đầu:</strong> @Model.PreferredStartDate.ToString("dd/MM/yyyy")</p>
+                <p><strong>Số buổi/tuần:</strong> @Model.SessionsPerWeek buổi</p>
+                <p><strong>Thời gian:</strong> @Model.DurationWeeks tuần</p>
+                <p><strong>Ngày gửi:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+            </div>
+        </div>
+        @if (!string.IsNullOrEmpty(Model.Message))
+        {
+            <hr />
+            <h5>Lời nhắn từ học viên</h5>
+            <div class="border rounded p-3 bg-light">@Model.Message</div>
+        }
+
+        @if (Model.Status == BookingStatus.Pending)
+        {
+            <div class="mt-4 d-flex gap-2">
+                <form asp-action="AcceptBooking" method="post" style="display:inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <button type="submit" class="btn btn-success" onclick="return confirm('Chấp nhận booking và tạo hợp đồng?')">Chấp nhận</button>
+                </form>
+                <form asp-action="RejectBooking" method="post" style="display:inline">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Từ chối booking này?')">Từ chối</button>
+                </form>
+            </div>
+        }
+        else
+        {
+            <div class="mt-3">
+                <strong>Trạng thái: </strong>
+                @switch (Model.Status)
+                {
+                    case BookingStatus.Accepted: <span class="badge bg-success fs-6">Đã chấp nhận</span> break;
+                    case BookingStatus.Rejected: <span class="badge bg-danger fs-6">Đã từ chối</span> break;
+                    case BookingStatus.Expired: <span class="badge bg-dark fs-6">Hết hạn</span> break;
+                    default: <span class="badge bg-secondary fs-6">Đã huỷ</span> break;
+                }
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,346 @@
+/* ===== EduMatch Global Styles ===== */
+
+/* --- CSS Variables --- */
+:root {
+    --black: #0a0a0a;
+    --white: #fafafa;
+    --gray-1: #111111;
+    --gray-2: #1c1c1c;
+    --gray-3: #2e2e2e;
+    --gray-4: #5a5a5a;
+    --gray-5: #8a8a8a;
+    --gray-6: #c4c4c4;
+    --gray-7: #e8e8e8;
+    --gray-8: #f4f4f4;
+    --font-display: 'Playfair Display', Georgia, serif;
+    --font-body: 'Be Vietnam Pro', sans-serif;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --shadow-soft: 0 4px 40px rgba(0, 0, 0, 0.07);
+    --radius-card: 14px;
+}
+
+/* --- Base --- */
+body {
+    font-family: var(--font-body);
+    background-color: var(--white);
+    color: var(--black);
+}
+
+/* --- Typography --- */
+.playfair-heading {
+    font-family: var(--font-display);
+    font-weight: 900;
+    letter-spacing: -0.05em;
+}
+
+.title-main {
+    font-family: var(--font-display);
+    font-weight: 900;
+    letter-spacing: -0.05em;
+}
+
+.accent-italic {
+    font-family: var(--font-display);
+    font-style: italic;
+    color: var(--gray-5);
+}
+
+.section-tag {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--gray-5);
+    font-weight: 600;
+}
+
+/* --- Form --- */
+input:focus {
+    border-color: var(--black) !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+/* --- Transitions & Animations --- */
+.btn-transition {
+    transition: all 0.4s var(--ease-out);
+}
+
+.card-fade-in {
+    animation: fadeIn 1s var(--ease-out) forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* --- Stats number font --- */
+.stat-number {
+    font-family: var(--font-display);
+}
+
+/* --- Editorial shadow --- */
+.editorial-shadow {
+    box-shadow: 0 4px 40px rgba(0, 0, 0, 0.07);
+}
+
+/* --- Underline input (auth forms) --- */
+.input-underline {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--gray-6);
+    padding: 0.75rem 0;
+    font-family: var(--font-body);
+    transition: border-color 0.3s var(--ease-out);
+}
+
+.input-underline:focus {
+    border-bottom-color: var(--black) !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.input-underline::placeholder {
+    color: #c4c4c4;
+}
+
+/* --- Role radio card --- */
+.role-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.role-card .role-card-inner {
+    padding: 1.5rem;
+    border: 1px solid var(--gray-6);
+    border-radius: 0.75rem;
+    transition: all 0.3s var(--ease-out);
+    cursor: pointer;
+}
+
+.role-card .role-card-inner:hover {
+    background-color: var(--gray-8);
+}
+
+.role-card input[type="radio"]:checked + .role-card-inner {
+    border-color: var(--black);
+    background-color: var(--gray-8);
+}
+
+/* --- Brand font --- */
+.font-brand {
+    font-family: 'Newsreader', serif;
+}
+
+/* --- Editorial title (Playfair, tighter) --- */
+.editorial-title {
+    font-family: var(--font-display);
+    letter-spacing: -0.05em;
+}
+
+/* --- Label technical (wide tracking) --- */
+.label-technical {
+    letter-spacing: 0.1em;
+}
+
+/* --- Bordered input (auth card forms) --- */
+.input-bordered {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--gray-6);
+    border-radius: 0.25rem;
+    padding: 1rem;
+    font-family: var(--font-body);
+    transition: all 0.3s var(--ease-out);
+}
+
+.input-bordered:focus {
+    border-color: var(--black) !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.input-bordered::placeholder {
+    color: rgba(196, 196, 196, 0.6);
+}
+
+/* --- Card hover shadow --- */
+.card-hover-shadow {
+    box-shadow: 0 4px 40px rgba(0, 0, 0, 0.04);
+    transition: box-shadow 0.5s var(--ease-out);
+}
+
+.card-hover-shadow:hover {
+    box-shadow: 0 8px 60px rgba(0, 0, 0, 0.07);
+}
+
+/* --- Minimal input (change password) --- */
+.input-minimal {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--gray-6);
+    border-radius: 0;
+    padding-left: 0;
+    padding-right: 0;
+    font-family: var(--font-body);
+    transition: border-color 0.3s var(--ease-out);
+}
+
+.input-minimal:focus {
+    box-shadow: none !important;
+    border-bottom: 2px solid var(--black) !important;
+    outline: none !important;
+}
+
+.input-minimal::placeholder {
+    color: #d4d4d4;
+}
+
+/* --- Confirmation page icon --- */
+.confirmation-icon {
+    font-size: 64px;
+    font-variation-settings: 'FILL' 0, 'wght' 100, 'GRAD' 0, 'opsz' 24;
+}
+
+/* --- Post detail gallery --- */
+.post-detail-gallery {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+    border-radius: var(--radius-card);
+    overflow: hidden;
+}
+
+.post-detail-gallery-item {
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    cursor: pointer;
+    position: relative;
+}
+
+.post-detail-gallery-item::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0);
+    transition: background 0.3s var(--ease-out);
+}
+
+.post-detail-gallery-item:hover::after {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.post-detail-gallery-item img {
+    transition: transform 0.5s var(--ease-out);
+}
+
+.post-detail-gallery-item:hover img {
+    transform: scale(1.03);
+}
+
+/* Single image: full width */
+.post-detail-gallery-item:only-child {
+    grid-column: 1 / -1;
+    aspect-ratio: 16 / 9;
+}
+
+/* Odd last item: span full width */
+.post-detail-gallery-item:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    aspect-ratio: 16 / 9;
+}
+
+/* --- Lightbox --- */
+.lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.95);
+    align-items: center;
+    justify-content: center;
+}
+
+.lightbox.active {
+    display: flex;
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 2.5rem;
+    cursor: pointer;
+    z-index: 10;
+    line-height: 1;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.lightbox-close:hover {
+    opacity: 1;
+}
+
+.lightbox-content {
+    max-width: 90vw;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.lightbox-content img {
+    max-width: 90vw;
+    max-height: 80vh;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.lightbox-counter {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.8rem;
+    margin-top: 1rem;
+    font-family: var(--font-body);
+}
+
+.lightbox-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 1rem;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+    z-index: 10;
+}
+
+.lightbox-nav:hover {
+    opacity: 1;
+}
+
+.lightbox-prev {
+    left: 1rem;
+}
+
+.lightbox-next {
+    right: 1rem;
+}
+
+.lightbox-nav .material-symbols-outlined {
+    font-size: 2.5rem;
+}

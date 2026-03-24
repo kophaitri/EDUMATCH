@@ -1,0 +1,50 @@
+@model List<Transaction>
+@{ ViewData["Title"] = "Lịch sử giao dịch"; }
+
+<h4 class="mb-3">Lịch sử giao dịch</h4>
+<p class="text-muted">Số dư hiện tại: <strong class="text-primary">@((ViewBag.Wallet as Wallet)?.Balance.ToString("N0")) VNĐ</strong></p>
+<a asp-action="Wallet" class="btn btn-outline-secondary btn-sm mb-3">← Quay lại ví</a>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Chưa có giao dịch nào.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr><th>Thời gian</th><th>Mô tả</th><th>Loại</th><th>Số tiền</th><th>Trạng thái</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model)
+                {
+                    <tr>
+                        <td>@t.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@t.Description</td>
+                        <td>
+                            @switch (t.Type)
+                            {
+                                case TransactionType.Deposit: <span class="text-success fw-bold">Nạp tiền</span> break;
+                                case TransactionType.Withdrawal: <span class="text-danger fw-bold">Rút tiền</span> break;
+                                case TransactionType.Payment: <span class="text-warning fw-bold">Thanh toán</span> break;
+                                default: <span class="text-info fw-bold">Hoàn tiền</span> break;
+                            }
+                        </td>
+                        <td class="@(t.Type == TransactionType.Deposit || t.Type == TransactionType.Refund ? "text-success" : "text-danger") fw-bold">
+                            @(t.Type == TransactionType.Deposit || t.Type == TransactionType.Refund ? "+" : "-")@t.Amount.ToString("N0") VNĐ
+                        </td>
+                        <td>
+                            @switch (t.Status)
+                            {
+                                case TransactionStatus.Completed: <span class="badge bg-success">Thành công</span> break;
+                                case TransactionStatus.Pending: <span class="badge bg-warning text-dark">Đang xử lý</span> break;
+                                default: <span class="badge bg-danger">Thất bại</span> break;
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

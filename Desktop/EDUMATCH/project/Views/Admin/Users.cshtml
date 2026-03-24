@@ -1,0 +1,88 @@
+@model List<AdminUserListDto>
+@{ ViewData["Title"] = "Quản lý người dùng"; }
+
+<h4 class="mb-3">Người dùng</h4>
+
+<form method="get" class="row g-2 mb-4">
+    <div class="col-md-4">
+        <input name="search" class="form-control" placeholder="Tìm tên, email..." value="@ViewBag.Search" />
+    </div>
+    <div class="col-md-3">
+        <select name="role" class="form-select">
+            <option value="">-- Tất cả role --</option>
+            <option value="Admin"    selected="@(ViewBag.Role == "Admin")">Admin</option>
+            <option value="Tutor"    selected="@(ViewBag.Role == "Tutor")">Gia sư</option>
+            <option value="Student"  selected="@(ViewBag.Role == "Student")">Học viên</option>
+        </select>
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Lọc</button>
+        <a asp-action="Users" class="btn btn-outline-secondary">Xóa lọc</a>
+    </div>
+</form>
+
+<div class="d-flex gap-2 mb-3">
+    <a asp-action="PendingTutors" class="btn btn-warning btn-sm"><i class="bi bi-person-check"></i> Gia sư chờ duyệt</a>
+    <a asp-action="Students" class="btn btn-info btn-sm text-white"><i class="bi bi-mortarboard"></i> Danh sách học viên</a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Không tìm thấy người dùng nào.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr><th>Người dùng</th><th>Role</th><th>Trạng thái</th><th>Email xác nhận</th><th>Lần đăng nhập cuối</th><th>Ngày tạo</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var u in Model)
+                {
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                @if (u.AvatarUrl != null)
+                                {
+                                    <img src="@u.AvatarUrl" class="rounded-circle" width="32" height="32" style="object-fit:cover" alt="" />
+                                }
+                                else
+                                {
+                                    <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center fw-bold" style="width:32px;height:32px;font-size:13px">
+                                        @u.FullName.FirstOrDefault()
+                                    </div>
+                                }
+                                <div>
+                                    <div class="fw-semibold">@u.FullName</div>
+                                    <small class="text-muted">@u.Email</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            @switch (u.Role)
+                            {
+                                case "Admin":   <span class="badge bg-danger">Admin</span>  break;
+                                case "Tutor":   <span class="badge bg-success">Gia sư</span> break;
+                                case "Student": <span class="badge bg-primary">Học viên</span> break;
+                                default:        <span class="badge bg-secondary">@u.Role</span> break;
+                            }
+                        </td>
+                        <td>
+                            @if (u.IsActive) { <span class="badge bg-success">Hoạt động</span> }
+                            else             { <span class="badge bg-danger">Bị khoá</span> }
+                        </td>
+                        <td>
+                            @if (u.EmailConfirmed) { <i class="bi bi-check-circle-fill text-success"></i> }
+                            else                   { <i class="bi bi-x-circle text-muted"></i> }
+                        </td>
+                        <td><small>@(u.LastLoginAt?.ToString("dd/MM/yy HH:mm") ?? "—")</small></td>
+                        <td><small>@u.CreatedAt.ToString("dd/MM/yyyy")</small></td>
+                        <td><a asp-action="UserDetail" asp-route-userId="@u.Id" class="btn btn-sm btn-outline-primary">Chi tiết</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="text-muted small">Tổng: @Model.Count người dùng</div>
+}

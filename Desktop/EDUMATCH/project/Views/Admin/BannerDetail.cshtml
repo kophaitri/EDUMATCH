@@ -1,0 +1,67 @@
+@model BannerDto
+@{
+    ViewData["Title"] = Model?.Id > 0 ? "Sửa Banner" : "Thêm Banner";
+    bool isNew = Model == null || Model.Id == 0;
+    string formAction = isNew ? "CreateBanner" : "UpdateBanner";
+}
+
+<h4 class="mb-1">@(isNew ? "Thêm Banner mới" : $"Sửa Banner: {Model!.Title}")</h4>
+<a asp-action="Banners" class="btn btn-outline-secondary btn-sm mb-3">← Quay lại</a>
+
+<div class="card shadow-sm" style="max-width:640px">
+    <div class="card-body">
+        @{
+            string actionUrl = isNew
+                ? Url.Action("CreateBanner", "Admin")!
+                : Url.Action("UpdateBanner", "Admin", new { id = Model!.Id })!;
+        }
+        <form action="@actionUrl" method="post">
+            @Html.AntiForgeryToken()
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Tiêu đề <span class="text-danger">*</span></label>
+                <input name="Title" class="form-control" value="@Model?.Title" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Mô tả</label>
+                <input name="Description" class="form-control" value="@Model?.Description" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Image URL</label>
+                <input name="ImageUrl" class="form-control" value="@Model?.ImageUrl" />
+                @if (Model?.ImageUrl != null)
+                {
+                    <img src="@Model.ImageUrl" class="mt-2 img-thumbnail" style="max-height:120px" alt="" />
+                }
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Link URL</label>
+                <input name="LinkUrl" class="form-control" value="@Model?.LinkUrl" placeholder="https://..." />
+            </div>
+            <div class="row g-2 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Hiển thị từ <span class="text-danger">*</span></label>
+                    <input name="StartAt" type="datetime-local" class="form-control"
+                           value="@(Model?.StartAt.ToString("yyyy-MM-ddTHH:mm") ?? DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm"))" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Hiển thị đến <span class="text-danger">*</span></label>
+                    <input name="EndAt" type="datetime-local" class="form-control"
+                           value="@(Model?.EndAt.ToString("yyyy-MM-ddTHH:mm") ?? DateTime.UtcNow.AddMonths(1).ToString("yyyy-MM-ddTHH:mm"))" required />
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Thứ tự hiển thị</label>
+                <input name="DisplayOrder" type="number" class="form-control" value="@(Model?.DisplayOrder ?? 0)" />
+            </div>
+            <div class="mb-3">
+                <div class="form-check">
+                    <input name="IsActive" type="checkbox" class="form-check-input" value="true"
+                           @(isNew || Model!.IsActive ? "checked" : "") />
+                    <label class="form-check-label">Kích hoạt</label>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">@(isNew ? "Tạo banner" : "Lưu thay đổi")</button>
+        </form>
+    </div>
+</div>

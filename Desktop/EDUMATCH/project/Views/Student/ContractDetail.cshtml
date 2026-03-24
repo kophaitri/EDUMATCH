@@ -1,0 +1,63 @@
+@model Contract
+@{ ViewData["Title"] = "Chi tiết hợp đồng"; }
+
+<h4 class="mb-3">Chi tiết hợp đồng</h4>
+<a asp-action="Contracts" class="btn btn-outline-secondary btn-sm mb-3">← Quay lại</a>
+
+<div class="row">
+    <div class="col-md-5">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header"><strong>Thông tin hợp đồng</strong></div>
+            <div class="card-body">
+                <p><strong>Gia sư:</strong> @Model.Tutor.FullName</p>
+                <p><strong>Môn học:</strong> @Model.Subject.Name</p>
+                <p><strong>Học phí:</strong> @Model.HourlyRate.ToString("N0") VNĐ/giờ</p>
+                <p><strong>Tổng số buổi:</strong> @Model.TotalSessions</p>
+                <p><strong>Đã hoàn thành:</strong> @Model.CompletedSessions buổi</p>
+                <p><strong>Ngày bắt đầu:</strong> @Model.StartDate.ToString("dd/MM/yyyy")</p>
+                <p><strong>Ngày kết thúc:</strong> @Model.EndDate.ToString("dd/MM/yyyy")</p>
+                <p><strong>Trạng thái:</strong>
+                    @switch (Model.Status)
+                    {
+                        case ContractStatus.Active: <span class="badge bg-success">Đang hoạt động</span> break;
+                        case ContractStatus.Completed: <span class="badge bg-primary">Hoàn thành</span> break;
+                        case ContractStatus.Disputed: <span class="badge bg-danger">Tranh chấp</span> break;
+                        default: <span class="badge bg-secondary">Đã huỷ</span> break;
+                    }
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-7">
+        <div class="card shadow-sm">
+            <div class="card-header"><strong>Danh sách buổi học (@Model.Sessions.Count buổi)</strong></div>
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr><th>Thời gian</th><th>Thời lượng</th><th>Trạng thái</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in Model.Sessions.OrderBy(x => x.ScheduledAt))
+                        {
+                            <tr>
+                                <td>@s.ScheduledAt.ToString("dd/MM HH:mm")</td>
+                                <td>@s.DurationMinutes phút</td>
+                                <td>
+                                    @switch (s.Status)
+                                    {
+                                        case SessionStatus.Scheduled: <span class="badge bg-info text-dark">Sắp tới</span> break;
+                                        case SessionStatus.InProgress: <span class="badge bg-primary">Đang diễn ra</span> break;
+                                        case SessionStatus.Completed: <span class="badge bg-success">Hoàn thành</span> break;
+                                        case SessionStatus.NoShow: <span class="badge bg-dark">Vắng mặt</span> break;
+                                        default: <span class="badge bg-secondary">Đã huỷ</span> break;
+                                    }
+                                </td>
+                                <td><a asp-action="SessionDetail" asp-route-id="@s.Id" class="btn btn-xs btn-outline-primary btn-sm">Xem</a></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

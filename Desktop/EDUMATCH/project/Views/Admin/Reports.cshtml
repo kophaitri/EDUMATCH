@@ -1,0 +1,53 @@
+@model List<ReportListDto>
+@{ ViewData["Title"] = "Báo cáo vi phạm"; }
+
+<h4 class="mb-3">Báo cáo vi phạm</h4>
+
+<form method="get" class="d-flex gap-2 mb-4">
+    <select name="status" class="form-select w-auto">
+        <option value="">-- Tất cả --</option>
+        <option value="Pending"     selected="@(ViewBag.FilterStatus == "Pending")">Chờ xử lý</option>
+        <option value="UnderReview" selected="@(ViewBag.FilterStatus == "UnderReview")">Đang xem xét</option>
+        <option value="Resolved"    selected="@(ViewBag.FilterStatus == "Resolved")">Đã xử lý</option>
+        <option value="Rejected"    selected="@(ViewBag.FilterStatus == "Rejected")">Đã từ chối</option>
+    </select>
+    <button type="submit" class="btn btn-primary">Lọc</button>
+    <a asp-action="Reports" class="btn btn-outline-secondary">Xóa lọc</a>
+</form>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Không có báo cáo vi phạm nào.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr><th>#</th><th>Người báo cáo</th><th>Người bị báo cáo</th><th>Lý do</th><th>TT</th><th>Ngày</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model)
+                {
+                    <tr>
+                        <td>@r.Id</td>
+                        <td>@r.ReporterFullName</td>
+                        <td><strong>@r.ReportedUserFullName</strong></td>
+                        <td><small>@r.Reason</small></td>
+                        <td>
+                            @switch (r.Status)
+                            {
+                                case ReportStatus.Pending:     <span class="badge bg-warning text-dark">Chờ</span> break;
+                                case ReportStatus.UnderReview: <span class="badge bg-info text-dark">Xem xét</span> break;
+                                case ReportStatus.Resolved:    <span class="badge bg-success">Đã xử lý</span> break;
+                                case ReportStatus.Rejected:    <span class="badge bg-secondary">Từ chối</span> break;
+                            }
+                        </td>
+                        <td><small>@r.CreatedAt.ToString("dd/MM/yy")</small></td>
+                        <td><a asp-action="ReportDetail" asp-route-id="@r.Id" class="btn btn-sm btn-outline-primary">Chi tiết</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

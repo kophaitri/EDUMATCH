@@ -1,0 +1,55 @@
+@model List<FraudWarningListDto>
+@{ ViewData["Title"] = "Cảnh báo gian lận"; }
+
+<h4 class="mb-3">Cảnh báo gian lận thi</h4>
+
+<form method="get" class="d-flex gap-2 mb-4">
+    <select name="flaggedOnly" class="form-select w-auto">
+        <option value="">-- Tất cả --</option>
+        <option value="true"  selected="@(ViewBag.FlaggedOnly?.ToString() == "True")">Chỉ bài bị cờ đỏ</option>
+        <option value="false" selected="@(ViewBag.FlaggedOnly?.ToString() == "False")">Chưa bị cờ đỏ</option>
+    </select>
+    <button type="submit" class="btn btn-primary">Lọc</button>
+    <a asp-action="FraudWarnings" class="btn btn-outline-secondary">Xóa lọc</a>
+</form>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-success"><i class="bi bi-shield-check"></i> Không có cảnh báo gian lận nào.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr><th>#</th><th>Học sinh</th><th>Bài thi</th><th>Loại cảnh báo</th><th>Fraud Score</th><th>Cờ đỏ</th><th>Phát hiện lúc</th></tr>
+            </thead>
+            <tbody>
+                @foreach (var f in Model)
+                {
+                    <tr class="@(f.IsFlagged ? "table-danger" : "")">
+                        <td>@f.Id</td>
+                        <td>
+                            <a asp-action="UserDetail" asp-route-userId="@f.StudentId">@f.StudentFullName</a>
+                        </td>
+                        <td>@f.ExamTitle</td>
+                        <td><span class="badge bg-warning text-dark">@f.WarningType</span></td>
+                        <td>
+                            @{
+                                string scoreColor = f.FraudScore >= 0.8m ? "danger" :
+                                                    f.FraudScore >= 0.5m ? "warning" : "success";
+                            }
+                            <span class="badge bg-@scoreColor">@f.FraudScore.ToString("F2")</span>
+                        </td>
+                        <td>
+                            @if (f.IsFlagged) { <i class="bi bi-flag-fill text-danger" title="Đã bị cờ đỏ"></i> }
+                            else              { <i class="bi bi-flag text-muted"></i> }
+                        </td>
+                        <td><small>@f.DetectedAt.ToString("dd/MM/yyyy HH:mm")</small></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="text-muted small">Tổng: @Model.Count cảnh báo | Bị cờ đỏ: @Model.Count(f => f.IsFlagged)</div>
+}

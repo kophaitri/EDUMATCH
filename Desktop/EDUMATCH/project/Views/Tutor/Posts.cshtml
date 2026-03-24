@@ -1,0 +1,106 @@
+@model List<TutorPostViewModel>
+@{
+    ViewData["Title"] = "Bài viết của tôi";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Bài viết của tôi</h2>
+        <a asp-action="CreatePost" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Đăng bài viết mới
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-file-earmark-text text-muted" style="font-size: 3rem;"></i>
+                <p class="text-muted mt-3">Bạn chưa có bài viết nào.</p>
+                <a asp-action="CreatePost" class="btn btn-primary mt-2">Đăng bài viết đầu tiên</a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var post in Model)
+            {
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <div class="row">
+                                @if (!string.IsNullOrEmpty(post.ThumbnailUrl))
+                                {
+                                    <div class="col-md-2">
+                                        <img src="@post.ThumbnailUrl" alt="Thumbnail"
+                                             class="img-fluid rounded" style="height: 100px; object-fit: cover; width: 100%;" />
+                                    </div>
+                                }
+                                <div class="@(!string.IsNullOrEmpty(post.ThumbnailUrl) ? "col-md-10" : "col-12")">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h5 class="mb-1">@post.Title</h5>
+                                            <small class="text-muted">
+                                                @post.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                                @if (post.UpdatedAt > post.CreatedAt.AddMinutes(1))
+                                                {
+                                                    <span class="ms-2">(đã chỉnh sửa)</span>
+                                                }
+                                            </small>
+                                        </div>
+                                        <div class="d-flex gap-2 ms-3">
+                                            @if (post.IsPublished)
+                                            {
+                                                <span class="badge bg-success">Đã đăng</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">Nháp</span>
+                                            }
+                                            <a asp-action="EditPost" asp-route-id="@post.Id"
+                                               class="btn btn-outline-primary btn-sm">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <form asp-action="DeletePost" asp-route-id="@post.Id" method="post"
+                                                  onsubmit="return confirm('Bạn có chắc muốn xóa bài viết này?')">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                    <p class="text-muted mt-2 mb-0" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                        @post.Content
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+    <div class="mt-3">
+        <a asp-controller="Account" asp-action="Profile" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Quay lại trang cá nhân
+        </a>
+    </div>
+</div>

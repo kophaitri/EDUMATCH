@@ -1,0 +1,75 @@
+@model TutorRevenueStatsDto
+@{ ViewData["Title"] = "Thống kê doanh thu"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Thống kê doanh thu — @Model.Year</h4>
+    <a asp-action="Dashboard" class="btn btn-outline-secondary btn-sm">← Dashboard</a>
+</div>
+
+@if (TempData["ErrorMessage"] != null) { <div class="alert alert-danger">@TempData["ErrorMessage"]</div> }
+
+<form method="get" class="d-flex gap-2 mb-4">
+    <select name="year" class="form-select w-auto">
+        @for (int y = DateTime.UtcNow.Year; y >= DateTime.UtcNow.Year - 3; y--)
+        {
+            <option value="@y" selected="@(Model.Year == y)">@y</option>
+        }
+    </select>
+    <button type="submit" class="btn btn-primary">Xem</button>
+</form>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 bg-success text-white text-center shadow-sm">
+            <div class="card-body py-3">
+                <div class="fs-4 fw-bold">@Model.TotalRevenue.ToString("N0") VNĐ</div>
+                <div class="small">Tổng doanh thu</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 bg-primary text-white text-center shadow-sm">
+            <div class="card-body py-3">
+                <div class="fs-4 fw-bold">@Model.TotalSessions</div>
+                <div class="small">Tổng buổi học</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 bg-info text-white text-center shadow-sm">
+            <div class="card-body py-3">
+                <div class="fs-4 fw-bold">@Model.TotalStudents</div>
+                <div class="small">Học viên (tháng cao nhất)</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-bordered align-middle text-center">
+        <thead class="table-dark">
+            <tr><th>Tháng</th><th>Doanh thu</th><th>Buổi học</th><th>Học viên</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var m in Model.Months)
+            {
+                <tr class="@(m.Revenue == 0 ? "text-muted" : "")">
+                    <td class="fw-semibold">@m.MonthName</td>
+                    <td class="@(m.Revenue > 0 ? "text-success fw-bold" : "")">
+                        @(m.Revenue > 0 ? m.Revenue.ToString("N0") + " VNĐ" : "—")
+                    </td>
+                    <td>@(m.Sessions > 0 ? m.Sessions.ToString() : "—")</td>
+                    <td>@(m.Students > 0 ? m.Students.ToString() : "—")</td>
+                </tr>
+            }
+        </tbody>
+        <tfoot class="table-light fw-bold">
+            <tr>
+                <td>Tổng năm</td>
+                <td class="text-success">@Model.TotalRevenue.ToString("N0") VNĐ</td>
+                <td>@Model.TotalSessions</td>
+                <td>—</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>

@@ -1,0 +1,183 @@
+@model TicketDetailDto
+@{ ViewData["Title"] = "Chi tiết ticket #" + Model.Id; }
+
+<h4 class="mb-1">Ticket #@Model.Id — @Model.Subject</h4>
+<a asp-action="Tickets" class="btn btn-outline-secondary btn-sm mb-3">← Quay lại</a>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row g-3">
+    <!-- Ticket info + replies -->
+    <div class="col-md-8">
+        <!-- Original message -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>@Model.UserFullName</strong>
+                    <small class="text-muted ms-1">@Model.UserEmail</small>
+                </div>
+                <small class="text-muted">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+            </div>
+            <div class="card-body">
+                <p class="mb-0" style="white-space:pre-wrap">@Model.Description</p>
+            </div>
+        </div>
+
+        <!-- Replies -->
+        @foreach (var r in Model.Replies)
+        {
+            <div class="card shadow-sm mb-2 @(r.IsStaffReply ? "border-primary" : "")">
+                <div class="card-header d-flex justify-content-between align-items-center @(r.IsStaffReply ? "bg-primary bg-opacity-10" : "")">
+                    <div>
+                        @if (r.IsStaffReply)
+                        {
+                            <i class="bi bi-shield-fill text-primary me-1"></i>
+                        }
+                        <strong>@r.SenderFullName</strong>
+                        @if (r.IsStaffReply)
+                        {
+                            <span class="badge bg-primary ms-1">Staff</span>
+                        }
+                    </div>
+                    <small class="text-muted">@r.CreatedAt.ToString("dd/MM/yyyy HH:mm")</small>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0" style="white-space:pre-wrap">@r.Content</p>
+                </div>
+            </div>
+        }
+
+        <!-- Reply form -->
+        @if (Model.Status != TicketStatus.Closed)
+        {
+            <div class="card shadow-sm border-success mt-3">
+                <div class="card-header bg-success bg-opacity-10"><strong>Trả lời</strong></div>
+                <div class="card-body">
+                    <form asp-action="ReplyTicket" asp-route-id="@Model.Id" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="mb-3">
+                            <textarea name="Content" class="form-control" rows="4" placeholder="Nội dung trả lời..." required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Cập nhật trạng thái (tuỳ chọn)</label>
+                            <select name="UpdateStatus" class="form-select">
+                                <option value="">-- Giữ nguyên --</option>
+                                <option value="InProgress">Đang xử lý</option>
+                                <option value="Resolved">Đã giải quyết</option>
+                                <option value="Closed">Đóng ticket</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-success">Gửi trả lời</button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Sidebar: info + actions -->
+    <div class="col-md-4">
+        <!-- Status badges -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header"><strong>Thông tin ticket</strong></div>
+            <div class="card-body">
+                <p class="mb-2">
+                    <strong>Trạng thái:</strong>
+                    @switch (Model.Status)
+                    {
+                        case TicketStatus.Open:       <span class="badge bg-primary">Mở</span> break;
+                        case TicketStatus.InProgress: <span class="badge bg-warning text-dark">Đang xử lý</span> break;
+                        case TicketStatus.Resolved:   <span class="badge bg-success">Đã giải quyết</span> break;
+                        case TicketStatus.Closed:     <span class="badge bg-secondary">Đã đóng</span> break;
+                    }
+                </p>
+                <p class="mb-2">
+                    <strong>Ưu tiên:</strong>
+                    @switch (Model.Priority)
+                    {
+                        case TicketPriority.Urgent: <span class="badge bg-danger">Khẩn cấp</span> break;
+                        case TicketPriority.High:   <span class="badge bg-warning text-dark">Cao</span> break;
+                        case TicketPriority.Medium: <span class="badge bg-info text-dark">Trung bình</span> break;
+                        case TicketPriority.Low:    <span class="badge bg-secondary">Thấp</span> break;
+                    }
+                </p>
+                <p class="mb-2"><strong>Phân công:</strong> @(Model.AssignedToFullName ?? "Chưa phân công")</p>
+                <p class="mb-0"><strong>Số trả lời:</strong> @Model.Replies.Count</p>
+                @if (Model.ResolvedAt.HasValue)
+                {
+                    <p class="mb-0 mt-2"><strong>Giải quyết lúc:</strong> <small>@Model.ResolvedAt.Value.ToString("dd/MM/yyyy HH:mm")</small></p>
+                }
+            </div>
+        </div>
+
+        <!-- Assign ticket -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header"><strong>Phân công staff</strong></div>
+            <div class="card-body">
+                <form asp-action="AssignTicket" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-2">
+                        <select name="AssignedToId" class="form-select form-select-sm">
+                            <option value="">-- Bỏ phân công --</option>
+                            @if (ViewBag.StaffList is List<StaffMemberDto> staffList)
+                            {
+                                @foreach (var s in staffList)
+                                {
+                                    <option value="@s.Id" selected="@(Model.AssignedToId == s.Id)">
+                                        @s.FullName (@s.AssignedTickets đang xử lý)
+                                    </option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-outline-primary w-100">Lưu phân công</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Update status/priority -->
+        @if (Model.Status != TicketStatus.Closed)
+        {
+            <div class="card shadow-sm">
+                <div class="card-header"><strong>Cập nhật trạng thái</strong></div>
+                <div class="card-body">
+                    <form asp-action="UpdateTicketStatus" asp-route-id="@Model.Id" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="mb-2">
+                            <label class="form-label form-label-sm">Trạng thái</label>
+                            <select name="Status" class="form-select form-select-sm">
+                                <option value="Open"       selected="@(Model.Status == TicketStatus.Open)">Mở</option>
+                                <option value="InProgress" selected="@(Model.Status == TicketStatus.InProgress)">Đang xử lý</option>
+                                <option value="Resolved"   selected="@(Model.Status == TicketStatus.Resolved)">Đã giải quyết</option>
+                                <option value="Closed"     selected="@(Model.Status == TicketStatus.Closed)">Đóng</option>
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label form-label-sm">Ưu tiên</label>
+                            <select name="Priority" class="form-select form-select-sm">
+                                <option value="">-- Giữ nguyên --</option>
+                                <option value="Urgent" selected="@(Model.Priority == TicketPriority.Urgent)">Khẩn cấp</option>
+                                <option value="High"   selected="@(Model.Priority == TicketPriority.High)">Cao</option>
+                                <option value="Medium" selected="@(Model.Priority == TicketPriority.Medium)">Trung bình</option>
+                                <option value="Low"    selected="@(Model.Priority == TicketPriority.Low)">Thấp</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-sm btn-warning w-100">Cập nhật</button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+</div>

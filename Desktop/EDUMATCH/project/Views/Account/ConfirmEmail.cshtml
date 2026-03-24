@@ -1,0 +1,96 @@
+@{
+    ViewData["Title"] = "Xác minh email";
+    var success = (bool)(ViewData["Success"] ?? false);
+    var message = ViewData["Message"] as string;
+}
+
+@section Styles {
+    @await Html.PartialAsync("_AuthStyles")
+}
+
+<main class="flex-grow flex items-center justify-center px-6 py-24">
+    <section class="w-full max-w-2xl">
+        <!-- Card -->
+        <div class="bg-white rounded-[14px] p-12 md:p-24 text-center editorial-shadow border border-gray-6/20 relative overflow-hidden card-fade-in">
+            <div class="relative z-10 flex flex-col items-center">
+                @if (success)
+                {
+                    <!-- Success Icon -->
+                    <div class="w-24 h-24 rounded-full bg-black flex items-center justify-center mb-12">
+                        <span class="material-symbols-outlined text-white text-5xl confirmation-icon" style="font-variation-settings: 'FILL' 0, 'wght' 200;">
+                            check_circle
+                        </span>
+                    </div>
+
+                    <!-- Title -->
+                    <div class="space-y-6 mb-12">
+                        <h1 class="editorial-title text-4xl md:text-6xl font-black tracking-tight leading-none">
+                            Xác minh thành công!
+                        </h1>
+                        <p class="text-gray-4 text-lg max-w-md mx-auto leading-relaxed">
+                            @(message ?? "Tài khoản của bạn đã được xác thực thành công. Bây giờ bạn có thể truy cập đầy đủ các tính năng của EduMatch.")
+                        </p>
+                    </div>
+
+                    <!-- Primary Action -->
+                    <div class="w-full max-w-xs mx-auto">
+                        <a asp-action="Login" class="block w-full bg-black text-white py-5 rounded-xl font-bold text-sm label-technical text-center hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-black/10 btn-transition no-underline">
+                            ĐĂNG NHẬP NGAY
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <!-- Error Icon -->
+                    <div class="w-24 h-24 rounded-full bg-gray-7 flex items-center justify-center mb-12">
+                        <span class="material-symbols-outlined text-gray-4 text-5xl confirmation-icon" style="font-variation-settings: 'FILL' 0, 'wght' 200;">
+                            error
+                        </span>
+                    </div>
+
+                    <!-- Title -->
+                    <div class="space-y-6 mb-12">
+                        <h1 class="editorial-title text-4xl md:text-6xl font-black tracking-tight leading-none">
+                            Xác minh thất bại
+                        </h1>
+                        <p class="text-gray-4 text-lg max-w-md mx-auto leading-relaxed">
+                            @(message ?? "Link xác minh không hợp lệ hoặc đã hết hạn. Vui lòng thử đăng ký lại.")
+                        </p>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="w-full max-w-xs mx-auto space-y-4">
+                        <a asp-action="Register" class="block w-full bg-black text-white py-5 rounded-xl font-bold text-sm label-technical text-center hover:opacity-90 active:scale-95 transition-all shadow-lg shadow-black/10 btn-transition no-underline">
+                            ĐĂNG KÝ LẠI
+                        </a>
+                        <a asp-action="Login" class="block text-center text-[10px] uppercase tracking-[0.15em] font-bold text-gray-5 hover:text-black transition-colors no-underline">
+                            Quay lại đăng nhập
+                        </a>
+                    </div>
+                }
+
+                <!-- Metadata -->
+                <div class="mt-12 pt-12 border-t border-gray-7 w-full">
+                    <p class="text-[10px] uppercase tracking-[0.2em] text-gray-5 font-medium m-0">
+                        EDUMATCH · XÁC THỰC TÀI KHOẢN
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Branding decoration -->
+        <div class="mt-12 flex justify-between items-start opacity-30">
+            <div class="max-w-[120px]">
+                <p class="text-[10px] leading-tight font-brand italic m-0">
+                    "Giáo dục không phải là việc đổ đầy một cái bình, mà là việc thắp sáng một ngọn lửa."
+                </p>
+            </div>
+            <div class="h-px bg-gray-6 w-1/4 self-center"></div>
+            <div class="max-w-[120px] text-right">
+                <p class="text-[10px] leading-tight uppercase tracking-tighter font-bold m-0">
+                    EduMatch<br/>Edition 2024
+                </p>
+            </div>
+        </div>
+    </section>
+</main>

@@ -1,0 +1,31 @@
+@{ ViewData["Title"] = "Nạp tiền"; }
+
+<h4 class="mb-3">Nạp tiền vào ví</h4>
+
+<div class="row justify-content-center">
+    <div class="col-md-5">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form asp-action="TopUp" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label">Số tiền nạp (VNĐ)</label>
+                        <input type="number" name="amount" class="form-control" min="10000" step="10000" placeholder="Nhập số tiền..." required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Chọn nhanh</label><br />
+                        @foreach (var amt in new[] { 50000, 100000, 200000, 500000 })
+                        {
+                            <button type="button" class="btn btn-outline-secondary btn-sm me-1 mb-1"
+                                    onclick="document.querySelector('[name=amount]').value='@amt'">
+                                @amt.ToString("N0")
+                            </button>
+                        }
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Nạp tiền</button>
+                    <a asp-action="Wallet" class="btn btn-outline-secondary w-100 mt-2">Huỷ</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

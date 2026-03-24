@@ -1,0 +1,35 @@
+@* Shared auth styles: fonts, Tailwind, Material Icons, and edumatch.css *@
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;900&family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,700&family=Newsreader:ital,wght@0,800;1,800&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            black: '#0a0a0a',
+            white: '#fafafa',
+            gray: {
+              1: '#111111',
+              2: '#1c1c1c',
+              3: '#2e2e2e',
+              4: '#5a5a5a',
+              5: '#8a8a8a',
+              6: '#c4c4c4',
+              7: '#e8e8e8',
+              8: '#f4f4f4',
+            }
+          },
+          fontFamily: {
+            display: ['Playfair Display', 'Georgia', 'serif'],
+            body: ['Be Vietnam Pro', 'sans-serif'],
+          }
+        }
+      }
+    }
+</script>
+
+<link rel="stylesheet" href="~/css/edumatch.css" />

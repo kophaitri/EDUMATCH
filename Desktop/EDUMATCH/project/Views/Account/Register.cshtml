@@ -1,0 +1,113 @@
+@model RegisterViewModel
+@{
+    ViewData["Title"] = "Đăng ký";
+}
+
+@section Styles {
+    @await Html.PartialAsync("_AuthStyles")
+}
+
+<div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center py-16 lg:py-24 px-4">
+    <!-- Left Side: Editorial Content -->
+    <div class="space-y-8 card-fade-in">
+        <div class="inline-block">
+            <span class="font-bold text-xs tracking-widest text-gray-5 uppercase py-1 border-b-2 border-black">
+                TẠO TÀI KHOẢN MỚI
+            </span>
+        </div>
+        <h1 class="playfair-heading text-6xl md:text-7xl lg:text-8xl leading-[1] tracking-tight">
+            Đăng ký tài khoản
+        </h1>
+        <p class="text-gray-4 text-lg max-w-md leading-relaxed">
+            Trở thành một phần của cộng đồng giáo dục hiện đại. Kết nối tri thức và xây dựng tương lai cùng EduMatch.
+        </p>
+        <div class="pt-8 flex items-center space-x-4">
+            <div class="h-12 w-12 rounded-full bg-gray-7 flex items-center justify-center">
+                <span class="material-symbols-outlined">school</span>
+            </div>
+            <div>
+                <p class="font-bold m-0">Hơn 5000+ Học sinh</p>
+                <p class="text-sm text-gray-5 m-0">Đang tìm kiếm người dẫn đường</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Side: Registration Form Card -->
+    <div class="bg-white editorial-shadow rounded-[14px] border border-gray-6 p-10 md:p-12 card-fade-in">
+        <form asp-action="Register" method="post" class="space-y-8">
+            <div asp-validation-summary="ModelOnly" class="bg-red-50 text-red-700 px-4 py-3 rounded-lg text-sm border border-red-200"></div>
+
+            <!-- Role Selection Cards -->
+            <div class="space-y-4">
+                <label class="font-bold text-sm tracking-tight uppercase">BẠN LÀ AI?</label>
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="role-card relative cursor-pointer">
+                        <input type="radio" asp-for="Role" value="Student" />
+                        <div class="role-card-inner">
+                            <div class="flex flex-col items-center text-center space-y-2">
+                                <span class="material-symbols-outlined text-gray-5">person</span>
+                                <span class="font-bold text-sm">Học sinh</span>
+                            </div>
+                        </div>
+                    </label>
+                    <label class="role-card relative cursor-pointer">
+                        <input type="radio" asp-for="Role" value="Tutor" />
+                        <div class="role-card-inner">
+                            <div class="flex flex-col items-center text-center space-y-2">
+                                <span class="material-symbols-outlined text-gray-5">history_edu</span>
+                                <span class="font-bold text-sm">Gia sư</span>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+                <span asp-validation-for="Role" class="text-red-500 text-sm"></span>
+            </div>
+
+            <!-- Input Fields -->
+            <div class="space-y-6">
+                <div class="space-y-2">
+                    <label asp-for="FullName" class="font-bold text-sm"></label>
+                    <input asp-for="FullName" class="input-underline" placeholder="Nguyễn Văn A" />
+                    <span asp-validation-for="FullName" class="text-red-500 text-sm"></span>
+                </div>
+                <div class="space-y-2">
+                    <label asp-for="Email" class="font-bold text-sm"></label>
+                    <input asp-for="Email" class="input-underline" placeholder="example@edumatch.vn" />
+                    <span asp-validation-for="Email" class="text-red-500 text-sm"></span>
+                </div>
+                <div class="space-y-2">
+                    <label asp-for="PhoneNumber" class="font-bold text-sm"></label>
+                    <input asp-for="PhoneNumber" class="input-underline" placeholder="0901 234 567" />
+                    <span asp-validation-for="PhoneNumber" class="text-red-500 text-sm"></span>
+                </div>
+                <div class="space-y-2">
+                    <label asp-for="Password" class="font-bold text-sm"></label>
+                    <input asp-for="Password" class="input-underline" placeholder="Tối thiểu 8 ký tự" />
+                    <span asp-validation-for="Password" class="text-red-500 text-sm"></span>
+                </div>
+                <div class="space-y-2">
+                    <label asp-for="ConfirmPassword" class="font-bold text-sm"></label>
+                    <input asp-for="ConfirmPassword" class="input-underline" placeholder="Nhập lại mật khẩu" />
+                    <span asp-validation-for="ConfirmPassword" class="text-red-500 text-sm"></span>
+                </div>
+            </div>
+
+            <!-- Action Button -->
+            <button type="submit" class="w-full bg-black text-white py-5 rounded-xl font-bold text-lg hover:shadow-lg transition-all active:scale-[0.98] btn-transition">
+                Đăng ký ngay
+            </button>
+
+            <!-- Login Redirect -->
+            <div class="pt-4 text-center">
+                <p class="text-sm text-gray-5 m-0">
+                    Đã có tài khoản?
+                    <a asp-action="Login" class="text-gray-4 hover:text-black transition-colors font-bold ml-1 no-underline">Đăng nhập ngay</a>
+                </p>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,8 +1,8 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using project.Models;
+using EduMatch.Models;
 
-namespace project.Controllers;
+namespace EduMatch.Controllers;
 
 public class HomeController : Controller
 {
