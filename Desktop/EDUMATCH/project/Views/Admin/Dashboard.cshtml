@@ -1,0 +1,210 @@
+@model AdminDashboardDto
+@{ ViewData["Title"] = "Dashboard Admin"; }
+
+<h4 class="mb-4">Dashboard Tổng quan</h4>
+
+<!-- Widget row 1 -->
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-primary bg-opacity-10 p-3">
+                    <i class="bi bi-people-fill fs-4 text-primary"></i>
+                </div>
+                <div>
+                    <div class="fs-3 fw-bold">@Model.TotalUsers</div>
+                    <div class="text-muted small">Tổng người dùng</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-success bg-opacity-10 p-3">
+                    <i class="bi bi-person-badge-fill fs-4 text-success"></i>
+                </div>
+                <div>
+                    <div class="fs-3 fw-bold">@Model.TotalTutors</div>
+                    <div class="text-muted small">Gia sư</div>
+                    @if (Model.PendingVerifications > 0)
+                    {
+                        <a asp-action="PendingTutors" class="badge bg-warning text-dark text-decoration-none">
+                            @Model.PendingVerifications chờ duyệt
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-info bg-opacity-10 p-3">
+                    <i class="bi bi-mortarboard-fill fs-4 text-info"></i>
+                </div>
+                <div>
+                    <div class="fs-3 fw-bold">@Model.TotalStudents</div>
+                    <div class="text-muted small">Học viên</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-warning bg-opacity-10 p-3">
+                    <i class="bi bi-currency-dollar fs-4 text-warning"></i>
+                </div>
+                <div>
+                    <div class="fs-4 fw-bold">@Model.TotalTransactionAmount.ToString("N0")</div>
+                    <div class="text-muted small">Tổng giao dịch (VNĐ)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Widget row 2 -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-4">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-3 fw-bold text-primary">@Model.TotalContracts</div>
+            <div class="text-muted small">Tổng hợp đồng</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-3 fw-bold text-success">@Model.ActiveContracts</div>
+            <div class="text-muted small">Hợp đồng đang chạy</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-4">
+        <div class="card border-0 shadow-sm text-center py-3">
+            <div class="fs-3 fw-bold text-secondary">@Model.CompletedContracts</div>
+            <div class="text-muted small">Hợp đồng hoàn thành</div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick links -->
+<div class="row g-2 mb-4">
+    <div class="col-auto"><a asp-action="Stats" class="btn btn-outline-primary btn-sm"><i class="bi bi-bar-chart"></i> Thống kê chi tiết</a></div>
+    <div class="col-auto"><a asp-action="Users" class="btn btn-outline-secondary btn-sm"><i class="bi bi-people"></i> Quản lý User</a></div>
+    <div class="col-auto"><a asp-action="Tickets" class="btn btn-outline-secondary btn-sm"><i class="bi bi-headset"></i> Support Tickets</a></div>
+    <div class="col-auto"><a asp-action="AuditLogs" class="btn btn-outline-secondary btn-sm"><i class="bi bi-journal-text"></i> Audit Logs</a></div>
+    <div class="col-auto"><a asp-action="BroadcastNotification" class="btn btn-outline-warning btn-sm"><i class="bi bi-megaphone"></i> Broadcast</a></div>
+</div>
+
+<div class="row g-3">
+    <!-- Người dùng mới nhất -->
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Người dùng mới nhất</strong>
+                <a asp-action="Users" class="btn btn-sm btn-outline-primary">Xem tất cả</a>
+            </div>
+            @if (!Model.RecentUsers.Any())
+            {
+                <div class="card-body text-muted text-center py-4">Chưa có người dùng nào.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr><th>Họ tên</th><th>Role</th><th>Ngày tạo</th><th>TT</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var u in Model.RecentUsers)
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            @if (u.AvatarUrl != null)
+                                            {
+                                                <img src="@u.AvatarUrl" class="rounded-circle" width="28" height="28" style="object-fit:cover" alt="" />
+                                            }
+                                            else
+                                            {
+                                                <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" style="width:28px;height:28px;font-size:12px">
+                                                    @u.FullName.FirstOrDefault()
+                                                </div>
+                                            }
+                                            <span>@u.FullName</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @switch (u.Role)
+                                        {
+                                            case "Admin": <span class="badge bg-danger">Admin</span> break;
+                                            case "Tutor": <span class="badge bg-success">Gia sư</span> break;
+                                            case "Student": <span class="badge bg-primary">Học viên</span> break;
+                                            default: <span class="badge bg-secondary">@u.Role</span> break;
+                                        }
+                                    </td>
+                                    <td><small>@u.CreatedAt.ToString("dd/MM/yy")</small></td>
+                                    <td>
+                                        @if (u.IsActive) { <i class="bi bi-circle-fill text-success" title="Đang hoạt động"></i> }
+                                        else { <i class="bi bi-circle-fill text-danger" title="Bị khoá"></i> }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Giao dịch gần nhất -->
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Giao dịch gần nhất</strong>
+                <a asp-action="Transactions" class="btn btn-sm btn-outline-primary">Xem tất cả</a>
+            </div>
+            @if (!Model.RecentTransactions.Any())
+            {
+                <div class="card-body text-muted text-center py-4">Chưa có giao dịch nào.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light">
+                            <tr><th>Người dùng</th><th>Loại</th><th>Số tiền</th><th>TT</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var t in Model.RecentTransactions)
+                            {
+                                <tr>
+                                    <td>@t.UserFullName</td>
+                                    <td>
+                                        @switch (t.Type)
+                                        {
+                                            case TransactionType.Deposit: <span class="badge bg-success">Nạp</span> break;
+                                            case TransactionType.Withdrawal: <span class="badge bg-danger">Rút</span> break;
+                                            case TransactionType.Earning: <span class="badge bg-primary">Thu nhập</span> break;
+                                            case TransactionType.Payment: <span class="badge bg-warning text-dark">TT</span> break;
+                                            default: <span class="badge bg-info text-dark">Hoàn</span> break;
+                                        }
+                                    </td>
+                                    <td class="fw-semibold">@t.Amount.ToString("N0")</td>
+                                    <td>
+                                        @switch (t.Status)
+                                        {
+                                            case TransactionStatus.Completed: <i class="bi bi-check-circle-fill text-success"></i> break;
+                                            case TransactionStatus.Pending: <i class="bi bi-clock-fill text-warning"></i> break;
+                                            default: <i class="bi bi-x-circle-fill text-danger"></i> break;
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

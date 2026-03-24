@@ -1,0 +1,217 @@
+@model AdminStatsDto
+@{
+    ViewData["Title"] = "Thống kê hệ thống";
+    int selectedYear = ViewBag.SelectedYear ?? DateTime.UtcNow.Year;
+    decimal maxRevenue = Model.MonthlyRevenue.Any() ? Model.MonthlyRevenue.Max(m => m.TotalRevenue) : 1;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0">Thống kê hệ thống — @selectedYear</h4>
+    <a asp-action="Dashboard" class="btn btn-outline-secondary btn-sm">← Dashboard</a>
+</div>
+
+<!-- Bộ lọc năm -->
+<form method="get" class="d-flex gap-2 mb-4">
+    <select name="year" class="form-select w-auto">
+        @for (int y = DateTime.UtcNow.Year; y >= DateTime.UtcNow.Year - 4; y--)
+        {
+            <option value="@y" selected="@(selectedYear == y)">@y</option>
+        }
+    </select>
+    <button type="submit" class="btn btn-primary">Xem</button>
+</form>
+
+<!-- Summary widgets -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card text-center border-0 shadow-sm py-3">
+            <div class="fs-3 fw-bold text-success">@Model.TotalRevenue.ToString("N0")</div>
+            <div class="text-muted small">Doanh thu (VNĐ)</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center border-0 shadow-sm py-3">
+            <div class="fs-3 fw-bold text-primary">@Model.TotalSessions</div>
+            <div class="text-muted small">Tổng buổi học</div>
+            <div class="small">
+                <span class="text-success">@Model.CompletedSessions hoàn thành</span> ·
+                <span class="text-danger">@Model.CancelledSessions hủy</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center border-0 shadow-sm py-3">
+            <div class="fs-3 fw-bold text-warning">@Model.TotalBookings</div>
+            <div class="text-muted small">Yêu cầu đặt lịch</div>
+            <div class="small">
+                <span class="text-success">@Model.AcceptedBookings chấp nhận</span> ·
+                <span class="text-danger">@Model.RejectedBookings từ chối</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-center border-0 shadow-sm py-3">
+            @{
+                int completionRate = Model.TotalSessions > 0
+                    ? Model.CompletedSessions * 100 / Model.TotalSessions : 0;
+            }
+            <div class="fs-3 fw-bold text-info">@completionRate%</div>
+            <div class="text-muted small">Tỉ lệ hoàn thành buổi</div>
+        </div>
+    </div>
+</div>
+
+<!-- Biểu đồ doanh thu theo tháng (CSS bar chart) -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header"><strong>Doanh thu theo tháng</strong></div>
+    <div class="card-body">
+        @if (!Model.MonthlyRevenue.Any())
+        {
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-bar-chart fs-1 d-block mb-2"></i>
+                Chưa có dữ liệu doanh thu cho năm @selectedYear.
+            </div>
+        }
+        else
+        {
+            <!-- Bar chart bằng CSS -->
+            <div class="d-flex align-items-end gap-1" style="height:180px;overflow-x:auto">
+                @{
+                    var allMonths = Enumerable.Range(1, 12).Select(m =>
+                        Model.MonthlyRevenue.FirstOrDefault(r => r.Month == m)
+                        ?? new MonthlyRevenueDto { Month = m, Year = selectedYear, TotalRevenue = 0 }
+                    );
+                    string[] monthLabels = { "T1","T2","T3","T4","T5","T6","T7","T8","T9","T10","T11","T12" };
+                }
+                @foreach (var m in allMonths)
+                {
+                    int heightPct = maxRevenue > 0 ? (int)(m.TotalRevenue * 160 / maxRevenue) : 0;
+                    <div class="d-flex flex-column align-items-center flex-grow-1" style="min-width:36px">
+                        @if (m.TotalRevenue > 0)
+                        {
+                            <small class="text-muted" style="font-size:10px">@((m.TotalRevenue/1000).ToString("N0"))k</small>
+                        }
+                        <div class="w-75 rounded-top @(m.TotalRevenue > 0 ? "bg-primary" : "bg-light border")"
+                             style="height:@(Math.Max(heightPct, 2))px;transition:height .3s"
+                             title="Tháng @m.Month: @m.TotalRevenue.ToString("N0") VNĐ"></div>
+                        <small class="text-muted mt-1" style="font-size:11px">@monthLabels[m.Month-1]</small>
+                    </div>
+                }
+            </div>
+
+            <!-- Bảng chi tiết -->
+            <div class="table-responsive mt-3">
+                <table class="table table-sm table-bordered align-middle text-center">
+                    <thead class="table-light">
+                        <tr><th>Tháng</th><th>Doanh thu</th><th>Số buổi</th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var m in allMonths)
+                        {
+                            <tr class="@(m.TotalRevenue == 0 ? "text-muted" : "")">
+                                <td>Tháng @m.Month</td>
+                                <td class="@(m.TotalRevenue > 0 ? "fw-semibold text-success" : "")">
+                                    @(m.TotalRevenue > 0 ? m.TotalRevenue.ToString("N0") + " VNĐ" : "—")
+                                </td>
+                                <td>@(m.TotalSessions > 0 ? m.TotalSessions.ToString() : "—")</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light fw-bold">
+                        <tr>
+                            <td>Tổng</td>
+                            <td class="text-success">@Model.TotalRevenue.ToString("N0") VNĐ</td>
+                            <td>@Model.MonthlyRevenue.Sum(m => m.TotalSessions)</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Top gia sư -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header"><strong>Top 5 Gia sư doanh thu cao nhất — @selectedYear</strong></div>
+    @if (!Model.TopTutors.Any())
+    {
+        <div class="card-body text-muted text-center py-4">
+            <i class="bi bi-person-x fs-1 d-block mb-2"></i>
+            Chưa có dữ liệu gia sư cho năm @selectedYear.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr><th>#</th><th>Gia sư</th><th>Doanh thu</th><th>Số buổi</th><th>Đánh giá TB</th></tr>
+                </thead>
+                <tbody>
+                    @{ int rank = 1; }
+                    @foreach (var t in Model.TopTutors)
+                    {
+                        <tr>
+                            <td>
+                                @switch (rank)
+                                {
+                                    case 1: <span class="badge bg-warning text-dark fs-6">🥇</span> break;
+                                    case 2: <span class="badge bg-secondary fs-6">🥈</span> break;
+                                    case 3: <span class="badge bg-danger fs-6">🥉</span> break;
+                                    default: <span class="text-muted">@rank</span> break;
+                                }
+                            </td>
+                            <td>
+                                <a asp-action="UserDetail" asp-route-userId="@t.TutorId" class="text-decoration-none">
+                                    @t.FullName
+                                </a>
+                            </td>
+                            <td class="fw-bold text-success">@t.TotalRevenue.ToString("N0") VNĐ</td>
+                            <td>@t.TotalSessions</td>
+                            <td>
+                                <span class="text-warning">⭐</span> @t.AvgRating.ToString("F1")
+                            </td>
+                        </tr>
+                        rank++;
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<!-- Booking funnel -->
+<div class="card shadow-sm">
+    <div class="card-header"><strong>Booking funnel — @selectedYear</strong></div>
+    <div class="card-body">
+        @if (Model.TotalBookings == 0)
+        {
+            <div class="text-muted text-center py-3">Chưa có booking nào trong năm @selectedYear.</div>
+        }
+        else
+        {
+            int acceptRate = Model.TotalBookings > 0 ? Model.AcceptedBookings * 100 / Model.TotalBookings : 0;
+            int rejectRate = Model.TotalBookings > 0 ? Model.RejectedBookings * 100 / Model.TotalBookings : 0;
+            int pendingRate = Model.TotalBookings > 0 ? Model.PendingBookings * 100 / Model.TotalBookings : 0;
+
+            <div class="mb-2">
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Chấp nhận (@Model.AcceptedBookings)</span><span>@acceptRate%</span>
+                </div>
+                <div class="progress mb-2"><div class="progress-bar bg-success" style="width:@acceptRate%"></div></div>
+            </div>
+            <div class="mb-2">
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Từ chối (@Model.RejectedBookings)</span><span>@rejectRate%</span>
+                </div>
+                <div class="progress mb-2"><div class="progress-bar bg-danger" style="width:@rejectRate%"></div></div>
+            </div>
+            <div>
+                <div class="d-flex justify-content-between mb-1">
+                    <span>Đang chờ (@Model.PendingBookings)</span><span>@pendingRate%</span>
+                </div>
+                <div class="progress"><div class="progress-bar bg-warning" style="width:@pendingRate%"></div></div>
+            </div>
+        }
+    </div>
+</div>

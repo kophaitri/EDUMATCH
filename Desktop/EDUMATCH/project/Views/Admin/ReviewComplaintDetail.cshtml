@@ -1,0 +1,75 @@
+@model ReviewComplaintDetailDto
+@{ ViewData["Title"] = "Xử lý khiếu nại"; }
+
+<h4 class="mb-1">Khiếu nại #@Model.Id</h4>
+<a asp-action="ReviewComplaints" class="btn btn-outline-secondary btn-sm mb-3">← Quay lại</a>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card shadow-sm">
+            <div class="card-header"><strong>Review bị khiếu nại</strong></div>
+            <div class="card-body">
+                <p><strong>Người được review:</strong> @Model.RevieweeFullName</p>
+                <p><strong>Người viết review:</strong> @Model.ReviewerFullName</p>
+                <p><strong>Đánh giá:</strong> @string.Concat(Enumerable.Repeat("⭐", Model.ReviewRating))</p>
+                @if (Model.ReviewComment != null)
+                {
+                    <p><strong>Nội dung:</strong><br /><em>@Model.ReviewComment</em></p>
+                }
+            </div>
+        </div>
+        <div class="card shadow-sm mt-3">
+            <div class="card-header"><strong>Người khiếu nại</strong></div>
+            <div class="card-body">
+                <p><strong>Tên:</strong> @Model.ComplainantFullName</p>
+                <p><strong>Email:</strong> @Model.ComplainantEmail</p>
+                <p><strong>Lý do khiếu nại:</strong><br /><em>@Model.Reason</em></p>
+                <p><strong>Ngày khiếu nại:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                <p><strong>Trạng thái hiện tại:</strong>
+                    @switch (Model.Status)
+                    {
+                        case "Pending":  <span class="badge bg-warning text-dark fs-6">Chờ xử lý</span> break;
+                        case "Approved": <span class="badge bg-success fs-6">Đã duyệt</span> break;
+                        case "Rejected": <span class="badge bg-danger fs-6">Đã từ chối</span> break;
+                        default:         <span class="badge bg-secondary fs-6">@Model.Status</span> break;
+                    }
+                </p>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Status == "Pending")
+    {
+        <div class="col-md-6">
+            <div class="card shadow-sm border-warning">
+                <div class="card-header bg-warning text-dark"><strong>Xử lý khiếu nại</strong></div>
+                <div class="card-body">
+                    <form asp-action="HandleReviewComplaint" asp-route-id="@Model.Id" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Quyết định</label>
+                            <div class="d-flex gap-3">
+                                <div class="form-check">
+                                    <input type="radio" name="Status" value="Approved" class="form-check-input" id="statusApproved" required />
+                                    <label class="form-check-label text-success" for="statusApproved">Chấp nhận khiếu nại</label>
+                                </div>
+                                <div class="form-check">
+                                    <input type="radio" name="Status" value="Rejected" class="form-check-input" id="statusRejected" />
+                                    <label class="form-check-label text-danger" for="statusRejected">Từ chối khiếu nại</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" name="RemoveReview" value="true" class="form-check-input" id="removeReview" />
+                                <label class="form-check-label text-danger" for="removeReview">Xóa review gốc</label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-warning fw-bold"
+                                onclick="return confirm('Xác nhận xử lý khiếu nại này?')">Xác nhận</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+</div>

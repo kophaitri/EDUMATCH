@@ -1,0 +1,57 @@
+@model List<AdminStudentListDto>
+@{ ViewData["Title"] = "Danh sách học viên"; }
+
+<h4 class="mb-3">Học viên</h4>
+
+<form method="get" class="row g-2 mb-4">
+    <div class="col-md-4">
+        <input name="search" class="form-control" placeholder="Tên, email..." value="@ViewBag.Search" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Tìm</button>
+        <a asp-action="Students" class="btn btn-outline-secondary">Xóa lọc</a>
+    </div>
+</form>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Không có học viên nào.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr><th>Học viên</th><th>Lớp</th><th>Trường</th><th>Trạng thái</th><th>Ngày tạo</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var s in Model)
+                {
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                @if (s.AvatarUrl != null)
+                                {
+                                    <img src="@s.AvatarUrl" class="rounded-circle" width="32" height="32" style="object-fit:cover" alt="" />
+                                }
+                                <div>
+                                    <div class="fw-semibold">@s.FullName</div>
+                                    <small class="text-muted">@s.Email</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>@(s.CurrentGrade ?? "—")</td>
+                        <td>@(s.SchoolName ?? "—")</td>
+                        <td>
+                            @if (s.IsActive) { <span class="badge bg-success">Hoạt động</span> }
+                            else             { <span class="badge bg-danger">Bị khoá</span> }
+                        </td>
+                        <td><small>@s.CreatedAt.ToString("dd/MM/yyyy")</small></td>
+                        <td><a asp-action="UserDetail" asp-route-userId="@s.UserId" class="btn btn-sm btn-outline-primary">Chi tiết</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="text-muted small">Tổng: @Model.Count học viên</div>
+}

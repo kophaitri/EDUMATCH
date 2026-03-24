@@ -1,0 +1,63 @@
+@model List<TeachingStyleDto>
+@{ ViewData["Title"] = "Phong cách dạy"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Phong cách dạy</h4>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createModal">+ Thêm</button>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-dark"><tr><th>Tên</th><th>Mô tả</th><th>Gia sư dùng</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var ts in Model)
+            {
+                <tr>
+                    <td><strong>@ts.Name</strong></td>
+                    <td><small class="text-muted">@ts.Description</small></td>
+                    <td><span class="badge bg-info text-dark">@ts.TutorCount</span></td>
+                    <td class="d-flex gap-1">
+                        <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editModal-@ts.Id">Sửa</button>
+                        <form asp-action="DeleteTeachingStyle" asp-route-id="@ts.Id" method="post"
+                              onsubmit="return confirm('Xóa phong cách @ts.Name?')">
+                            @Html.AntiForgeryToken()
+                            <button class="btn btn-sm btn-outline-danger"
+                                    @(ts.TutorCount > 0 ? "disabled title=Đang được sử dụng" : "")>Xóa</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="modal fade" id="createModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Thêm phong cách dạy</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <form asp-action="CreateTeachingStyle" method="post">
+            @Html.AntiForgeryToken()
+            <div class="modal-body">
+                <div class="mb-2"><label class="form-label">Tên <span class="text-danger">*</span></label><input name="Name" class="form-control" required /></div>
+                <div class="mb-2"><label class="form-label">Mô tả</label><textarea name="Description" class="form-control" rows="2"></textarea></div>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn btn-primary">Thêm</button></div>
+        </form>
+    </div></div>
+</div>
+
+@foreach (var ts in Model)
+{
+    <div class="modal fade" id="editModal-@ts.Id" tabindex="-1">
+        <div class="modal-dialog"><div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Sửa: @ts.Name</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form asp-action="UpdateTeachingStyle" asp-route-id="@ts.Id" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <div class="mb-2"><label class="form-label">Tên <span class="text-danger">*</span></label><input name="Name" class="form-control" value="@ts.Name" required /></div>
+                    <div class="mb-2"><label class="form-label">Mô tả</label><textarea name="Description" class="form-control" rows="2">@ts.Description</textarea></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn btn-primary">Lưu</button></div>
+            </form>
+        </div></div>
+    </div>
+}

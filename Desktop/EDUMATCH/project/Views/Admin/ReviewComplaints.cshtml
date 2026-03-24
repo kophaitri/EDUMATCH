@@ -1,0 +1,58 @@
+@model List<ReviewComplaintListDto>
+@{ ViewData["Title"] = "Khiếu nại review"; }
+
+<h4 class="mb-3">Khiếu nại Review</h4>
+
+<form method="get" class="d-flex gap-2 mb-4">
+    <select name="status" class="form-select w-auto">
+        <option value="">-- Tất cả --</option>
+        <option value="Pending"  selected="@(ViewBag.FilterStatus == "Pending")">Chờ xử lý</option>
+        <option value="Approved" selected="@(ViewBag.FilterStatus == "Approved")">Đã duyệt</option>
+        <option value="Rejected" selected="@(ViewBag.FilterStatus == "Rejected")">Đã từ chối</option>
+    </select>
+    <button type="submit" class="btn btn-primary">Lọc</button>
+    <a asp-action="ReviewComplaints" class="btn btn-outline-secondary">Xóa lọc</a>
+</form>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Không có khiếu nại nào.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr><th>#</th><th>Người khiếu nại</th><th>Review bị khiếu nại</th><th>Lý do</th><th>TT</th><th>Ngày</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var c in Model)
+                {
+                    <tr>
+                        <td>@c.Id</td>
+                        <td>
+                            <div class="fw-semibold">@c.ComplainantFullName</div>
+                            <small class="text-muted">@c.ComplainantEmail</small>
+                        </td>
+                        <td>
+                            <div>@string.Concat(Enumerable.Repeat("⭐", c.ReviewRating)) của <strong>@c.RevieweeFullName</strong></div>
+                            @if (c.ReviewComment != null) { <small class="text-muted">@c.ReviewComment</small> }
+                        </td>
+                        <td><small>@c.Reason</small></td>
+                        <td>
+                            @switch (c.Status)
+                            {
+                                case "Pending":  <span class="badge bg-warning text-dark">Chờ</span> break;
+                                case "Approved": <span class="badge bg-success">Đã duyệt</span> break;
+                                case "Rejected": <span class="badge bg-danger">Từ chối</span> break;
+                                default:         <span class="badge bg-secondary">@c.Status</span> break;
+                            }
+                        </td>
+                        <td><small>@c.CreatedAt.ToString("dd/MM/yy")</small></td>
+                        <td><a asp-action="ReviewComplaintDetail" asp-route-id="@c.Id" class="btn btn-sm btn-outline-primary">Xử lý</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

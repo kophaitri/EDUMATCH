@@ -55,6 +55,12 @@ public class EduMatchDbContext : IdentityDbContext<ApplicationUser, ApplicationR
     public DbSet<Report> Reports { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
 
+    // Content
+    public DbSet<Banner> Banners { get; set; }
+
+    // Support
+    public DbSet<TicketReply> TicketReplies { get; set; }
+
     // Email
     public DbSet<EmailTemplate> EmailTemplates { get; set; }
     public DbSet<EmailQueue> EmailQueue { get; set; }

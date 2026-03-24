@@ -11,14 +11,90 @@ namespace EduMatch.Controllers;
 public class TutorController : Controller
 {
     private readonly ITutorService _tutorService;
+    private readonly ITutorDashboardService _dashboardService;
     private readonly EduMatchDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
 
-    public TutorController(ITutorService tutorService, EduMatchDbContext db, UserManager<ApplicationUser> userManager)
+    public TutorController(
+        ITutorService tutorService,
+        ITutorDashboardService dashboardService,
+        EduMatchDbContext db,
+        UserManager<ApplicationUser> userManager)
     {
         _tutorService = tutorService;
+        _dashboardService = dashboardService;
         _db = db;
         _userManager = userManager;
+    }
+
+    // ============================================================
+    // Dashboard & Statistics
+    // ============================================================
+
+    // GET: /Tutor/Dashboard
+    public async Task<IActionResult> Dashboard()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        try
+        {
+            var dto = await _dashboardService.GetDashboardAsync(userId);
+            return View(dto);
+        }
+        catch (Exception ex)
+        {
+            TempData["ErrorMessage"] = "Không thể tải dashboard: " + ex.Message;
+            return View(new EduMatch.DTOs.Tutor.TutorDashboardDto());
+        }
+    }
+
+    // GET: /Tutor/StatsSessions?year=2025
+    public async Task<IActionResult> StatsSessions(int? year)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        try
+        {
+            var dto = await _dashboardService.GetSessionStatsAsync(userId, year);
+            ViewBag.SelectedYear = dto.Year;
+            return View(dto);
+        }
+        catch (Exception ex)
+        {
+            TempData["ErrorMessage"] = "Không thể tải thống kê buổi học: " + ex.Message;
+            return View(new EduMatch.DTOs.Tutor.TutorSessionStatsDto());
+        }
+    }
+
+    // GET: /Tutor/StatsRevenue?year=2025
+    public async Task<IActionResult> StatsRevenue(int? year)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        try
+        {
+            var dto = await _dashboardService.GetRevenueStatsAsync(userId, year);
+            ViewBag.SelectedYear = dto.Year;
+            return View(dto);
+        }
+        catch (Exception ex)
+        {
+            TempData["ErrorMessage"] = "Không thể tải thống kê doanh thu: " + ex.Message;
+            return View(new EduMatch.DTOs.Tutor.TutorRevenueStatsDto());
+        }
+    }
+
+    // GET: /Tutor/StatsReputation
+    public async Task<IActionResult> StatsReputation()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        try
+        {
+            var dto = await _dashboardService.GetReputationStatsAsync(userId);
+            return View(dto);
+        }
+        catch (Exception ex)
+        {
+            TempData["ErrorMessage"] = "Không thể tải thống kê uy tín: " + ex.Message;
+            return View(new EduMatch.DTOs.Tutor.TutorReputationStatsDto());
+        }
     }
 
     // GET: /Tutor/Posts

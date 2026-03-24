@@ -1,0 +1,83 @@
+@model List<TicketListDto>
+@{ ViewData["Title"] = "Support Tickets"; }
+
+<h4 class="mb-3">Support Tickets</h4>
+
+<form method="get" class="row g-2 mb-4">
+    <div class="col-md-3">
+        <select name="status" class="form-select">
+            <option value="">-- Trạng thái --</option>
+            <option value="Open"       selected="@(ViewBag.FilterStatus == "Open")">Mở</option>
+            <option value="InProgress" selected="@(ViewBag.FilterStatus == "InProgress")">Đang xử lý</option>
+            <option value="Resolved"   selected="@(ViewBag.FilterStatus == "Resolved")">Đã giải quyết</option>
+            <option value="Closed"     selected="@(ViewBag.FilterStatus == "Closed")">Đã đóng</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <select name="priority" class="form-select">
+            <option value="">-- Ưu tiên --</option>
+            <option value="Urgent" selected="@(ViewBag.FilterPriority == "Urgent")">Khẩn cấp</option>
+            <option value="High"   selected="@(ViewBag.FilterPriority == "High")">Cao</option>
+            <option value="Medium" selected="@(ViewBag.FilterPriority == "Medium")">Trung bình</option>
+            <option value="Low"    selected="@(ViewBag.FilterPriority == "Low")">Thấp</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <input name="search" class="form-control" placeholder="Tên, email, tiêu đề..." value="@ViewBag.Search" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Lọc</button>
+        <a asp-action="Tickets" class="btn btn-outline-secondary">Xóa lọc</a>
+    </div>
+</form>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Không có ticket nào.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr><th>#</th><th>Người dùng</th><th>Tiêu đề</th><th>Ưu tiên</th><th>TT</th><th>Phân công</th><th>Trả lời</th><th>Ngày</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model)
+                {
+                    <tr>
+                        <td>@t.Id</td>
+                        <td>
+                            <div class="fw-semibold">@t.UserFullName</div>
+                            <small class="text-muted">@t.UserEmail</small>
+                        </td>
+                        <td>@t.Subject</td>
+                        <td>
+                            @switch (t.Priority)
+                            {
+                                case TicketPriority.Urgent: <span class="badge bg-danger">Khẩn</span> break;
+                                case TicketPriority.High:   <span class="badge bg-warning text-dark">Cao</span> break;
+                                case TicketPriority.Medium: <span class="badge bg-info text-dark">TB</span> break;
+                                case TicketPriority.Low:    <span class="badge bg-secondary">Thấp</span> break;
+                            }
+                        </td>
+                        <td>
+                            @switch (t.Status)
+                            {
+                                case TicketStatus.Open:       <span class="badge bg-primary">Mở</span> break;
+                                case TicketStatus.InProgress: <span class="badge bg-warning text-dark">Đang xử lý</span> break;
+                                case TicketStatus.Resolved:   <span class="badge bg-success">Đã giải quyết</span> break;
+                                case TicketStatus.Closed:     <span class="badge bg-secondary">Đã đóng</span> break;
+                            }
+                        </td>
+                        <td><small>@(t.AssignedToFullName ?? "—")</small></td>
+                        <td><span class="badge bg-light text-dark">@t.ReplyCount</span></td>
+                        <td><small>@t.CreatedAt.ToString("dd/MM/yy")</small></td>
+                        <td><a asp-action="TicketDetail" asp-route-id="@t.Id" class="btn btn-sm btn-outline-primary">Chi tiết</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="text-muted small">Tổng: @Model.Count ticket</div>
+}

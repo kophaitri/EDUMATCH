@@ -1,0 +1,83 @@
+@model List<AuditLogListDto>
+@{
+    ViewData["Title"] = "Audit Logs";
+    int page = ViewBag.Page ?? 1;
+    int total = ViewBag.TotalCount ?? 0;
+    int pageSize = ViewBag.PageSize ?? 50;
+    int totalPages = (int)Math.Ceiling((double)total / pageSize);
+}
+
+<h4 class="mb-3">Audit Logs <small class="text-muted fs-6">(@total bản ghi)</small></h4>
+
+<form method="get" class="row g-2 mb-4">
+    <div class="col-md-3">
+        <input name="action" class="form-control" placeholder="Hành động..." value="@ViewBag.FilterAction" />
+    </div>
+    <div class="col-md-3">
+        <input name="entityType" class="form-control" placeholder="Loại entity..." value="@ViewBag.FilterEntityType" />
+    </div>
+    <div class="col-md-3">
+        <input name="userId" class="form-control" placeholder="User ID..." value="@ViewBag.FilterUserId" />
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Lọc</button>
+        <a asp-action="AuditLogs" class="btn btn-outline-secondary">Xóa lọc</a>
+    </div>
+</form>
+
+@if (TempData["ErrorMessage"] != null) { <div class="alert alert-danger">@TempData["ErrorMessage"]</div> }
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle table-sm">
+        <thead class="table-dark">
+            <tr><th>#</th><th>Người dùng</th><th>Hành động</th><th>Entity</th><th>Entity ID</th><th>IP</th><th>Thời gian</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var log in Model)
+            {
+                <tr>
+                    <td>@log.Id</td>
+                    <td>
+                        @if (log.UserName != null)
+                        {
+                            @log.UserName<br />
+                            <small class="text-muted">@log.UserEmail</small>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Hệ thống</span>
+                        }
+                    </td>
+                    <td><span class="badge bg-info text-dark">@log.Action</span></td>
+                    <td>@log.EntityType</td>
+                    <td><code>@log.EntityId</code></td>
+                    <td><small>@log.IpAddress</small></td>
+                    <td>@log.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                    <td><a asp-action="AuditLogDetail" asp-route-id="@log.Id" class="btn btn-sm btn-outline-primary">Chi tiết</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (totalPages > 1)
+{
+    <nav>
+        <ul class="pagination flex-wrap">
+            @for (int i = 1; i <= Math.Min(totalPages, 20); i++)
+            {
+                <li class="page-item @(i == page ? "active" : "")">
+                    <a class="page-link" asp-action="AuditLogs"
+                       asp-route-page="@i"
+                       asp-route-action="@ViewBag.FilterAction"
+                       asp-route-entityType="@ViewBag.FilterEntityType"
+                       asp-route-userId="@ViewBag.FilterUserId">@i</a>
+                </li>
+            }
+            @if (totalPages > 20)
+            {
+                <li class="page-item disabled"><span class="page-link">... @totalPages</span></li>
+            }
+        </ul>
+    </nav>
+}

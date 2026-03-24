@@ -68,6 +68,7 @@ public class SupportTicket
 
     public ApplicationUser User { get; set; } = null!;
     public ApplicationUser? AssignedTo { get; set; }
+    public ICollection<TicketReply> Replies { get; set; } = new List<TicketReply>();
 }
 
 public class Report

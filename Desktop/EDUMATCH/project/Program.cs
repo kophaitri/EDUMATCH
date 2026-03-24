@@ -18,6 +18,16 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<ITutorService, TutorService>();
 
+// Admin Services
+builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+builder.Services.AddScoped<IAdminUserService, AdminUserService>();
+builder.Services.AddScoped<IAdminContentService, AdminContentService>();
+builder.Services.AddScoped<IAdminComplaintService, AdminComplaintService>();
+builder.Services.AddScoped<IAdminTicketService, AdminTicketService>();
+builder.Services.AddScoped<IAdminEmailService, AdminEmailService>();
+builder.Services.AddScoped<IAdminAuditService, AdminAuditService>();
+builder.Services.AddScoped<ITutorDashboardService, TutorDashboardService>();
+
 // Identity
 builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
 {

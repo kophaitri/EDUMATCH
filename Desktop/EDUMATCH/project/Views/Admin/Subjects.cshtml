@@ -1,0 +1,80 @@
+@model List<SubjectDto>
+@{ ViewData["Title"] = "Quản lý môn học"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Môn học</h4>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createModal">+ Thêm môn</button>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-dark">
+            <tr><th>Tên</th><th>Mô tả</th><th>Gia sư dùng</th><th>Trạng thái</th><th></th></tr>
+        </thead>
+        <tbody>
+            @foreach (var s in Model)
+            {
+                <tr>
+                    <td><strong>@s.Name</strong></td>
+                    <td><small class="text-muted">@s.Description</small></td>
+                    <td><span class="badge bg-info text-dark">@s.TutorCount gia sư</span></td>
+                    <td>
+                        @if (s.IsActive) { <span class="badge bg-success">Hoạt động</span> }
+                        else             { <span class="badge bg-secondary">Ẩn</span> }
+                    </td>
+                    <td class="d-flex gap-1">
+                        <button class="btn btn-sm btn-outline-secondary"
+                                data-bs-toggle="modal" data-bs-target="#editModal-@s.Id">Sửa</button>
+                        <form asp-action="DeleteSubject" asp-route-id="@s.Id" method="post"
+                              onsubmit="return confirm('Xóa môn học @s.Name?')">
+                            @Html.AntiForgeryToken()
+                            <button class="btn btn-sm btn-outline-danger"
+                                    @(s.TutorCount > 0 ? "disabled title=Đang được sử dụng" : "")>Xóa</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal tạo -->
+<div class="modal fade" id="createModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Thêm môn học</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form asp-action="CreateSubject" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <div class="mb-2"><label class="form-label">Tên <span class="text-danger">*</span></label><input name="Name" class="form-control" required /></div>
+                    <div class="mb-2"><label class="form-label">Mô tả</label><input name="Description" class="form-control" /></div>
+                    <div class="mb-2"><label class="form-label">Icon URL</label><input name="IconUrl" class="form-control" /></div>
+                    <div class="form-check"><input name="IsActive" type="checkbox" class="form-check-input" value="true" checked /><label class="form-check-label">Hoạt động</label></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn btn-primary">Thêm</button></div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal sửa từng môn -->
+@foreach (var s in Model)
+{
+    <div class="modal fade" id="editModal-@s.Id" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header"><h5 class="modal-title">Sửa: @s.Name</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <form asp-action="UpdateSubject" asp-route-id="@s.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-body">
+                        <div class="mb-2"><label class="form-label">Tên <span class="text-danger">*</span></label><input name="Name" class="form-control" value="@s.Name" required /></div>
+                        <div class="mb-2"><label class="form-label">Mô tả</label><input name="Description" class="form-control" value="@s.Description" /></div>
+                        <div class="mb-2"><label class="form-label">Icon URL</label><input name="IconUrl" class="form-control" value="@s.IconUrl" /></div>
+                        <div class="form-check"><input name="IsActive" type="checkbox" class="form-check-input" value="true" @(s.IsActive ? "checked" : "") /><label class="form-check-label">Hoạt động</label></div>
+                    </div>
+                    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn btn-primary">Lưu</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
