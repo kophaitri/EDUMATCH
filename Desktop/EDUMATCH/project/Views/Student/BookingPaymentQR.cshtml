@@ -1,0 +1,92 @@
+@model EduMatch.Models.BookingRequest
+@{
+    ViewData["Title"] = "Thanh toán đăng ký học";
+    var bankCode = ViewBag.BankCode as string;
+    var accountNumber = ViewBag.AccountNumber as string;
+    var accountName = ViewBag.AccountName as string;
+    var amount = (long)Model.TotalAmount;
+    var refCode = Model.PaymentOrderId;
+    var qrUrl = $"https://img.vietqr.io/image/{bankCode}-{accountNumber}-compact2.png?amount={amount}&addInfo={refCode}&accountName={Uri.EscapeDataString(accountName ?? "")}";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div id="payment-pending">
+            <h5 class="mb-3 text-center">Thanh toán để xác nhận đăng ký</h5>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <table class="table table-sm mb-0">
+                        <tr><td class="text-muted">Gia sư</td><td><strong>@Model.Tutor?.FullName</strong></td></tr>
+                        <tr><td class="text-muted">Môn học</td><td><strong>@Model.Subject?.Name</strong></td></tr>
+                        <tr><td class="text-muted">Số buổi</td><td><strong>@(Model.SessionsPerWeek * Model.DurationWeeks) buổi</strong></td></tr>
+                        <tr><td class="text-muted">Tổng tiền</td><td><strong class="text-primary fs-5">@Model.TotalAmount.ToString("N0") VNĐ</strong></td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-body text-center">
+                    <img src="@qrUrl" alt="QR VietQR" class="img-fluid" style="max-width:280px;" />
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <table class="table table-sm mb-0">
+                        <tr><td class="text-muted">Ngân hàng</td><td><strong>@bankCode</strong></td></tr>
+                        <tr><td class="text-muted">Số tài khoản</td><td><strong>@accountNumber</strong></td></tr>
+                        <tr><td class="text-muted">Tên tài khoản</td><td><strong>@accountName</strong></td></tr>
+                        <tr>
+                            <td class="text-muted">Nội dung CK</td>
+                            <td>
+                                <strong class="text-danger">@refCode</strong>
+                                <button class="btn btn-sm btn-outline-secondary ms-1" onclick="navigator.clipboard.writeText('@refCode')" title="Copy">
+                                    <i class="bi bi-clipboard"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="alert alert-warning py-2">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                Nhập <strong>đúng nội dung chuyển khoản</strong> để hệ thống tự xác nhận.
+            </div>
+
+            <div class="text-center text-muted mb-3">
+                <div class="spinner-border spinner-border-sm me-1" role="status"></div>
+                Đang chờ xác nhận thanh toán...
+            </div>
+
+            <a asp-action="Bookings" class="btn btn-outline-secondary w-100">Huỷ / Quay lại</a>
+        </div>
+
+        <div id="payment-success" class="text-center d-none">
+            <div class="display-1 text-success mb-3">✓</div>
+            <h4 class="text-success">Thanh toán thành công!</h4>
+            <p class="text-muted">Yêu cầu đã gửi đến gia sư. Vui lòng chờ gia sư xác nhận.</p>
+            <a asp-action="Bookings" class="btn btn-primary mt-2">Xem yêu cầu của tôi</a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const bookingId = @Model.Id;
+    async function checkStatus() {
+        try {
+            const res = await fetch(`/Student/CheckBookingPayment?bookingId=${bookingId}`);
+            const data = await res.json();
+            if (data.status !== 'PendingPayment') {
+                document.getElementById('payment-pending').classList.add('d-none');
+                document.getElementById('payment-success').classList.remove('d-none');
+                return;
+            }
+        } catch (e) {}
+        setTimeout(checkStatus, 4000);
+    }
+    setTimeout(checkStatus, 4000);
+</script>
+}

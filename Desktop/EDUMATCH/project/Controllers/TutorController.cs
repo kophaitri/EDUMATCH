@@ -481,7 +481,7 @@ public class TutorController : Controller
     // POST: /Tutor/Withdraw
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Withdraw(decimal amount, string bankAccount, string bankName)
+    public async Task<IActionResult> Withdraw(decimal amount, string accountNumber, string bankName, string accountName)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         var wallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == userId);
@@ -494,13 +494,25 @@ public class TutorController : Controller
             return View();
         }
 
+        // Giữ tiền (trừ tạm) + tạo yêu cầu rút
+        var withdrawalRequest = new WithdrawalRequest
+        {
+            TutorId = userId,
+            Amount = amount,
+            BankName = bankName,
+            AccountNumber = accountNumber,
+            AccountName = accountName,
+            Status = WithdrawalStatus.Pending
+        };
+        _db.WithdrawalRequests.Add(withdrawalRequest);
+
         var transaction = new Transaction
         {
             WalletId = wallet.Id,
             Amount = amount,
             Type = TransactionType.Withdrawal,
             Status = TransactionStatus.Pending,
-            Description = $"Rút tiền về {bankName} - {bankAccount}",
+            Description = $"Yêu cầu rút tiền về {bankName} - {accountNumber}",
             BalanceBefore = wallet.Balance,
             BalanceAfter = wallet.Balance - amount
         };
@@ -511,7 +523,31 @@ public class TutorController : Controller
 
         await _db.SaveChangesAsync();
 
-        TempData["SuccessMessage"] = $"Yêu cầu rút {amount:N0} VNĐ đã được ghi nhận. Tiền sẽ về trong 1-3 ngày làm việc.";
+        TempData["SuccessMessage"] = $"Yêu cầu rút {amount:N0} VNĐ đã gửi. Admin sẽ xử lý trong 1-3 ngày làm việc.";
         return RedirectToAction("Wallet");
+    }
+
+    // POST: /Tutor/CompleteSession
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CompleteSession(int sessionId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var session = await _db.Sessions
+            .Include(s => s.Contract)
+            .FirstOrDefaultAsync(s => s.Id == sessionId && s.Contract.TutorId == userId);
+
+        if (session == null) return NotFound();
+        if (session.Status != SessionStatus.Scheduled && session.Status != SessionStatus.InProgress)
+            return BadRequest();
+
+        session.Status = SessionStatus.PendingConfirmation;
+        session.TutorCompletedAt = DateTime.UtcNow;
+        session.EndedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Đã đánh dấu hoàn thành. Chờ học viên xác nhận (tự động sau 24h).";
+        return RedirectToAction("ContractDetail", new { id = session.ContractId });
     }
 }

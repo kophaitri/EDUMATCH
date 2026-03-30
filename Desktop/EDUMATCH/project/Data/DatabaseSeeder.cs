@@ -47,6 +47,29 @@ public static class DatabaseSeeder
             }
         }
 
+        // Seed Admin User 2
+        var admin2Email = configuration["AdminAccount2:Email"] ?? "admin2@edumatch.vn";
+        var admin2Password = configuration["AdminAccount2:Password"] ?? "Admin@654321";
+        var admin2FullName = configuration["AdminAccount2:FullName"] ?? "EduMatch Admin 2";
+
+        if (await userManager.FindByEmailAsync(admin2Email) is null)
+        {
+            var admin2 = new ApplicationUser
+            {
+                UserName = admin2Email,
+                Email = admin2Email,
+                FullName = admin2FullName,
+                EmailConfirmed = true,
+                IsActive = true
+            };
+
+            var result2 = await userManager.CreateAsync(admin2, admin2Password);
+            if (result2.Succeeded)
+            {
+                await userManager.AddToRoleAsync(admin2, "Admin");
+            }
+        }
+
         // Seed Master Data
         await SeedMasterDataAsync(dbContext);
     }

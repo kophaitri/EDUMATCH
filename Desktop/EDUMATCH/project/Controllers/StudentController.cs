@@ -11,12 +11,14 @@ public class StudentController : Controller
     private readonly EduMatchDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ITutorService _tutorService;
+    private readonly IConfiguration _config;
 
-    public StudentController(EduMatchDbContext db, UserManager<ApplicationUser> userManager, ITutorService tutorService)
+    public StudentController(EduMatchDbContext db, UserManager<ApplicationUser> userManager, ITutorService tutorService, IConfiguration config)
     {
         _db = db;
         _userManager = userManager;
         _tutorService = tutorService;
+        _config = config;
     }
 
     private string? GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -140,9 +142,20 @@ public class StudentController : Controller
     [HttpPost]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = "StudentOnly")]
-    public async Task<IActionResult> CreateBooking(string tutorId, string? message, int subjectId, int gradeLevelId, DateTime preferredStartDate, int sessionsPerWeek, int durationWeeks)
+    public async Task<IActionResult> CreateBooking(string tutorId, string? message, int subjectId, int gradeLevelId, DateTime preferredStartDate, int sessionsPerWeek, int durationWeeks, decimal sessionDurationHours = 1.5m)
     {
         var userId = GetUserId()!;
+
+        // Lấy giá theo môn/khối của gia sư
+        var tutorProfile = await _db.TutorProfiles.FirstOrDefaultAsync(t => t.UserId == tutorId);
+        var tutorSubject = await _db.TutorSubjects.FirstOrDefaultAsync(ts =>
+            ts.TutorId == tutorProfile!.Id && ts.SubjectId == subjectId && ts.GradeLevelId == gradeLevelId);
+
+        var hourlyRate = tutorSubject?.HourlyRate ?? 0;
+        var totalSessions = sessionsPerWeek * durationWeeks;
+        var totalAmount = hourlyRate * sessionDurationHours * totalSessions;
+
+        var refCode = "BK" + Guid.NewGuid().ToString("N")[..8].ToUpper();
 
         var booking = new BookingRequest
         {
@@ -154,14 +167,104 @@ public class StudentController : Controller
             PreferredStartDate = preferredStartDate,
             SessionsPerWeek = sessionsPerWeek,
             DurationWeeks = durationWeeks,
-            Status = BookingStatus.Pending
+            SessionDurationHours = sessionDurationHours,
+            HourlyRate = hourlyRate,
+            TotalAmount = totalAmount,
+            PaymentOrderId = refCode,
+            Status = BookingStatus.PendingPayment
         };
 
         _db.BookingRequests.Add(booking);
         await _db.SaveChangesAsync();
 
-        TempData["SuccessMessage"] = "Gửi yêu cầu thành công! Vui lòng chờ gia sư phản hồi.";
-        return RedirectToAction("Bookings");
+        return RedirectToAction("BookingPaymentQR", new { bookingId = booking.Id });
+    }
+
+    // GET: /Student/BookingPaymentQR
+    [Authorize(Policy = "StudentOnly")]
+    public async Task<IActionResult> BookingPaymentQR(int bookingId)
+    {
+        var userId = GetUserId()!;
+        var booking = await _db.BookingRequests
+            .Include(b => b.Tutor)
+            .Include(b => b.Subject)
+            .Include(b => b.GradeLevel)
+            .FirstOrDefaultAsync(b => b.Id == bookingId && b.StudentId == userId);
+
+        if (booking == null) return NotFound();
+
+        ViewBag.BankCode = _config["SePay:BankCode"];
+        ViewBag.AccountNumber = _config["SePay:AccountNumber"];
+        ViewBag.AccountName = _config["SePay:AccountName"];
+        return View(booking);
+    }
+
+    // GET: /Student/CheckBookingPayment
+    [Authorize(Policy = "StudentOnly")]
+    public async Task<IActionResult> CheckBookingPayment(int bookingId)
+    {
+        var userId = GetUserId()!;
+        var booking = await _db.BookingRequests.FirstOrDefaultAsync(b => b.Id == bookingId && b.StudentId == userId);
+        if (booking == null) return NotFound();
+        return Json(new { status = booking.Status.ToString() });
+    }
+
+    // POST: /Student/ConfirmSession
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Policy = "StudentOnly")]
+    public async Task<IActionResult> ConfirmSession(int sessionId)
+    {
+        var userId = GetUserId()!;
+        var session = await _db.Sessions
+            .Include(s => s.Contract)
+            .FirstOrDefaultAsync(s => s.Id == sessionId && s.Contract.StudentId == userId);
+
+        if (session == null) return NotFound();
+        if (session.Status != SessionStatus.PendingConfirmation) return BadRequest();
+
+        session.Status = SessionStatus.Completed;
+        session.StudentConfirmedAt = DateTime.UtcNow;
+
+        await ReleaseEarningAsync(session);
+        await _db.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Đã xác nhận buổi học hoàn thành!";
+        return RedirectToAction("Schedule");
+    }
+
+    private async Task ReleaseEarningAsync(Session session)
+    {
+        if (session.EarningReleased) return;
+
+        var contract = session.Contract ?? await _db.Contracts.FindAsync(session.ContractId);
+        if (contract == null) return;
+
+        var tutorWallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == contract.TutorId);
+        if (tutorWallet == null) return;
+
+        const decimal platformFee = 0.15m;
+        var sessionEarning = contract.HourlyRate * (session.DurationMinutes / 60m);
+        var tutorEarning = sessionEarning * (1 - platformFee);
+
+        var transaction = new Transaction
+        {
+            WalletId = tutorWallet.Id,
+            Amount = tutorEarning,
+            Type = TransactionType.Earning,
+            Status = TransactionStatus.Completed,
+            Description = $"Thu nhập buổi học #{session.Id} (sau chiết khấu 15%)",
+            ReferenceId = session.Id.ToString(),
+            BalanceBefore = tutorWallet.Balance,
+            BalanceAfter = tutorWallet.Balance + tutorEarning
+        };
+        _db.Transactions.Add(transaction);
+
+        tutorWallet.Balance += tutorEarning;
+        tutorWallet.TotalEarned += tutorEarning;
+        tutorWallet.UpdatedAt = DateTime.UtcNow;
+
+        session.EarningReleased = true;
     }
 
     // GET: /Student/Bookings
@@ -285,9 +388,9 @@ public class StudentController : Controller
     [Authorize(Policy = "StudentOnly")]
     public async Task<IActionResult> TopUp(decimal amount)
     {
-        if (amount <= 0)
+        if (amount < 10000)
         {
-            ModelState.AddModelError("", "Số tiền nạp phải lớn hơn 0");
+            ModelState.AddModelError("", "Số tiền nạp tối thiểu 10,000 VNĐ");
             return View();
         }
 
@@ -295,25 +398,44 @@ public class StudentController : Controller
         var wallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == userId);
         if (wallet == null) return NotFound();
 
-        var transaction = new Transaction
+        var refCode = "DT" + Guid.NewGuid().ToString("N")[..8].ToUpper();
+
+        var order = new PaymentOrder
         {
-            WalletId = wallet.Id,
+            UserId = userId,
             Amount = amount,
-            Type = TransactionType.Deposit,
-            Status = TransactionStatus.Completed,
-            Description = "Nạp tiền vào ví",
-            BalanceBefore = wallet.Balance,
-            BalanceAfter = wallet.Balance + amount
+            PaymentMethod = PaymentMethod.BankTransfer,
+            Status = TransactionStatus.Pending,
+            PaymentGatewayOrderId = refCode
         };
-        _db.Transactions.Add(transaction);
-
-        wallet.Balance += amount;
-        wallet.UpdatedAt = DateTime.UtcNow;
-
+        _db.PaymentOrders.Add(order);
         await _db.SaveChangesAsync();
 
-        TempData["SuccessMessage"] = $"Nạp tiền thành công! Số dư hiện tại: {wallet.Balance:N0} VNĐ";
-        return RedirectToAction("Wallet");
+        return RedirectToAction("TopUpQR", new { orderId = order.Id });
+    }
+
+    // GET: /Student/TopUpQR
+    [Authorize(Policy = "StudentOnly")]
+    public async Task<IActionResult> TopUpQR(int orderId)
+    {
+        var userId = GetUserId()!;
+        var order = await _db.PaymentOrders.FirstOrDefaultAsync(o => o.Id == orderId && o.UserId == userId);
+        if (order == null) return NotFound();
+
+        ViewBag.BankCode = _config["SePay:BankCode"];
+        ViewBag.AccountNumber = _config["SePay:AccountNumber"];
+        ViewBag.AccountName = _config["SePay:AccountName"];
+        return View(order);
+    }
+
+    // GET: /Student/CheckPaymentStatus
+    [Authorize(Policy = "StudentOnly")]
+    public async Task<IActionResult> CheckPaymentStatus(int orderId)
+    {
+        var userId = GetUserId()!;
+        var order = await _db.PaymentOrders.FirstOrDefaultAsync(o => o.Id == orderId && o.UserId == userId);
+        if (order == null) return NotFound();
+        return Json(new { status = order.Status.ToString() });
     }
 
     // GET: /Student/WalletTransactions
