@@ -30,6 +30,7 @@ public enum ExamStatus
 {
     Draft,
     Published,
+    Closed, 
     Archived
 }
 

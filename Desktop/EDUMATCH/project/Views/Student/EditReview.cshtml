@@ -1,0 +1,48 @@
+@model EduMatch.Models.Review
+@{
+    ViewData["Title"] = "Chỉnh sửa đánh giá";
+    var tutorName = ViewBag.TutorName;
+}
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">✏️ Chỉnh sửa đánh giá</h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <strong>Đánh giá cho:</strong> @tutorName
+            </div>
+
+            <form asp-action="EditReview" asp-route-id="@Model.Id" method="post">
+                @Html.AntiForgeryToken()
+                
+                <div class="mb-3">
+                    <label class="form-label">Đánh giá <span class="text-danger">*</span></label>
+                    <div class="rating-stars">
+                        @for (int i = 5; i >= 1; i--)
+                        {
+                            <input type="radio" name="rating" value="@i" id="star@i" 
+                                   @(i == Model.Rating ? "checked" : "") required />
+                            <label for="star@i">★</label>
+                        }
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Nhận xét <span class="text-danger">*</span></label>
+                    <textarea name="comment" class="form-control" rows="5" required>@Model.Comment</textarea>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a asp-action="MyReviews" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Quay lại
+                    </a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Cập nhật
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,86 @@
+@model IEnumerable<EduMatch.Controllers.StudentController.ExamQuestionViewModel>
+@{
+    ViewData["Title"] = "Làm bài thi";
+    var examId = ViewBag.ExamId;
+    var examTitle = ViewBag.ExamTitle;
+    var duration = ViewBag.Duration;
+    var questionCount = ViewBag.QuestionCount;
+}
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">📝 @examTitle</h5>
+            <div>
+                <span class="badge bg-light text-dark">
+                    <i class="bi bi-clock"></i> <span id="timer">@duration:00</span>
+                </span>
+                <span class="badge bg-light text-dark ms-2">
+                    <i class="bi bi-question-circle"></i> @questionCount câu
+                </span>
+            </div>
+        </div>
+        <div class="card-body">
+            <form asp-action="SubmitExam" asp-route-examId="@examId" method="post" id="examForm">
+                @Html.AntiForgeryToken()
+                
+                @foreach (var question in Model)
+                {
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <strong>Câu @question.DisplayOrder:</strong> 
+                            <span class="badge bg-info float-end">@question.Points điểm</span>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-3">@question.QuestionText</p>
+                            
+                            @if (question.QuestionType == "MultipleChoice")
+                            {
+                                @foreach (var option in question.AnswerOptions)
+                                {
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" 
+                                               name="answers[@(question.DisplayOrder-1)].QuestionId" 
+                                               value="@option.Id" 
+                                               id="q@question.Id_opt@option.Id">
+                                        <label class="form-check-label" for="q@question.Id_opt@option.Id">
+                                            @option.OptionText
+                                        </label>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a asp-action="Exams" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Quay lại
+                    </a>
+                    <button type="submit" class="btn btn-success" onclick="return confirm('Bạn có chắc muốn nộp bài?');">
+                        <i class="bi bi-check-circle"></i> Nộp bài
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let timeRemaining = @duration * 60;
+        const timerElement = document.getElementById('timer');
+        
+        const timer = setInterval(() => {
+            const minutes = Math.floor(timeRemaining / 60);
+            const seconds = timeRemaining % 60;
+            timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            if (timeRemaining <= 0) {
+                clearInterval(timer);
+                alert('⏰ Hết giờ!');
+                document.getElementById('examForm').submit();
+            }
+            timeRemaining--;
+        }, 1000);
+    </script>
+}

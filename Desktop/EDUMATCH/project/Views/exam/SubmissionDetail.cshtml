@@ -1,0 +1,118 @@
+@model EduMatch.Models.ExamSubmission
+@{
+    ViewData["Title"] = "Chi tiết bài làm";
+    var maxScore = ViewBag.MaxScore as decimal? ?? 0;
+}
+
+<div class="d-flex justify-content-between mb-4">
+    <h2> Bài làm của @Model.Student.FullName</h2>
+    <a asp-action="Submissions" asp-route-id="@Model.ExamId" class="btn btn-secondary">Quay lại</a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h5>Thông tin bài làm</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Bắt đầu:</strong> @Model.StartedAt.ToString("dd/MM HH:mm")</p>
+                        <p><strong>Nộp lúc:</strong> @(Model.SubmittedAt?.ToString("dd/MM HH:mm") ?? "Chưa nộp")</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Điểm:</strong> @Model.TotalScore / @maxScore</p>
+                        <p><strong>Tỷ lệ:</strong> @Model.Percentage.ToString("F1")%</p>
+                        <p><strong>Trạng thái:</strong> <span class="badge bg-info">@Model.Status</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5>Câu trả lời</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.Answers?.Any() == true)
+                {
+                    foreach (var answer in Model.Answers.OrderBy(a => a.Question.DisplayOrder))
+                    {
+                        <div class="border-bottom py-3">
+                            <p><strong>Câu @answer.Question.DisplayOrder:</strong> @answer.Question.QuestionText</p>
+                            <p><strong>Đáp án chọn:</strong> 
+                                @(answer.SelectedOption?.OptionText ?? answer.TextAnswer ?? "Không trả lời")
+                            </p>
+                            <p>
+                                <strong>Kết quả:</strong> 
+                                <span class="badge @(answer.IsCorrect ? "bg-success" : "bg-danger")">
+                                    @(answer.IsCorrect ? "✓ Đúng" : "✗ Sai") - @answer.PointsEarned điểm
+                                </span>
+                            </p>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-muted">Chưa có câu trả lời nào.</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5>Chấm điểm</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.Status != SubmissionStatus.Graded)
+                {
+                    <form asp-action="Grade" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="examId" value="@Model.ExamId" />
+                        <input type="hidden" name="subId" value="@Model.Id" />
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Tổng điểm *</label>
+                            <input type="number" name="totalScore" class="form-control" 
+                                   min="0" max="@maxScore" step="0.5" required />
+                            <small class="text-muted">Tối đa: @maxScore điểm</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Nhận xét</label>
+                            <textarea name="tutorComment" class="form-control" rows="3"></textarea>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-check-circle"></i> Chấm điểm
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <div class="alert alert-success">
+                        <strong>✓ Đã chấm điểm</strong><br>
+                        Điểm: @Model.TotalScore / @maxScore<br>
+                        @(Model.IsPassed ? "ĐẠT" : "KHÔNG ĐẠT")
+                    </div>
+                }
+
+                @if (Model.IsFlagged)
+                {
+                    <a asp-action="FraudWarnings" asp-route-examId="@Model.ExamId" asp-route-subId="@Model.Id" 
+                       class="btn btn-warning w-100 mt-2">
+                        <i class="bi bi-exclamation-triangle"></i> Xem cảnh báo gian lận
+                    </a>
+                }
+
+                <a asp-action="RetakeRequests" asp-route-examId="@Model.ExamId" asp-route-subId="@Model.Id" 
+                   class="btn btn-info text-white w-100 mt-2">
+                    <i class="bi bi-arrow-repeat"></i> Yêu cầu làm lại
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

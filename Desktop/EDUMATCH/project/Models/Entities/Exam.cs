@@ -1,11 +1,10 @@
-using EduMatch.Models.Enums;
 
 namespace EduMatch.Models;
 
 public class Exam
 {
     public int Id { get; set; }
-    public int SessionId { get; set; }
+    public int? SessionId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     public int DurationMinutes { get; set; }
@@ -63,6 +62,7 @@ public class ExamSubmission
     public ApplicationUser Student { get; set; } = null!;
     public ICollection<SubmissionAnswer> Answers { get; set; } = new List<SubmissionAnswer>();
     public ICollection<FraudWarning> FraudWarnings { get; set; } = new List<FraudWarning>();
+    public ICollection<RetakeRequest> RetakeRequests { get; set; } = new List<RetakeRequest>();
 }
 
 public class SubmissionAnswer
@@ -74,7 +74,7 @@ public class SubmissionAnswer
     public string? TextAnswer { get; set; }
     public bool IsCorrect { get; set; }
     public int PointsEarned { get; set; }
-
+    public ExamAnswerOption? SelectedOption { get; set; } 
     public ExamSubmission Submission { get; set; } = null!;
     public ExamQuestion Question { get; set; } = null!;
 }

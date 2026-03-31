@@ -1,0 +1,161 @@
+@model EduMatch.Models.Conversation
+@{
+    ViewData["Title"] = "Cuộc trò chuyện";
+    var currentUserId = ViewBag.CurrentUserId as string;
+    var otherParticipant = Model.Participants.FirstOrDefault(p => p.UserId != currentUserId);
+    var messages = Model.Messages.OrderBy(m => m.CreatedAt).ToList();
+    var otherName = otherParticipant?.User.FullName ?? Model.Title;
+    var otherAvatar = otherParticipant?.User.AvatarUrl;
+    var allConvs = ViewBag.AllConversations as List<EduMatch.Models.Conversation> ?? new();
+}
+
+<!-- Khung Messenger -->
+<div id="chatWindow" class="messenger-layout">
+
+    <!-- ===== SIDEBAR TRÁI ===== -->
+    <div class="messenger-sidebar">
+        <div class="messenger-sidebar-header">Đoạn chat</div>
+        <div class="messenger-sidebar-list">
+            @foreach (var conv in allConvs)
+            {
+                var other = conv.Participants.FirstOrDefault(p => p.UserId != currentUserId);
+                var lastMsg = conv.Messages.OrderByDescending(m => m.CreatedAt).FirstOrDefault();
+                var myP = conv.Participants.FirstOrDefault(p => p.UserId == currentUserId);
+                var unread = conv.Messages.Count(m =>
+                    m.SenderId != currentUserId &&
+                    (myP?.LastReadAt == null || m.CreatedAt > myP.LastReadAt));
+                var name = other?.User.FullName ?? conv.Title ?? "Cuộc trò chuyện";
+                var avatar = other?.User.AvatarUrl;
+                var isActive = conv.Id == Model.Id;
+
+                <a asp-action="Conversation" asp-route-conversationId="@conv.Id"
+                   class="messenger-conv-item @(isActive ? "active" : "")">
+                    @if (!string.IsNullOrEmpty(avatar))
+                    {
+                        <img src="@avatar" class="messenger-conv-avatar" />
+                    }
+                    else
+                    {
+                        <div class="messenger-conv-avatar">
+                            @(name.Length > 0 ? name[0].ToString().ToUpper() : "?")
+                        </div>
+                    }
+                    <div class="messenger-conv-info">
+                        <div class="messenger-conv-name @(unread > 0 ? "fw-bold" : "")">
+                            @name
+                            @if (unread > 0)
+                            {
+                                <span class="badge bg-danger ms-1" style="font-size:0.65rem">@unread</span>
+                            }
+                        </div>
+                        <div class="messenger-conv-preview @(unread > 0 ? "unread" : "")">
+                            @if (lastMsg != null)
+                            {
+                                @(lastMsg.SenderId == currentUserId ? "Bạn: " : "")@lastMsg.Content
+                            }
+                            else
+                            {
+                                <span class="text-muted">Chưa có tin nhắn</span>
+                            }
+                        </div>
+                    </div>
+                </a>
+            }
+        </div>
+    </div>
+
+    <!-- ===== CHAT BÊN PHẢI ===== -->
+    <div class="messenger-main">
+        <div class="messenger-chat-header">
+            <div class="d-flex align-items-center gap-2">
+                @if (!string.IsNullOrEmpty(otherAvatar))
+                {
+                    <img src="@otherAvatar" class="rounded-circle" width="40" height="40" style="object-fit:cover" />
+                }
+                else
+                {
+                    <div class="messenger-conv-avatar" style="width:40px;height:40px;font-size:1rem">
+                        @(otherName?.Length > 0 ? otherName[0].ToString().ToUpper() : "?")
+                    </div>
+                }
+                <strong>@otherName</strong>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-light" onclick="minimizeChat()" title="Thu nhỏ">
+                    <i class="bi bi-dash-lg"></i>
+                </button>
+                <a asp-action="Messages" class="btn btn-sm btn-light" title="Quay lại danh sách">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="messenger-chat-body" id="messageArea">
+            @if (!messages.Any())
+            {
+                <p class="text-center text-muted mt-5">Chưa có tin nhắn nào. Hãy bắt đầu cuộc trò chuyện!</p>
+            }
+            else
+            {
+                @foreach (var msg in messages)
+                {
+                    var isMine = msg.SenderId == currentUserId;
+                    <div class="d-flex @(isMine ? "justify-content-end" : "justify-content-start") mb-2">
+                        <div class="@(isMine ? "bg-primary text-white" : "bg-white border") rounded-3 px-3 py-2"
+                             style="max-width:65%;word-break:break-word">
+                            <div>@msg.Content</div>
+                            <small class="@(isMine ? "text-white-50" : "text-muted") d-block text-end" style="font-size:0.72rem">
+                                @msg.CreatedAt.ToString("HH:mm dd/MM")
+                            </small>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+        <div class="messenger-chat-footer">
+            <form asp-action="SendMessage" asp-route-conversationId="@Model.Id" method="post"
+                  class="d-flex gap-2">
+                @Html.AntiForgeryToken()
+                <input type="text" name="content" class="form-control rounded-pill"
+                       placeholder="Nhập tin nhắn..." autocomplete="off" required />
+                <button type="submit" class="btn btn-primary rounded-circle" style="width:42px;height:42px;padding:0">
+                    <i class="bi bi-send"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bubble khi thu nhỏ -->
+<button id="chatBubble" class="chat-bubble d-none" onclick="expandChat()" title="@otherName">
+    @if (!string.IsNullOrEmpty(otherAvatar))
+    {
+        <img src="@otherAvatar" />
+    }
+    else
+    {
+        <i class="bi bi-chat-dots-fill"></i>
+    }
+</button>
+
+@section Scripts {
+    <script>
+        document.body.classList.add('chat-page');
+
+        const area = document.getElementById('messageArea');
+        if (area) area.scrollTop = area.scrollHeight;
+
+        function minimizeChat() {
+            document.getElementById('chatWindow').classList.add('d-none');
+            document.getElementById('chatBubble').classList.remove('d-none');
+        }
+
+        function expandChat() {
+            document.getElementById('chatBubble').classList.add('d-none');
+            document.getElementById('chatWindow').classList.remove('d-none');
+            const a = document.getElementById('messageArea');
+            if (a) a.scrollTop = a.scrollHeight;
+        }
+    </script>
+}

@@ -1,0 +1,77 @@
+@model EduMatch.Models.Exam
+@{
+    ViewData["Title"] = "Tạo bài thi mới";
+}
+
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">📝 Tạo bài thi mới</h5>
+    </div>
+    <div class="card-body">
+        <form asp-action="Create" enctype="multipart/form-data" method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+            
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="SessionId" class="form-label">Session *</label>
+                    <select asp-for="SessionId" class="form-select" asp-items="ViewBag.SessionId">
+                        <option value="">-- Chọn Session --</option>
+                    </select>
+                    <span asp-validation-for="SessionId" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Title" class="form-label">Tiêu đề *</label>
+                    <input asp-for="Title" class="form-control" placeholder="VD: Kiểm tra cuối chương 1" />
+                    <span asp-validation-for="Title" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="DurationMinutes" class="form-label">Thời gian (phút) *</label>
+                    <input asp-for="DurationMinutes" type="number" min="1" max="300" class="form-control" value="45" />
+                    <span asp-validation-for="DurationMinutes" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="PassingScore" class="form-label">Điểm đạt (%) *</label>
+                    <input asp-for="PassingScore" type="number" min="0" max="100" class="form-control" value="70" />
+                    <span asp-validation-for="PassingScore" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="MaxRetakes" class="form-label">Số lần làm lại tối đa</label>
+                    <input asp-for="MaxRetakes" type="number" min="0" max="10" class="form-control" value="2" />
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label">📄 Upload file đề thi (Word)</label>
+                    <div class="border border-dashed p-4 rounded bg-light">
+                        <input type="file" name="examWordFile" class="form-control" accept=".doc,.docx" />
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i> 
+                            Hệ thống sẽ tự động quét và trích xuất câu hỏi từ file Word. 
+                            Chấp nhận file .doc, .docx (tối đa 50MB)
+                        </small>
+                    </div>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Description" class="form-label">Mô tả thêm (tùy chọn)</label>
+                    <textarea asp-for="Description" class="form-control" rows="3" 
+                              placeholder="Ghi chú về bài thi, hướng dẫn cho học viên..."></textarea>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2 mt-4">
+                <a asp-action="Index" class="btn btn-secondary">Hủy</a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> Tạo bài thi & Tiếp tục thêm câu hỏi
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

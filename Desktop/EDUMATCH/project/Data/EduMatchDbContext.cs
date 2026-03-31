@@ -1,6 +1,4 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
-
 namespace EduMatch.Data;
 
 public class EduMatchDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, string>
@@ -256,5 +254,11 @@ public class EduMatchDbContext : IdentityDbContext<ApplicationUser, ApplicationR
             .WithMany(x => x.Images)
             .HasForeignKey(x => x.PostId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<SubmissionAnswer>()
+            .HasOne(sa => sa.SelectedOption)
+            .WithMany()
+            .HasForeignKey(sa => sa.SelectedOptionId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

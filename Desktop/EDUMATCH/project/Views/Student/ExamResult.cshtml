@@ -1,0 +1,35 @@
+@model EduMatch.Models.ExamSubmission
+@{
+    ViewData["Title"] = "Kết quả bài làm";
+    var maxScore = ViewBag.MaxScore as decimal? ?? 0;
+}
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header @(Model.IsPassed ? "bg-success" : "bg-danger") text-white">
+            <h4 class="mb-0">@(Model.IsPassed ? "✅ ĐẠT" : "❌ KHÔNG ĐẠT")</h4>
+        </div>
+        <div class="card-body">
+            <div class="row text-center mb-4">
+                <div class="col-md-4">
+                    <h3>@Model.TotalScore / @maxScore</h3>
+                    <p class="text-muted">Điểm số</p>
+                </div>
+                <div class="col-md-4">
+                    <h3>@Model.Percentage.ToString("F1")%</h3>
+                    <p class="text-muted">Tỷ lệ</p>
+                </div>
+                <div class="col-md-4">
+                    <h3>@Model.RetakeNumber</h3>
+                    <p class="text-muted">Lần làm</p>
+                </div>
+            </div>
+            <a asp-action="Exams" class="btn btn-primary">
+                <i class="bi bi-house"></i> Về danh sách bài thi
+            </a>
+            <a asp-action="ExamHistory" class="btn btn-outline-secondary">
+                <i class="bi bi-clock-history"></i> Xem lịch sử
+            </a>
+        </div>
+    </div>
+</div>

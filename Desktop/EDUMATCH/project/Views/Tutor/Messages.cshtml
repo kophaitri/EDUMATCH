@@ -1,0 +1,110 @@
+@model IEnumerable<EduMatch.Models.Conversation>
+@{
+    ViewData["Title"] = "Hộp thư";
+    var currentUserId = ViewBag.CurrentUserId as string;
+    var contacts = ViewBag.Contacts as List<EduMatch.Models.ApplicationUser> ?? new List<EduMatch.Models.ApplicationUser>();
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>📬 Hộp thư</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newMessageModal">
+            <i class="bi bi-pencil-square"></i> Nhắn tin mới
+        </button>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-inbox"></i> Chưa có cuộc trò chuyện nào. Nhấn <strong>Nhắn tin mới</strong> để bắt đầu.
+        </div>
+    }
+    else
+    {
+        <div class="list-group">
+            @foreach (var conv in Model)
+            {
+                var otherParticipant = conv.Participants.FirstOrDefault(p => p.UserId != currentUserId);
+                var lastMessage = conv.Messages.OrderByDescending(m => m.CreatedAt).FirstOrDefault();
+                var myParticipant = conv.Participants.FirstOrDefault(p => p.UserId == currentUserId);
+                var unreadCount = conv.Messages.Count(m =>
+                    m.SenderId != currentUserId &&
+                    (myParticipant?.LastReadAt == null || m.CreatedAt > myParticipant.LastReadAt));
+
+                <a asp-action="Conversation" asp-route-conversationId="@conv.Id"
+                   class="list-group-item list-group-item-action @(unreadCount > 0 ? "fw-bold" : "")">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-person-circle me-2 text-primary"></i>
+                            @(otherParticipant?.User.FullName ?? conv.Title)
+                            @if (unreadCount > 0)
+                            {
+                                <span class="badge bg-danger ms-2">@unreadCount</span>
+                            }
+                        </div>
+                        <small class="text-muted">@conv.UpdatedAt.ToString("dd/MM HH:mm")</small>
+                    </div>
+                    @if (lastMessage != null)
+                    {
+                        <small class="text-muted d-block text-truncate" style="max-width:500px">
+                            @(lastMessage.SenderId == currentUserId ? "Bạn: " : "")@lastMessage.Content
+                        </small>
+                    }
+                </a>
+            }
+        </div>
+    }
+</div>
+
+<!-- Modal: Nhắn tin mới -->
+<div class="modal fade" id="newMessageModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-chat-dots me-2"></i>Nhắn tin mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                @if (!contacts.Any())
+                {
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        Chưa có học viên nào trong hệ thống.
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted mb-3">Chọn học viên để bắt đầu cuộc trò chuyện:</p>
+                    <div class="list-group">
+                        @foreach (var contact in contacts)
+                        {
+                            <form asp-action="StartConversation" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="otherUserId" value="@contact.Id" />
+                                <button type="submit" class="list-group-item list-group-item-action d-flex align-items-center gap-2">
+                                    @if (!string.IsNullOrEmpty(contact.AvatarUrl))
+                                    {
+                                        <img src="@contact.AvatarUrl" class="rounded-circle" width="36" height="36" style="object-fit:cover" />
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-person-circle fs-4 text-secondary"></i>
+                                    }
+                                    <div>
+                                        <div class="fw-semibold">@contact.FullName</div>
+                                        <small class="text-muted">@contact.Email</small>
+                                    </div>
+                                </button>
+                            </form>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
