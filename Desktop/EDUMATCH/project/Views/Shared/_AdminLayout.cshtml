@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - EduMatch Admin</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/project.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+    @RenderSection("Styles", required: false)
+</head>
+<body>
+
+<div class="admin-wrapper">
+
+    @* Sidebar *@
+    @await Html.PartialAsync("_AdminSidebar")
+
+    @* Mobile overlay — closes sidebar when clicking outside *@
+    <div class="admin-mobile-overlay" id="adminOverlay"></div>
+
+    @* Main area *@
+    <div class="admin-main" id="adminMain">
+
+        @* ── Top header ── *@
+        <header class="admin-header">
+            <div class="admin-header-left">
+
+                @* Sidebar toggle *@
+                <button class="admin-sidebar-toggle" id="sidebarToggle" title="Thu gọn / Mở rộng sidebar">
+                    <i class="bi bi-list fs-5"></i>
+                </button>
+
+                @* Breadcrumb *@
+                <nav class="admin-breadcrumb" aria-label="breadcrumb">
+                    <a asp-controller="Admin" asp-action="Dashboard">Admin</a>
+                    @if (ViewData["BreadcrumbParent"] != null)
+                    {
+                        <span> / </span>
+                        @if (ViewData["BreadcrumbParentUrl"] != null)
+                        {
+                            <a href="@ViewData["BreadcrumbParentUrl"]">@ViewData["BreadcrumbParent"]</a>
+                        }
+                        else
+                        {
+                            <span>@ViewData["BreadcrumbParent"]</span>
+                        }
+                    }
+                    @if (ViewData["Title"] != null)
+                    {
+                        <span> / </span>
+                        <span class="admin-breadcrumb-current">@ViewData["Title"]</span>
+                    }
+                </nav>
+
+            </div>
+            <div class="admin-header-right">
+                <div class="admin-user-info">
+                    <i class="bi bi-person-circle"></i>
+                    <span>@User.Identity?.Name</span>
+                </div>
+                <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="admin-logout-btn">
+                        <i class="bi bi-box-arrow-right"></i>
+                        Đăng xuất
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        @* ── Content ── *@
+        <main class="admin-content">
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show admin-flash" role="alert">
+                    <i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show admin-flash" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @RenderBody()
+
+        </main>
+
+    </div>
+</div>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/site.js" asp-append-version="true"></script>
+<script>
+    (function () {
+        var sidebar  = document.getElementById('adminSidebar');
+        var main     = document.getElementById('adminMain');
+        var toggle   = document.getElementById('sidebarToggle');
+        var overlay  = document.getElementById('adminOverlay');
+
+        function isMobile() { return window.innerWidth <= 768; }
+
+        function openMobile() {
+            sidebar.classList.add('mobile-open');
+            overlay.classList.add('active');
+        }
+        function closeMobile() {
+            sidebar.classList.remove('mobile-open');
+            overlay.classList.remove('active');
+        }
+        function toggleDesktop() {
+            sidebar.classList.toggle('collapsed');
+            main.classList.toggle('sidebar-collapsed');
+        }
+
+        toggle.addEventListener('click', function () {
+            if (isMobile()) {
+                sidebar.classList.contains('mobile-open') ? closeMobile() : openMobile();
+            } else {
+                toggleDesktop();
+            }
+        });
+
+        overlay.addEventListener('click', closeMobile);
+
+        window.addEventListener('resize', function () {
+            if (!isMobile()) {
+                closeMobile();
+            }
+        });
+    })();
+</script>
+@await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>

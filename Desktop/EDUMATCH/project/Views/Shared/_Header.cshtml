@@ -33,8 +33,11 @@
             EduMatch
         </a>
         <ul class="nav-links">
-            <li><a asp-controller="Student" asp-action="Search">Tìm gia sư</a></li>
-            <li><a asp-controller="Student" asp-action="Subjects">Môn học</a></li>
+            @if (!User.IsInRole("Tutor") && !User.IsInRole("Admin"))
+            {
+                <li><a asp-controller="Student" asp-action="Search">Tìm gia sư</a></li>
+                <li><a asp-controller="Student" asp-action="Subjects">Môn học</a></li>
+            }
             @if (User?.Identity?.IsAuthenticated == true)
             {
                 @if (User.IsInRole("Student"))
@@ -61,6 +64,7 @@
                 }
                 @if (User.IsInRole("Tutor"))
                 {
+                    <li><a asp-controller="Tutor" asp-action="Dashboard">Dashboard</a></li>
                     <li><a asp-controller="Tutor" asp-action="ManageSubjects">Môn dạy</a></li>
                     <li><a asp-controller="Tutor" asp-action="Bookings">Yêu cầu dạy</a></li>
                     <li><a asp-controller="Tutor" asp-action="Contracts">Hợp đồng</a></li>
