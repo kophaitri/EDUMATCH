@@ -4,6 +4,7 @@ using EduMatch.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EduMatch.Migrations
 {
     [DbContext(typeof(EduMatchDbContext))]
-    partial class EduMatchDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260329140853_AddExamTutorFeatures")]
+    partial class AddExamTutorFeatures
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -560,12 +563,6 @@ namespace EduMatch.Migrations
 
                     b.Property<int>("ExamId")
                         .HasColumnType("int");
-
-                    b.Property<int>("PartNumber")
-                        .HasColumnType("int");
-
-                    b.Property<string>("PassageText")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Points")
                         .HasColumnType("int");

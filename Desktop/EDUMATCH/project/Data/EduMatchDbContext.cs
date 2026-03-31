@@ -239,6 +239,19 @@ public class EduMatchDbContext : IdentityDbContext<ApplicationUser, ApplicationR
             .HasForeignKey(x => x.ReportedUserId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.Entity<Exam>()
+            .HasOne(x => x.Tutor)
+            .WithMany()
+            .HasForeignKey(x => x.TutorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Exam>()
+            .HasOne(x => x.Session)
+            .WithMany(x => x.Exams)
+            .HasForeignKey(x => x.SessionId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
+
         builder.Entity<SubmissionAnswer>()
             .HasOne(x => x.Question)
             .WithMany()

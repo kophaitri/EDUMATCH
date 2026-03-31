@@ -1,0 +1,317 @@
+@model EduMatch.ViewModels.EditExamViewModel
+@{
+    ViewData["Title"] = "Chỉnh sửa bài thi";
+    var existingQuestions = ViewBag.ExistingQuestions as List<EduMatch.Models.ExamQuestion> ?? new();
+    var letters = new[] { "A", "B", "C", "D" };
+    string? lastPassageEdit = null;
+}
+
+<div class="container mt-4">
+    <div class="d-flex align-items-center mb-4">
+        <a asp-action="Exams" class="btn btn-outline-secondary btn-sm me-3">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h2 class="mb-0">Chỉnh sửa bài thi</h2>
+    </div>
+
+    <form asp-action="EditExam" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="Id" />
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header"><strong>Thông tin chung</strong></div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label asp-for="Title" class="form-label">Tiêu đề <span class="text-danger">*</span></label>
+                    <input asp-for="Title" class="form-control" />
+                    <span asp-validation-for="Title" class="text-danger small"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label">Mô tả</label>
+                    <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="DurationMinutes" class="form-label">Thời gian (phút)</label>
+                        <input asp-for="DurationMinutes" class="form-control" type="number" min="1" max="300" />
+                        <span asp-validation-for="DurationMinutes" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="PassingScore" class="form-label">Điểm qua môn</label>
+                        <input asp-for="PassingScore" class="form-control" type="number" min="0" />
+                        <span asp-validation-for="PassingScore" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="MaxRetakes" class="form-label">Số lần thi lại tối đa</label>
+                        <input asp-for="MaxRetakes" class="form-control" type="number" min="0" max="10" />
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">File đề thi</label>
+                    @if (!string.IsNullOrEmpty(Model.ExistingFileUrl))
+                    {
+                        <div class="mb-2">
+                            <a href="@Model.ExistingFileUrl" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-paperclip"></i> Tải file đề hiện tại
+                            </a>
+                        </div>
+                    }
+                    <input asp-for="ExamFile" class="form-control" type="file" accept=".pdf,.doc,.docx,.xlsx" />
+                    <div class="form-text">Upload file mới sẽ thay thế file cũ</div>
+                </div>
+            </div>
+        </div>
+
+        @if (existingQuestions.Any())
+        {
+            <div class="card shadow-sm mb-4">
+                <div class="card-header"><strong>Câu hỏi hiện có (@existingQuestions.Count câu)</strong></div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        @foreach (var q in existingQuestions)
+                        {
+                            var opts = q.AnswerOptions.OrderBy(o => o.DisplayOrder).ToList();
+                            var correctIdx = opts.FindIndex(o => o.IsCorrect);
+                            var correctLetter = correctIdx >= 0 ? letters[correctIdx] : "A";
+
+                            if (q.PassageText != null && q.PassageText != lastPassageEdit)
+                            {
+                                lastPassageEdit = q.PassageText;
+                                <div class="list-group-item bg-info bg-opacity-10 border-start border-info border-3">
+                                    <small class="text-info fw-bold"><i class="bi bi-journal-text"></i> Đoạn văn</small>
+                                    <p class="mb-0 mt-1 small" style="white-space: pre-wrap;">@q.PassageText</p>
+                                </div>
+                            }
+
+                            <div class="list-group-item p-0" id="q-item-@q.Id">
+
+                                @* VIEW MODE *@
+                                <div class="p-3 q-view-@q.Id">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center mb-1 gap-1">
+                                                <span class="badge bg-secondary">Câu @q.DisplayOrder</span>
+                                                @if (q.PartNumber > 0)
+                                                {
+                                                    <span class="badge bg-primary">Part @q.PartNumber</span>
+                                                }
+                                                <span class="badge bg-light text-dark border">@q.Points điểm</span>
+                                            </div>
+                                            <p class="mb-2 fw-medium">@q.QuestionText</p>
+                                            <div class="row g-1">
+                                                @for (int oi = 0; oi < opts.Count; oi++)
+                                                {
+                                                    var opt = opts[oi];
+                                                    <div class="col-md-6">
+                                                        <small class="@(opt.IsCorrect ? "text-success fw-bold" : "text-muted")">
+                                                            @letters[oi]. @opt.OptionText
+                                                            @if (opt.IsCorrect) { <i class="bi bi-check-circle-fill"></i> }
+                                                        </small>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="d-flex gap-1 ms-2 flex-shrink-0">
+                                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                                    onclick="toggleEdit(@q.Id)" title="Sửa câu hỏi">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <form asp-action="DeleteExamQuestion" method="post"
+                                                  onsubmit="return confirm('Xóa câu hỏi này?')">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="questionId" value="@q.Id" />
+                                                <input type="hidden" name="examId" value="@Model.Id" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @* EDIT MODE (ẩn mặc định) *@
+                                <div class="p-3 border-top bg-light d-none q-edit-@q.Id">
+                                    <form asp-action="UpdateExamQuestion" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="QuestionId" value="@q.Id" />
+                                        <input type="hidden" name="ExamId" value="@Model.Id" />
+
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold small">Nội dung câu hỏi</label>
+                                            <textarea name="QuestionText" class="form-control form-control-sm"
+                                                      rows="2" required>@q.QuestionText</textarea>
+                                        </div>
+
+                                        @if (!string.IsNullOrEmpty(q.PassageText))
+                                        {
+                                            <div class="mb-3">
+                                                <label class="form-label fw-semibold small text-info">
+                                                    <i class="bi bi-journal-text"></i> Đoạn văn (passage)
+                                                </label>
+                                                <textarea name="PassageText" class="form-control form-control-sm"
+                                                          rows="4">@q.PassageText</textarea>
+                                            </div>
+                                        }
+
+                                        <div class="row g-2 mb-3">
+                                            @for (int oi = 0; oi < 4; oi++)
+                                            {
+                                                var letter = letters[oi];
+                                                var existingOpt = oi < opts.Count ? opts[oi].OptionText : "";
+                                                <div class="col-md-6">
+                                                    <label class="form-label small fw-semibold">@letter.</label>
+                                                    <input type="text" name="Option@(letter)"
+                                                           class="form-control form-control-sm"
+                                                           value="@existingOpt" required />
+                                                </div>
+                                            }
+                                        </div>
+
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-md-4">
+                                                <label class="form-label small fw-semibold">Đáp án đúng</label>
+                                                <select name="CorrectOption" class="form-select form-select-sm">
+                                                    @foreach (var l in new[] { "A", "B", "C", "D" })
+                                                    {
+                                                        if (l == correctLetter)
+                                                        {
+                                                            <option value="@l" selected="selected">@l</option>
+                                                        }
+                                                        else
+                                                        {
+                                                            <option value="@l">@l</option>
+                                                        }
+                                                    }
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label small fw-semibold">Điểm</label>
+                                                <input type="number" name="Points" class="form-control form-control-sm"
+                                                       value="@q.Points" min="1" max="100" />
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex gap-2">
+                                            <button type="submit" class="btn btn-sm btn-success">
+                                                <i class="bi bi-check-lg"></i> Lưu
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                    onclick="toggleEdit(@q.Id)">
+                                                Hủy
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Thêm câu hỏi mới</strong>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddQuestion">
+                    <i class="bi bi-plus-circle"></i> Thêm câu hỏi
+                </button>
+            </div>
+            <div class="card-body" id="questionsContainer">
+                <p class="text-muted text-center py-3" id="noQuestionsMsg">
+                    Nhấn "Thêm câu hỏi" để thêm câu hỏi mới.
+                </p>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg"></i> Lưu thay đổi
+            </button>
+            <a asp-action="Exams" class="btn btn-outline-secondary">Hủy</a>
+        </div>
+    </form>
+</div>
+
+<template id="questionTemplate">
+    <div class="border rounded p-3 mb-3 question-block">
+        <div class="d-flex justify-content-between mb-2">
+            <strong>Câu hỏi mới <span class="q-index"></span></strong>
+            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-question">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+        <div class="mb-2">
+            <input type="text" class="form-control" placeholder="Nội dung câu hỏi" name="NewQuestions[__IDX__].QuestionText" />
+        </div>
+        <div class="row mb-2">
+            <div class="col-md-3">
+                <label class="form-label small">Điểm</label>
+                <input type="number" class="form-control form-control-sm" value="1" min="1" name="NewQuestions[__IDX__].Points" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small">Đáp án đúng</label>
+                <select class="form-select form-select-sm" name="NewQuestions[__IDX__].CorrectOptionIndex">
+                    <option value="0">A</option>
+                    <option value="1">B</option>
+                    <option value="2">C</option>
+                    <option value="3">D</option>
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-2">
+                <label class="form-label small">A.</label>
+                <input type="text" class="form-control form-control-sm" placeholder="Đáp án A" name="NewQuestions[__IDX__].Options[0].OptionText" />
+            </div>
+            <div class="col-md-6 mb-2">
+                <label class="form-label small">B.</label>
+                <input type="text" class="form-control form-control-sm" placeholder="Đáp án B" name="NewQuestions[__IDX__].Options[1].OptionText" />
+            </div>
+            <div class="col-md-6 mb-2">
+                <label class="form-label small">C.</label>
+                <input type="text" class="form-control form-control-sm" placeholder="Đáp án C" name="NewQuestions[__IDX__].Options[2].OptionText" />
+            </div>
+            <div class="col-md-6 mb-2">
+                <label class="form-label small">D.</label>
+                <input type="text" class="form-control form-control-sm" placeholder="Đáp án D" name="NewQuestions[__IDX__].Options[3].OptionText" />
+            </div>
+        </div>
+    </div>
+</template>
+
+@section Scripts {
+    <script>
+        function toggleEdit(id) {
+            var view = document.querySelector('.q-view-' + id);
+            var edit = document.querySelector('.q-edit-' + id);
+            view.classList.toggle('d-none');
+            edit.classList.toggle('d-none');
+            if (!edit.classList.contains('d-none')) {
+                edit.querySelector('textarea, input[type=text]').focus();
+            }
+        }
+        (function () {
+            var container = document.getElementById('questionsContainer');
+            var noMsg = document.getElementById('noQuestionsMsg');
+            var template = document.getElementById('questionTemplate');
+            var idx = 0;
+
+            document.getElementById('btnAddQuestion').addEventListener('click', function () {
+                noMsg.style.display = 'none';
+                var html = template.innerHTML.replace(/__IDX__/g, idx);
+                var div = document.createElement('div');
+                div.innerHTML = html;
+                var block = div.firstElementChild;
+                block.querySelector('.q-index').textContent = idx + 1;
+                block.querySelector('.btn-remove-question').addEventListener('click', function () {
+                    block.remove();
+                    if (container.querySelectorAll('.question-block').length === 0)
+                        noMsg.style.display = '';
+                });
+                container.appendChild(block);
+                idx++;
+            });
+        })();
+    </script>
+}

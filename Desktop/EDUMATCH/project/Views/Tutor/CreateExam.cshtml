@@ -1,0 +1,228 @@
+@model EduMatch.ViewModels.CreateExamViewModel
+@{ ViewData["Title"] = "Tạo bài kiểm tra mới"; }
+
+<div class="container mt-4">
+    <div class="d-flex align-items-center mb-4">
+        <a asp-action="Exams" class="btn btn-outline-secondary btn-sm me-3">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <h2 class="mb-0">Tạo bài kiểm tra mới</h2>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid && ViewData.ModelState.Values.Any(v => v.Errors.Any()))
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            <strong>Lỗi import file:</strong>
+            <ul class="mb-0 mt-1">
+                @foreach (var err in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <li>@err.ErrorMessage</li>
+                }
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <form asp-action="CreateExam" method="post" enctype="multipart/form-data">
+        @Html.AntiForgeryToken()
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header"><strong>Thông tin chung</strong></div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label asp-for="Title" class="form-label">Tiêu đề <span class="text-danger">*</span></label>
+                    <input asp-for="Title" class="form-control" placeholder="Nhập tiêu đề bài kiểm tra" />
+                    <span asp-validation-for="Title" class="text-danger small"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Description" class="form-label">Mô tả</label>
+                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="Mô tả ngắn về bài kiểm tra"></textarea>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="DurationMinutes" class="form-label">Thời gian (phút) <span class="text-danger">*</span></label>
+                        <input asp-for="DurationMinutes" class="form-control" type="number" min="1" max="300" />
+                        <span asp-validation-for="DurationMinutes" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="PassingScore" class="form-label">Điểm qua môn <span class="text-danger">*</span></label>
+                        <input asp-for="PassingScore" class="form-control" type="number" min="0" />
+                        <span asp-validation-for="PassingScore" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label asp-for="MaxRetakes" class="form-label">Số lần thi lại tối đa</label>
+                        <input asp-for="MaxRetakes" class="form-control" type="number" min="0" max="10" />
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="ExamFile" class="form-label">
+                        Import từ file .docx <span class="badge bg-primary ms-1">Tự động parse câu hỏi</span>
+                    </label>
+                    <input asp-for="ExamFile" class="form-control" type="file" accept=".docx" id="examFileInput" />
+                    <div class="form-text">
+                        Upload file <strong>.docx</strong> đúng định dạng tag → hệ thống tự tạo câu hỏi.
+                        <a href="#" data-bs-toggle="collapse" data-bs-target="#formatGuide">Xem định dạng</a>
+                    </div>
+                    <div class="collapse mt-2" id="formatGuide">
+                        <div class="card card-body bg-light small">
+                            <strong>Định dạng file .docx:</strong>
+                            <pre class="mb-0 mt-2" style="font-size: 0.8rem;">[EXAM_TITLE] Tên bài kiểm tra
+[EXAM_TIME] 90
+[PASSING_SCORE] 50
+[MAX_RETAKES] 2
+[DESCRIPTION] Mô tả (tùy chọn)
+
+[Q:1] Nội dung câu hỏi số 1
+[POINTS] 2
+[A] Đáp án A
+[B] Đáp án B
+[C] Đáp án C
+[D] Đáp án D
+[KEY:B]
+
+[Q:2] Nội dung câu hỏi số 2
+[A] Đáp án A
+[B] Đáp án B
+[C] Đáp án C
+[D] Đáp án D
+[KEY:A]</pre>
+                            <div class="mt-2 text-muted">
+                                Khi upload .docx: tiêu đề/thời gian trong form sẽ ghi đè tag trong file nếu bạn đã điền.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-info small mt-2 mb-0 d-none" id="docxAlert">
+                        <i class="bi bi-magic"></i> Phát hiện file .docx — câu hỏi sẽ được tự động parse từ file, bỏ qua phần nhập tay bên dưới.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4" id="questionsSection">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Câu hỏi <span class="text-muted fw-normal small">(hoặc dùng import .docx bên trên)</span></strong>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btnAddQuestion">
+                    <i class="bi bi-plus-circle"></i> Thêm câu hỏi
+                </button>
+            </div>
+            <div class="card-body" id="questionsContainer">
+                <p class="text-muted text-center py-3" id="noQuestionsMsg">
+                    Chưa có câu hỏi nào. Nhấn "Thêm câu hỏi" để bắt đầu.
+                </p>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-check-lg"></i> Tạo bài kiểm tra
+            </button>
+            <a asp-action="Exams" class="btn btn-outline-secondary">Hủy</a>
+        </div>
+    </form>
+</div>
+
+<template id="questionTemplate">
+    <div class="border rounded p-3 mb-3 question-block">
+        <div class="d-flex justify-content-between mb-2">
+            <strong class="question-label">Câu hỏi <span class="q-index"></span></strong>
+            <button type="button" class="btn btn-sm btn-outline-danger btn-remove-question">
+                <i class="bi bi-trash"></i>
+            </button>
+        </div>
+        <div class="mb-2">
+            <input type="text" class="form-control" placeholder="Nội dung câu hỏi" name="__NAME__[__IDX__].QuestionText" required />
+        </div>
+        <div class="row mb-2">
+            <div class="col-md-3">
+                <label class="form-label small">Điểm</label>
+                <input type="number" class="form-control form-control-sm" value="1" min="1" name="__NAME__[__IDX__].Points" />
+            </div>
+        </div>
+        <div class="mb-2">
+            <label class="form-label small">Đáp án đúng</label>
+            <select class="form-select form-select-sm" name="__NAME__[__IDX__].CorrectOptionIndex">
+                <option value="0">Đáp án A</option>
+                <option value="1">Đáp án B</option>
+                <option value="2">Đáp án C</option>
+                <option value="3">Đáp án D</option>
+            </select>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-2">
+                <label class="form-label small">A.</label>
+                <input type="text" class="form-control form-control-sm" placeholder="Nội dung đáp án A" name="__NAME__[__IDX__].Options[0].OptionText" />
+            </div>
+            <div class="col-md-6 mb-2">
+                <label class="form-label small">B.</label>
+                <input type="text" class="form-control form-control-sm" placeholder="Nội dung đáp án B" name="__NAME__[__IDX__].Options[1].OptionText" />
+            </div>
+            <div class="col-md-6 mb-2">
+                <label class="form-label small">C.</label>
+                <input type="text" class="form-control form-control-sm" placeholder="Nội dung đáp án C" name="__NAME__[__IDX__].Options[2].OptionText" />
+            </div>
+            <div class="col-md-6 mb-2">
+                <label class="form-label small">D.</label>
+                <input type="text" class="form-control form-control-sm" placeholder="Nội dung đáp án D" name="__NAME__[__IDX__].Options[3].OptionText" />
+            </div>
+        </div>
+    </div>
+</template>
+
+@section Scripts {
+    <script>
+        (function () {
+            var fileInput = document.getElementById('examFileInput');
+            var docxAlert = document.getElementById('docxAlert');
+            var questionsSection = document.getElementById('questionsSection');
+
+            fileInput.addEventListener('change', function () {
+                var file = this.files[0];
+                if (file && file.name.toLowerCase().endsWith('.docx')) {
+                    docxAlert.classList.remove('d-none');
+                    if (questionsSection) questionsSection.style.opacity = '0.4';
+                } else {
+                    docxAlert.classList.add('d-none');
+                    if (questionsSection) questionsSection.style.opacity = '1';
+                }
+            });
+        })();
+
+        (function () {
+            var container = document.getElementById('questionsContainer');
+            var noMsg = document.getElementById('noQuestionsMsg');
+            var template = document.getElementById('questionTemplate');
+            var questionCount = 0;
+            var fieldName = 'Questions';
+
+            document.getElementById('btnAddQuestion').addEventListener('click', function () {
+                noMsg.style.display = 'none';
+                var html = template.innerHTML
+                    .replace(/__NAME__/g, fieldName)
+                    .replace(/__IDX__/g, questionCount);
+                var div = document.createElement('div');
+                div.innerHTML = html;
+                var block = div.firstElementChild;
+                block.querySelector('.q-index').textContent = questionCount + 1;
+                block.querySelector('.btn-remove-question').addEventListener('click', function () {
+                    block.remove();
+                    reindex();
+                    if (container.querySelectorAll('.question-block').length === 0)
+                        noMsg.style.display = '';
+                });
+                container.appendChild(block);
+                questionCount++;
+            });
+
+            function reindex() {
+                var blocks = container.querySelectorAll('.question-block');
+                blocks.forEach(function (block, i) {
+                    block.querySelector('.q-index').textContent = i + 1;
+                    block.querySelectorAll('[name]').forEach(function (el) {
+                        el.name = el.name.replace(/\[\d+\]/, '[' + i + ']');
+                    });
+                });
+                questionCount = blocks.length;
+            }
+        })();
+    </script>
+}

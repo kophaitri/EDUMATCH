@@ -1,0 +1,123 @@
+@model EduMatch.Models.RetakeRequest?
+@{
+    ViewData["Title"] = "Yêu cầu làm lại bài";
+    var exam = ViewBag.Exam as EduMatch.Models.Exam;
+    var submission = ViewBag.Submission as EduMatch.Models.ExamSubmission;
+}
+
+<div class="container mt-4" style="max-width: 700px;">
+    <div class="d-flex align-items-center mb-4">
+        <a asp-action="ExamSubmissions" asp-route-id="@exam!.Id" class="btn btn-outline-secondary btn-sm me-3">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <h2 class="mb-0">Yêu cầu làm lại bài</h2>
+            <small class="text-muted">@exam.Title — @submission!.Student.FullName</small>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (Model == null)
+    {
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                <p class="text-muted mt-3">Học viên chưa gửi yêu cầu làm lại bài cho bài làm này.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm mb-4">
+            <div class="card-header"><strong>Thông tin yêu cầu</strong></div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tr>
+                        <td class="text-muted" style="width: 150px;">Học viên</td>
+                        <td><strong>@submission!.Student.FullName</strong></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Lần thi</td>
+                        <td>Lần @submission.RetakeNumber</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Điểm bài làm</td>
+                        <td>@submission.TotalScore.ToString("0.#") (@submission.Percentage.ToString("0.#")%)</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Yêu cầu lúc</td>
+                        <td>@Model.RequestedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Lý do</td>
+                        <td>@Model.Reason</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted">Trạng thái</td>
+                        <td>
+                            @if (Model.RespondedAt.HasValue)
+                            {
+                                if (Model.IsApproved)
+                                {
+                                    <span class="badge bg-success">Đã chấp thuận</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Đã từ chối</span>
+                                }
+                                <small class="text-muted ms-2">(@Model.RespondedAt.Value.ToString("dd/MM/yyyy HH:mm"))</small>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">Chờ phản hồi</span>
+                            }
+                        </td>
+                    </tr>
+                    @if (!string.IsNullOrEmpty(Model.ResponseNote))
+                    {
+                        <tr>
+                            <td class="text-muted">Phản hồi</td>
+                            <td>@Model.ResponseNote</td>
+                        </tr>
+                    }
+                </table>
+            </div>
+        </div>
+
+        @if (!Model.RespondedAt.HasValue)
+        {
+            <div class="card shadow-sm">
+                <div class="card-header"><strong>Phản hồi yêu cầu</strong></div>
+                <div class="card-body">
+                    <form asp-action="RetakeRequest" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="examId" value="@exam.Id" />
+                        <input type="hidden" name="subId" value="@submission!.Id" />
+
+                        <div class="mb-3">
+                            <label class="form-label">Ghi chú phản hồi (tùy chọn)</label>
+                            <textarea name="responseNote" class="form-control" rows="3"
+                                      placeholder="Nhập lý do chấp thuận hoặc từ chối..."></textarea>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" name="isApproved" value="true" class="btn btn-success">
+                                <i class="bi bi-check-lg"></i> Chấp thuận
+                            </button>
+                            <button type="submit" name="isApproved" value="false" class="btn btn-danger">
+                                <i class="bi bi-x-lg"></i> Từ chối
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        }
+    }
+</div>
