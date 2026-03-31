@@ -43,6 +43,7 @@ public class EduMatchDbContext : IdentityDbContext<ApplicationUser, ApplicationR
     public DbSet<Wallet> Wallets { get; set; }
     public DbSet<Transaction> Transactions { get; set; }
     public DbSet<PaymentOrder> PaymentOrders { get; set; }
+    public DbSet<WithdrawalRequest> WithdrawalRequests { get; set; }
     public DbSet<TutorRevenueStat> TutorRevenueStats { get; set; }
     public DbSet<ReputationLog> ReputationLogs { get; set; }
 

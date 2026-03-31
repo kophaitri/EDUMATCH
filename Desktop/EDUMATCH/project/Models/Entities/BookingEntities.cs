@@ -13,7 +13,11 @@ public class BookingRequest
     public DateTime PreferredStartDate { get; set; }
     public int SessionsPerWeek { get; set; }
     public int DurationWeeks { get; set; }
-    public BookingStatus Status { get; set; } = BookingStatus.Pending;
+    public decimal SessionDurationHours { get; set; } = 1.5m;
+    public decimal HourlyRate { get; set; }
+    public decimal TotalAmount { get; set; }
+    public string? PaymentOrderId { get; set; }
+    public BookingStatus Status { get; set; } = BookingStatus.PendingPayment;
     public string? RejectionReason { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? RespondedAt { get; set; }
@@ -62,7 +66,26 @@ public class Session
     public string? Notes { get; set; }
     public string? CancellationReason { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? TutorCompletedAt { get; set; }
+    public DateTime? StudentConfirmedAt { get; set; }
+    public bool EarningReleased { get; set; } = false;
 
     public Contract Contract { get; set; } = null!;
     public ICollection<Exam> Exams { get; set; } = new List<Exam>();
+}
+
+public class WithdrawalRequest
+{
+    public int Id { get; set; }
+    public string TutorId { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
+    public string BankName { get; set; } = string.Empty;
+    public string AccountNumber { get; set; } = string.Empty;
+    public string AccountName { get; set; } = string.Empty;
+    public WithdrawalStatus Status { get; set; } = WithdrawalStatus.Pending;
+    public string? AdminNote { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? ProcessedAt { get; set; }
+
+    public ApplicationUser Tutor { get; set; } = null!;
 }
