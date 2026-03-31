@@ -190,6 +190,7 @@ public class StudentController : Controller
     }
 
     // GET: /Student/BookingPaymentQR
+    [HttpGet("[action]")]
     [Authorize(Policy = "StudentOnly")]
     public async Task<IActionResult> BookingPaymentQR(int bookingId)
     {
@@ -209,6 +210,7 @@ public class StudentController : Controller
     }
 
     // GET: /Student/CheckBookingPayment
+    [HttpGet("[action]")]
     [Authorize(Policy = "StudentOnly")]
     public async Task<IActionResult> CheckBookingPayment(int bookingId)
     {
@@ -219,7 +221,7 @@ public class StudentController : Controller
     }
 
     // POST: /Student/ConfirmSession
-    [HttpPost]
+    [HttpPost("[action]")]
     [ValidateAntiForgeryToken]
     [Authorize(Policy = "StudentOnly")]
     public async Task<IActionResult> ConfirmSession(int sessionId)
@@ -443,6 +445,7 @@ public class StudentController : Controller
     }
 
     // GET: /Student/TopUpQR
+    [HttpGet("[action]")]
     [Authorize(Policy = "StudentOnly")]
     public async Task<IActionResult> TopUpQR(int orderId)
     {
@@ -457,6 +460,7 @@ public class StudentController : Controller
     }
 
     // GET: /Student/CheckPaymentStatus
+    [HttpGet("[action]")]
     [Authorize(Policy = "StudentOnly")]
     public async Task<IActionResult> CheckPaymentStatus(int orderId)
     {

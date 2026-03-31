@@ -36,6 +36,7 @@ public class TutorController : Controller
     // ============================================================
 
     // GET: /Tutor/Dashboard
+    [HttpGet("[action]")]
     public async Task<IActionResult> Dashboard()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -52,6 +53,7 @@ public class TutorController : Controller
     }
 
     // GET: /Tutor/StatsSessions?year=2025
+    [HttpGet("[action]")]
     public async Task<IActionResult> StatsSessions(int? year)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -69,6 +71,7 @@ public class TutorController : Controller
     }
 
     // GET: /Tutor/StatsRevenue?year=2025
+    [HttpGet("[action]")]
     public async Task<IActionResult> StatsRevenue(int? year)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -86,6 +89,7 @@ public class TutorController : Controller
     }
 
     // GET: /Tutor/StatsReputation
+    [HttpGet("[action]")]
     public async Task<IActionResult> StatsReputation()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -106,7 +110,7 @@ public class TutorController : Controller
     // ============================================================
 
     // GET: /Tutor/Posts
-    [HttpGet]
+    [HttpGet("[action]")]
     public async Task<IActionResult> Posts()
     {
         var tutorId = GetUserId()!;
@@ -115,7 +119,7 @@ public class TutorController : Controller
     }
 
     // GET: /Tutor/PostDetail/5
-    [HttpGet]
+    [HttpGet("[action]")]
     [AllowAnonymous]
     public async Task<IActionResult> PostDetail(int id)
     {
@@ -134,11 +138,11 @@ public class TutorController : Controller
     }
 
     // GET: /Tutor/CreatePost
-    [HttpGet]
+    [HttpGet("[action]")]
     public IActionResult CreatePost() => View();
 
     // POST: /Tutor/CreatePost
-    [HttpPost]
+    [HttpPost("[action]")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreatePost(CreateTutorPostViewModel model)
     {
@@ -161,7 +165,7 @@ public class TutorController : Controller
     }
 
     // GET: /Tutor/EditPost/5
-    [HttpGet]
+    [HttpGet("[action]")]
     public async Task<IActionResult> EditPost(int id)
     {
         var tutorId = GetUserId()!;
@@ -183,7 +187,7 @@ public class TutorController : Controller
     }
 
     // POST: /Tutor/EditPost/5
-    [HttpPost]
+    [HttpPost("[action]")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> EditPost(EditTutorPostViewModel model)
     {
@@ -206,7 +210,7 @@ public class TutorController : Controller
     }
 
     // POST: /Tutor/DeletePost/5
-    [HttpPost]
+    [HttpPost("[action]")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeletePost(int id)
     {
@@ -226,6 +230,7 @@ public class TutorController : Controller
     // ============================================================
 
     // GET: /Tutor/ManageSubjects
+    [HttpGet("[action]")]
     public async Task<IActionResult> ManageSubjects()
     {
         var userId = GetUserId()!;
@@ -248,7 +253,7 @@ public class TutorController : Controller
     }
 
     // POST: /Tutor/AddSubject
-    [HttpPost]
+    [HttpPost("[action]")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddSubject(int subjectId, int gradeLevelId, decimal hourlyRate)
     {
@@ -287,7 +292,7 @@ public class TutorController : Controller
     }
 
     // POST: /Tutor/RemoveSubject
-    [HttpPost]
+    [HttpPost("[action]")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RemoveSubject(int id)
     {
@@ -310,7 +315,7 @@ public class TutorController : Controller
     }
 
     // POST: /Tutor/UpdateSubjectRate
-    [HttpPost]
+    [HttpPost("[action]")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UpdateSubjectRate(int id, decimal hourlyRate)
     {
@@ -365,6 +370,7 @@ public class TutorController : Controller
     // ============================================================
 
     // GET: /Tutor/Bookings
+    [HttpGet("[action]")]
     public async Task<IActionResult> Bookings()
     {
         var userId = GetUserId()!;
@@ -380,6 +386,7 @@ public class TutorController : Controller
     }
 
     // GET: /Tutor/BookingDetail/{id}
+    [HttpGet("[action]")]
     public async Task<IActionResult> BookingDetail(int id)
     {
         var userId = GetUserId()!;
@@ -396,7 +403,7 @@ public class TutorController : Controller
     }
 
     // POST: /Tutor/AcceptBooking
-    [HttpPost]
+    [HttpPost("[action]")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AcceptBooking(int id)
     {
@@ -438,7 +445,7 @@ public class TutorController : Controller
     }
 
     // POST: /Tutor/RejectBooking
-    [HttpPost]
+    [HttpPost("[action]")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RejectBooking(int id)
     {
@@ -462,6 +469,7 @@ public class TutorController : Controller
     // ============================================================
 
     // GET: /Tutor/Contracts
+    [HttpGet("[action]")]
     public async Task<IActionResult> Contracts()
     {
         var userId = GetUserId()!;
@@ -478,6 +486,7 @@ public class TutorController : Controller
     }
 
     // GET: /Tutor/ContractDetail/{id}
+    [HttpGet("[action]")]
     public async Task<IActionResult> ContractDetail(int id)
     {
         var userId = GetUserId()!;
@@ -494,7 +503,7 @@ public class TutorController : Controller
     }
 
     // POST: /Tutor/AddSession
-    [HttpPost]
+    [HttpPost("[action]")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddSession(int contractId, DateTime scheduledAt, int durationMinutes)
     {
@@ -521,6 +530,7 @@ public class TutorController : Controller
     // ============================================================
 
     // GET: /Tutor/Exams
+    [HttpGet("[action]")]
     public async Task<IActionResult> Exams()
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -553,11 +563,11 @@ public class TutorController : Controller
     }
 
     // GET: /Tutor/CreateExam
-    [HttpGet]
+    [HttpGet("[action]")]
     public IActionResult CreateExam() => View(new CreateExamViewModel());
 
     // POST: /Tutor/CreateExam
-    [HttpPost]
+    [HttpPost("[action]")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateExam(CreateExamViewModel model)
     {
@@ -701,7 +711,7 @@ public class TutorController : Controller
     }
 
     // GET: /Tutor/EditExam/5
-    [HttpGet]
+    [HttpGet("[action]")]
     public async Task<IActionResult> EditExam(int id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -727,7 +737,7 @@ public class TutorController : Controller
     }
 
     // POST: /Tutor/EditExam/5
-    [HttpPost]
+    [HttpPost("[action]")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> EditExam(EditExamViewModel model)
     {
@@ -799,7 +809,7 @@ public class TutorController : Controller
     }
 
     // POST: /Tutor/UpdateExamQuestion
-    [HttpPost]
+    [HttpPost("[action]")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UpdateExamQuestion(UpdateExamQuestionViewModel model)
     {
@@ -847,7 +857,7 @@ public class TutorController : Controller
     }
 
     // POST: /Tutor/DeleteExamQuestion/5
-    [HttpPost]
+    [HttpPost("[action]")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteExamQuestion(int questionId, int examId)
     {
@@ -870,7 +880,7 @@ public class TutorController : Controller
     }
 
     // POST: /Tutor/ToggleExam/5
-    [HttpPost]
+    [HttpPost("[action]")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ToggleExam(int id)
     {
@@ -899,6 +909,7 @@ public class TutorController : Controller
     }
 
     // GET: /Tutor/ExamSubmissions/5
+    [HttpGet("[action]")]
     public async Task<IActionResult> ExamSubmissions(int id)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -917,6 +928,7 @@ public class TutorController : Controller
     }
 
     // GET: /Tutor/SubmissionDetail/5/3
+    [HttpGet("[action]")]
     public async Task<IActionResult> SubmissionDetail(int examId, int subId)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -937,7 +949,7 @@ public class TutorController : Controller
     }
 
     // GET: /Tutor/GradeSubmission/5/3
-    [HttpGet]
+    [HttpGet("[action]")]
     public async Task<IActionResult> GradeSubmission(int examId, int subId)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -969,7 +981,7 @@ public class TutorController : Controller
     }
 
     // POST: /Tutor/GradeSubmission
-    [HttpPost]
+    [HttpPost("[action]")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> GradeSubmission(GradeSubmissionViewModel model)
     {
@@ -1012,6 +1024,7 @@ public class TutorController : Controller
     }
 
     // GET: /Tutor/FraudWarning/5/3
+    [HttpGet("[action]")]
     public async Task<IActionResult> FraudWarning(int examId, int subId)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -1029,7 +1042,7 @@ public class TutorController : Controller
     }
 
     // GET: /Tutor/RetakeRequest/5/3
-    [HttpGet]
+    [HttpGet("[action]")]
     public async Task<IActionResult> RetakeRequest(int examId, int subId)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
@@ -1052,7 +1065,7 @@ public class TutorController : Controller
     }
 
     // POST: /Tutor/RetakeRequest
-    [HttpPost]
+    [HttpPost("[action]")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RetakeRequest(int examId, int subId, bool isApproved, string? responseNote)
     {
@@ -1087,6 +1100,7 @@ public class TutorController : Controller
     // ============================================================
 
     // GET: /Tutor/Wallet
+    [HttpGet("[action]")]
     public async Task<IActionResult> Wallet()
     {
         var userId = GetUserId()!;
@@ -1099,6 +1113,7 @@ public class TutorController : Controller
     }
 
     // GET: /Tutor/WalletTransactions
+    [HttpGet("[action]")]
     public async Task<IActionResult> WalletTransactions()
     {
         var userId = GetUserId()!;
@@ -1115,6 +1130,7 @@ public class TutorController : Controller
     }
 
     // GET: /Tutor/Withdraw
+    [HttpGet("[action]")]
     public async Task<IActionResult> Withdraw()
     {
         var userId = GetUserId()!;
@@ -1124,7 +1140,7 @@ public class TutorController : Controller
     }
 
     // POST: /Tutor/Withdraw
-    [HttpPost]
+    [HttpPost("[action]")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Withdraw(decimal amount, string accountNumber, string bankName, string accountName)
     {
@@ -1173,7 +1189,7 @@ public class TutorController : Controller
     }
 
     // POST: /Tutor/CompleteSession
-    [HttpPost]
+    [HttpPost("[action]")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CompleteSession(int sessionId)
     {
