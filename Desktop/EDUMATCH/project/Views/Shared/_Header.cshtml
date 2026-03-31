@@ -1,3 +1,31 @@
+@using Microsoft.EntityFrameworkCore
+@inject EduMatch.Data.EduMatchDbContext _headerDb
+@inject Microsoft.AspNetCore.Identity.UserManager<EduMatch.Models.ApplicationUser> _headerUserManager
+
+@{
+    var currentUserId = _headerUserManager.GetUserId(User);
+    var unreadNotifCount = 0;
+    var unreadMsgCount = 0;
+
+    if (currentUserId != null && User?.Identity?.IsAuthenticated == true)
+    {
+        unreadNotifCount = await _headerDb.Notifications
+            .CountAsync(n => n.UserId == currentUserId && !n.IsRead);
+
+        var myParticipations = await _headerDb.ConversationParticipants
+            .Where(cp => cp.UserId == currentUserId)
+            .ToListAsync();
+
+        foreach (var p in myParticipations)
+        {
+            unreadMsgCount += await _headerDb.Messages
+                .CountAsync(m => m.ConversationId == p.ConversationId
+                    && m.SenderId != currentUserId
+                    && (p.LastReadAt == null || m.CreatedAt > p.LastReadAt));
+        }
+    }
+}
+
 <header>
     <nav class="nav">
         <a href="/" class="nav-logo" style="text-decoration: none;">
@@ -14,6 +42,22 @@
                     <li><a asp-controller="Student" asp-action="Bookings">Yêu cầu học</a></li>
                     <li><a asp-controller="Student" asp-action="Contracts">Hợp đồng</a></li>
                     <li><a asp-controller="Student" asp-action="Schedule">Lịch học</a></li>
+                    <li><a asp-controller="Student" asp-action="Exams">Bài kiểm tra</a></li>
+
+                    <!-- Dropdown: Đánh giá -->
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle-custom" id="studentReviewMenu" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            Đánh giá <i class="bi bi-chevron-down" style="font-size:0.7rem"></i>
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="studentReviewMenu">
+                            <li>
+                                <a class="dropdown-item" asp-controller="Student" asp-action="MyReviews">
+                                    <i class="bi bi-star me-2 text-warning"></i>Đánh giá của tôi
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                 }
                 @if (User.IsInRole("Tutor"))
                 {
@@ -38,6 +82,26 @@
                             </a>
                         </div>
                     </li>
+
+                    <!-- Dropdown: Đánh giá -->
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle-custom" id="tutorReviewMenu" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            Đánh giá <i class="bi bi-chevron-down" style="font-size:0.7rem"></i>
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="tutorReviewMenu">
+                            <li>
+                                <a class="dropdown-item" asp-controller="Tutor" asp-action="Reviews">
+                                    <i class="bi bi-star-fill me-2 text-warning"></i>Đánh giá nhận được
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" asp-controller="Tutor" asp-action="Complaints">
+                                    <i class="bi bi-exclamation-triangle me-2 text-danger"></i>Lịch sử khiếu nại
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
                 }
                 @if (User.IsInRole("Admin"))
                 {
@@ -53,17 +117,71 @@
                 <li><a href="#">Về chúng tôi</a></li>
             }
         </ul>
+
         <div class="nav-cta">
             @if (User?.Identity?.IsAuthenticated == true)
             {
                 @if (User.IsInRole("Student"))
                 {
                     <a asp-controller="Student" asp-action="Wallet" class="btn-ghost">Ví tiền</a>
+
+                    <!-- Icon: Tin nhắn -->
+                    <a asp-controller="Student" asp-action="Messages"
+                       class="btn-ghost position-relative" title="Tin nhắn" style="padding:6px 10px">
+                        <i class="bi bi-chat-dots-fill" style="font-size:1.1rem"></i>
+                        @if (unreadMsgCount > 0)
+                        {
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                  style="font-size:0.6rem">
+                                @(unreadMsgCount > 99 ? "99+" : unreadMsgCount.ToString())
+                            </span>
+                        }
+                    </a>
+
+                    <!-- Icon: Thông báo -->
+                    <a asp-controller="Student" asp-action="Notifications"
+                       class="btn-ghost position-relative" title="Thông báo" style="padding:6px 10px">
+                        <i class="bi bi-bell-fill" style="font-size:1.1rem"></i>
+                        @if (unreadNotifCount > 0)
+                        {
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                  style="font-size:0.6rem">
+                                @(unreadNotifCount > 99 ? "99+" : unreadNotifCount.ToString())
+                            </span>
+                        }
+                    </a>
                 }
                 @if (User.IsInRole("Tutor"))
                 {
                     <a asp-controller="Tutor" asp-action="Wallet" class="btn-ghost">Ví tiền</a>
+
+                    <!-- Icon: Tin nhắn -->
+                    <a asp-controller="Tutor" asp-action="Messages"
+                       class="btn-ghost position-relative" title="Tin nhắn" style="padding:6px 10px">
+                        <i class="bi bi-chat-dots-fill" style="font-size:1.1rem"></i>
+                        @if (unreadMsgCount > 0)
+                        {
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                  style="font-size:0.6rem">
+                                @(unreadMsgCount > 99 ? "99+" : unreadMsgCount.ToString())
+                            </span>
+                        }
+                    </a>
+
+                    <!-- Icon: Thông báo -->
+                    <a asp-controller="Tutor" asp-action="Notifications"
+                       class="btn-ghost position-relative" title="Thông báo" style="padding:6px 10px">
+                        <i class="bi bi-bell-fill" style="font-size:1.1rem"></i>
+                        @if (unreadNotifCount > 0)
+                        {
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                                  style="font-size:0.6rem">
+                                @(unreadNotifCount > 99 ? "99+" : unreadNotifCount.ToString())
+                            </span>
+                        }
+                    </a>
                 }
+
                 <a asp-controller="Account" asp-action="Profile" class="btn-ghost">Tài khoản</a>
                 <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline" style="display:inline;margin-left:8px;">
                     @Html.AntiForgeryToken()
@@ -78,3 +196,29 @@
         </div>
     </nav>
 </header>
+
+<style>
+    /* Dropdown trong nav custom */
+    .nav-links li.dropdown {
+        position: relative;
+    }
+    .nav-links li.dropdown .dropdown-toggle-custom {
+        cursor: pointer;
+    }
+    .nav-links li.dropdown .dropdown-menu {
+        min-width: 220px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+        border: 1px solid #eee;
+        padding: 6px 0;
+    }
+    .nav-links li.dropdown .dropdown-item {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+        color: #333;
+    }
+    .nav-links li.dropdown .dropdown-item:hover {
+        background: #f5f5ff;
+        color: #4f46e5;
+    }
+</style>

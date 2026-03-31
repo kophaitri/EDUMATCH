@@ -1,0 +1,140 @@
+@model IEnumerable<EduMatch.Models.Notification>
+@{
+    ViewData["Title"] = "Thông báo";
+    var unreadCount = Model.Count(n => !n.IsRead);
+    var students = ViewBag.Students as List<EduMatch.Models.ApplicationUser> ?? new List<EduMatch.Models.ApplicationUser>();
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>
+            🔔 Thông báo của tôi
+            @if (unreadCount > 0)
+            {
+                <span class="badge bg-danger ms-2">@unreadCount</span>
+            }
+        </h2>
+        <div class="d-flex gap-2">
+            @if (unreadCount > 0)
+            {
+                <form asp-action="MarkAllNotificationsRead" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-check-all"></i> Đánh dấu tất cả đã đọc
+                    </button>
+                </form>
+            }
+            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#sendNotifModal">
+                <i class="bi bi-send"></i> Gửi thông báo cho học viên
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-bell-slash"></i> Chưa có thông báo nào dành cho bạn.
+        </div>
+    }
+    else
+    {
+        <div class="list-group">
+            @foreach (var notification in Model)
+            {
+                <div class="list-group-item @(!notification.IsRead ? "list-group-item-warning" : "") d-flex justify-content-between align-items-start">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-secondary">@notification.Type</span>
+                            <strong>@notification.Title</strong>
+                            @if (!notification.IsRead)
+                            {
+                                <span class="badge bg-danger">Mới</span>
+                            }
+                        </div>
+                        <p class="mb-1 mt-1">@notification.Message</p>
+                        <small class="text-muted">@notification.CreatedAt.ToString("HH:mm dd/MM/yyyy")</small>
+                        @if (!string.IsNullOrEmpty(notification.ActionUrl))
+                        {
+                            <br>
+                            <a href="@notification.ActionUrl" class="btn btn-sm btn-link p-0 mt-1">Xem chi tiết →</a>
+                        }
+                    </div>
+                    @if (!notification.IsRead)
+                    {
+                        <form asp-action="MarkNotificationRead" asp-route-id="@notification.Id" method="post" class="ms-2">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Đánh dấu đã đọc">
+                                <i class="bi bi-check"></i>
+                            </button>
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- Modal: Gửi thông báo cho học viên -->
+<div class="modal fade" id="sendNotifModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="SendNotification" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-bell me-2"></i>Gửi thông báo cho học viên</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!students.Any())
+                    {
+                        <div class="alert alert-warning mb-0">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Bạn chưa có học viên nào (cần có hợp đồng).
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Gửi đến học viên</label>
+                            <select name="studentId" class="form-select" required>
+                                <option value="">-- Chọn học viên --</option>
+                                @foreach (var student in students)
+                                {
+                                    <option value="@student.Id">@student.FullName (@student.Email)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Tiêu đề</label>
+                            <input type="text" name="title" class="form-control"
+                                   placeholder="Nhập tiêu đề thông báo..." required maxlength="200" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Nội dung</label>
+                            <textarea name="message" class="form-control" rows="4"
+                                      placeholder="Nhập nội dung thông báo..." required maxlength="1000"></textarea>
+                        </div>
+                    }
+                </div>
+                @if (students.Any())
+                {
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send"></i> Gửi thông báo
+                        </button>
+                    </div>
+                }
+            </form>
+        </div>
+    </div>
+</div>

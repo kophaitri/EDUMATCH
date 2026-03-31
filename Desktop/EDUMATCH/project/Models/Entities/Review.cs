@@ -1,10 +1,9 @@
-using EduMatch.Models.Enums;
 
 namespace EduMatch.Models;
 
 public class Review
 {
-    public int Id { get; set; }
+     public int Id { get; set; }
     public int ContractId { get; set; }
     public string ReviewerId { get; set; } = string.Empty;
     public string RevieweeId { get; set; } = string.Empty;
@@ -12,6 +11,10 @@ public class Review
     public string? Comment { get; set; }
     public bool IsAnonymous { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    
+    // ← ← ← BẮT BUỘC PHẢI CÓ 2 DÒNG NÀY:
+    public bool IsApproved { get; set; } = true;
+    public DateTime? UpdatedAt { get; set; }
 
     public Contract Contract { get; set; } = null!;
     public ApplicationUser Reviewer { get; set; } = null!;
@@ -26,6 +29,7 @@ public class ReviewReply
     public int ReviewId { get; set; }
     public string ReplyText { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? RepliedAt { get; set; }
 
     public Review Review { get; set; } = null!;
 }
@@ -38,6 +42,11 @@ public class ReviewComplaint
     public string Reason { get; set; } = string.Empty;
     public string Status { get; set; } = "Pending";
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public string ReporterId { get; set; } = string.Empty;
+    
+    // ← ← ← BẮT BUỘC PHẢI CÓ 2 DÒNG NÀY:
+    public string? Details { get; set; }
+    public string? AdminResponse { get; set; }
 
     public Review Review { get; set; } = null!;
     public ApplicationUser Complainant { get; set; } = null!;

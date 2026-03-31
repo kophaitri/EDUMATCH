@@ -4,6 +4,7 @@ using EduMatch.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EduMatch.Migrations
 {
     [DbContext(typeof(EduMatchDbContext))]
-    partial class EduMatchDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260325171107_AddReviewColumns")]
+    partial class AddReviewColumns
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -180,50 +183,6 @@ namespace EduMatch.Migrations
                     b.ToTable("AuditLogs");
                 });
 
-            modelBuilder.Entity("EduMatch.Models.Banner", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("DisplayOrder")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("EndAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ImageUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("LinkUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("StartAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Banners");
-                });
-
             modelBuilder.Entity("EduMatch.Models.BookingRequest", b =>
                 {
                     b.Property<int>("Id")
@@ -241,13 +200,7 @@ namespace EduMatch.Migrations
                     b.Property<int>("GradeLevelId")
                         .HasColumnType("int");
 
-                    b.Property<decimal>("HourlyRate")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<string>("Message")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PaymentOrderId")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("PreferredStartDate")
@@ -258,9 +211,6 @@ namespace EduMatch.Migrations
 
                     b.Property<DateTime?>("RespondedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<decimal>("SessionDurationHours")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("SessionsPerWeek")
                         .HasColumnType("int");
@@ -274,9 +224,6 @@ namespace EduMatch.Migrations
 
                     b.Property<int>("SubjectId")
                         .HasColumnType("int");
-
-                    b.Property<decimal>("TotalAmount")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("TutorId")
                         .IsRequired()
@@ -522,9 +469,6 @@ namespace EduMatch.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime?>("CloseAt")
-                        .HasColumnType("datetime2");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -534,17 +478,8 @@ namespace EduMatch.Migrations
                     b.Property<int>("DurationMinutes")
                         .HasColumnType("int");
 
-                    b.Property<string>("ExamFileUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsOpen")
-                        .HasColumnType("bit");
-
                     b.Property<int>("MaxRetakes")
                         .HasColumnType("int");
-
-                    b.Property<DateTime?>("OpenAt")
-                        .HasColumnType("datetime2");
 
                     b.Property<int>("PassingScore")
                         .HasColumnType("int");
@@ -562,15 +497,9 @@ namespace EduMatch.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("TutorId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("SessionId");
-
-                    b.HasIndex("TutorId");
 
                     b.ToTable("Exams");
                 });
@@ -617,12 +546,6 @@ namespace EduMatch.Migrations
                     b.Property<int>("ExamId")
                         .HasColumnType("int");
 
-                    b.Property<int>("PartNumber")
-                        .HasColumnType("int");
-
-                    b.Property<string>("PassageText")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int>("Points")
                         .HasColumnType("int");
 
@@ -656,9 +579,6 @@ namespace EduMatch.Migrations
                         .HasPrecision(5, 2)
                         .HasColumnType("decimal(5,2)");
 
-                    b.Property<DateTime?>("GradedAt")
-                        .HasColumnType("datetime2");
-
                     b.Property<bool>("IsFlagged")
                         .HasColumnType("bit");
 
@@ -688,9 +608,6 @@ namespace EduMatch.Migrations
                     b.Property<decimal>("TotalScore")
                         .HasPrecision(7, 2)
                         .HasColumnType("decimal(7,2)");
-
-                    b.Property<string>("TutorComment")
-                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -1162,9 +1079,6 @@ namespace EduMatch.Migrations
                     b.Property<int>("DurationMinutes")
                         .HasColumnType("int");
 
-                    b.Property<bool>("EarningReleased")
-                        .HasColumnType("bit");
-
                     b.Property<DateTime?>("EndedAt")
                         .HasColumnType("datetime2");
 
@@ -1179,12 +1093,6 @@ namespace EduMatch.Migrations
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
-
-                    b.Property<DateTime?>("StudentConfirmedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("TutorCompletedAt")
-                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
@@ -1350,40 +1258,6 @@ namespace EduMatch.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("TeachingStyles");
-                });
-
-            modelBuilder.Entity("EduMatch.Models.TicketReply", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Content")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsStaffReply")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("SenderId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("TicketId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SenderId");
-
-                    b.HasIndex("TicketId");
-
-                    b.ToTable("TicketReplies");
                 });
 
             modelBuilder.Entity("EduMatch.Models.Transaction", b =>
@@ -1780,52 +1654,6 @@ namespace EduMatch.Migrations
                     b.ToTable("Wallets");
                 });
 
-            modelBuilder.Entity("EduMatch.Models.WithdrawalRequest", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("AccountName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AccountNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AdminNote")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("BankName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("ProcessedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<string>("TutorId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TutorId");
-
-                    b.ToTable("WithdrawalRequests");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.Property<int>("Id")
@@ -2042,18 +1870,9 @@ namespace EduMatch.Migrations
                 {
                     b.HasOne("EduMatch.Models.Session", "Session")
                         .WithMany("Exams")
-                        .HasForeignKey("SessionId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("EduMatch.Models.ApplicationUser", "Tutor")
-                        .WithMany()
-                        .HasForeignKey("TutorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .HasForeignKey("SessionId");
 
                     b.Navigation("Session");
-
-                    b.Navigation("Tutor");
                 });
 
             modelBuilder.Entity("EduMatch.Models.ExamAnswerOption", b =>
@@ -2323,25 +2142,6 @@ namespace EduMatch.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("EduMatch.Models.TicketReply", b =>
-                {
-                    b.HasOne("EduMatch.Models.ApplicationUser", "Sender")
-                        .WithMany()
-                        .HasForeignKey("SenderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("EduMatch.Models.SupportTicket", "Ticket")
-                        .WithMany("Replies")
-                        .HasForeignKey("TicketId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Sender");
-
-                    b.Navigation("Ticket");
-                });
-
             modelBuilder.Entity("EduMatch.Models.Transaction", b =>
                 {
                     b.HasOne("EduMatch.Models.Wallet", "Wallet")
@@ -2498,17 +2298,6 @@ namespace EduMatch.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("EduMatch.Models.WithdrawalRequest", b =>
-                {
-                    b.HasOne("EduMatch.Models.ApplicationUser", "Tutor")
-                        .WithMany()
-                        .HasForeignKey("TutorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Tutor");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("EduMatch.Models.ApplicationRole", null)
@@ -2628,11 +2417,6 @@ namespace EduMatch.Migrations
             modelBuilder.Entity("EduMatch.Models.Subject", b =>
                 {
                     b.Navigation("TutorSubjects");
-                });
-
-            modelBuilder.Entity("EduMatch.Models.SupportTicket", b =>
-                {
-                    b.Navigation("Replies");
                 });
 
             modelBuilder.Entity("EduMatch.Models.TeachingStyle", b =>

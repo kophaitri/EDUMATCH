@@ -1,0 +1,86 @@
+@model IEnumerable<EduMatch.Models.Review>
+@{
+    ViewData["Title"] = "Đánh giá nhận được";
+}
+
+<div class="container mt-4">
+    <h2>📊 Đánh giá từ học viên</h2>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Chưa có đánh giá nào.
+        </div>
+    }
+    else
+    {
+        @foreach (var review in Model)
+        {
+            <div class="card mb-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h5 class="card-title">
+                                @review.Reviewer.FullName
+                                <small class="text-muted">- @review.Contract.Subject.Name</small>
+                            </h5>
+                            <div class="mb-2">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    <span class="text-@(i <= review.Rating ? "warning" : "light")">★</span>
+                                }
+                            </div>
+                            <p class="card-text">@review.Comment</p>
+                            <small class="text-muted">
+                                <i class="bi bi-calendar"></i> @review.CreatedAt.ToString("dd/MM/yyyy")
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <button class="btn btn-sm btn-outline-primary mb-1" 
+                                    data-bs-toggle="modal" data-bs-target="#replyModal_@review.Id">
+                                <i class="bi bi-chat"></i> Trả lời
+                            </button>
+                            <br>
+                            <a asp-action="CreateComplaint" asp-route-id="@review.Id" 
+                               class="btn btn-sm btn-outline-warning">
+                                <i class="bi bi-exclamation-triangle"></i> Khiếu nại
+                            </a>
+                        </div>
+                    </div>
+                    
+                    @if (review.Reply != null)
+                    {
+                        <div class="alert alert-light mt-2 border">
+                            <strong>Phản hồi của bạn:</strong><br>
+                            @review.Reply.ReplyText
+                            <br><small class="text-muted">@review.Reply.RepliedAt?.ToString("dd/MM/yyyy")</small>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Modal Reply -->
+            <div class="modal fade" id="replyModal_@review.Id" tabindex="-1">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form asp-action="ReplyToReview" asp-route-id="@review.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <div class="modal-header">
+                                <h5 class="modal-title">Trả lời đánh giá</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <textarea name="replyText" class="form-control" rows="4" required
+                                          placeholder="Viết phản hồi của bạn..."></textarea>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                                <button type="submit" class="btn btn-primary">Gửi phản hồi</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>

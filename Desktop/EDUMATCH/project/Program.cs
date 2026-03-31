@@ -1,8 +1,6 @@
-using System.Text;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.Tokens;
 using EduMatch.Services;
+using Microsoft.AspNetCore.Http.Features;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,6 +49,16 @@ builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
 })
 .AddEntityFrameworkStores<EduMatchDbContext>()
 .AddDefaultTokenProviders();
+
+// Thêm service cho file upload
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 50 * 1024 * 1024; // 50MB
+});
+
+// Nếu dùng Word parsing, thêm thư viện:
+// dotnet add package DocumentFormat.OpenXml
+// hoặc dotnet add package DocX
 
 // Configure application cookie for web UI
 builder.Services.ConfigureApplicationCookie(options =>

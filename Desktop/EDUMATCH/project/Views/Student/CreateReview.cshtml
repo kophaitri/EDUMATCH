@@ -1,0 +1,98 @@
+@{
+    ViewData["Title"] = "Viết đánh giá gia sư";
+    var contractId = ViewBag.ContractId;
+    var tutorName = ViewBag.TutorName ?? "Gia sư";
+    var subjectName = ViewBag.SubjectName ?? "Môn học";
+}
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">✍️ Viết đánh giá gia sư</h5>
+        </div>
+        <div class="card-body">
+            @if (contractId == null || contractId == 0)
+            {
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle"></i> 
+                    Không tìm thấy thông tin hợp đồng. 
+                    <a asp-action="Contracts" class="alert-link">Quay lại danh sách hợp đồng</a>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info">
+                    <strong>Thông tin hợp đồng:</strong><br>
+                    Gia sư: <strong>@tutorName</strong><br>
+                    Môn học: <strong>@subjectName</strong>
+                </div>
+
+                <form asp-action="CreateReview" asp-route-contractId="@contractId" method="post">
+                    @Html.AntiForgeryToken()
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Đánh giá <span class="text-danger">*</span></label>
+                        <div class="rating-stars">
+                            @for (int i = 5; i >= 1; i--)
+                            {
+                                <input type="radio" name="rating" value="@i" id="star@i" required />
+                                <label for="star@i">★</label>
+                            }
+                        </div>
+                        <small class="text-muted">Click vào sao để chọn đánh giá</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Nhận xét <span class="text-danger">*</span></label>
+                        <textarea name="comment" class="form-control" rows="5" required 
+                                  placeholder="Chia sẻ trải nghiệm của bạn về gia sư..."
+                                  minlength="10" maxlength="500"></textarea>
+                        <small class="text-muted">Tối thiểu 10 ký tự, tối đa 500 ký tự</small>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a asp-action="Contracts" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Quay lại
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-circle"></i> Gửi đánh giá
+                        </button>
+                    </div>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+<style>
+.rating-stars {
+    direction: rtl;
+    font-size: 2rem;
+    unicode-bidi: bidi-override;
+}
+.rating-stars input {
+    display: none;
+}
+.rating-stars label {
+    color: #ddd;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+.rating-stars label:hover,
+.rating-stars label:hover ~ label,
+.rating-stars input:checked ~ label {
+    color: #ffc107;
+}
+</style>
+
+@section Scripts {
+    <script>
+        // Auto-submit when rating is selected (optional UX improvement)
+        document.querySelectorAll('.rating-stars input').forEach(radio => {
+            radio.addEventListener('change', function() {
+                // Visual feedback
+                this.closest('.rating-stars').classList.add('rated');
+            });
+        });
+    </script>
+}

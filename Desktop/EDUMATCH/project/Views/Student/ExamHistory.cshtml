@@ -1,0 +1,54 @@
+@model IEnumerable<EduMatch.Controllers.StudentController.StudentSubmissionHistoryViewModel>
+@{
+    ViewData["Title"] = "Lịch sử bài làm";
+}
+
+<div class="container mt-4">
+    <h2>📜 Lịch sử tất cả bài làm</h2>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Bạn chưa làm bài thi nào.
+        </div>
+    }
+    else
+    {
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Bài thi</th>
+                    <th>Môn học</th>
+                    <th>Ngày nộp</th>
+                    <th>Điểm</th>
+                    <th>Kết quả</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var sub in Model)
+                {
+                    <tr>
+                        <td><strong>@sub.ExamTitle</strong></td>
+                        <td>@sub.SubjectName</td>
+                        <td>@sub.SubmittedAt?.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>@sub.TotalScore (@sub.Percentage.ToString("F1")%)</td>
+                        <td>
+                            <span class="badge @(sub.IsPassed ? "bg-success" : "bg-danger")">
+                                @(sub.IsPassed ? "✓ Đạt" : "✗ Không đạt")
+                            </span>
+                        </td>
+                        <td>
+                            <a asp-action="ExamResult" asp-route-examId="@sub.Id" asp-route-subId="@sub.Id" 
+                               class="btn btn-sm btn-outline-primary">Xem</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+
+    <a asp-action="Exams" class="btn btn-primary mt-3">
+        <i class="bi bi-plus-circle"></i> Làm bài thi mới
+    </a>
+</div>
