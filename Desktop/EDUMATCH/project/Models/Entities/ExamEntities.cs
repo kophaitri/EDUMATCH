@@ -5,17 +5,23 @@ namespace EduMatch.Models;
 public class Exam
 {
     public int Id { get; set; }
-    public int SessionId { get; set; }
+    public int? SessionId { get; set; }
+    public string TutorId { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     public int DurationMinutes { get; set; }
     public int PassingScore { get; set; }
     public int MaxRetakes { get; set; } = 2;
+    public bool IsOpen { get; set; } = false;
+    public DateTime? OpenAt { get; set; }
+    public DateTime? CloseAt { get; set; }
+    public string? ExamFileUrl { get; set; }
     public ExamStatus Status { get; set; } = ExamStatus.Draft;
     public DateTime? PublishedAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public Session Session { get; set; } = null!;
+    public Session? Session { get; set; }
+    public ApplicationUser Tutor { get; set; } = null!;
     public ICollection<ExamQuestion> Questions { get; set; } = new List<ExamQuestion>();
     public ICollection<ExamSubmission> Submissions { get; set; } = new List<ExamSubmission>();
 }
@@ -25,6 +31,8 @@ public class ExamQuestion
     public int Id { get; set; }
     public int ExamId { get; set; }
     public string QuestionText { get; set; } = string.Empty;
+    public string? PassageText { get; set; }
+    public int PartNumber { get; set; } = 0;
     public string QuestionType { get; set; } = "MultipleChoice";
     public int Points { get; set; }
     public int DisplayOrder { get; set; }
@@ -58,6 +66,8 @@ public class ExamSubmission
     public decimal FraudScore { get; set; }
     public bool IsFlagged { get; set; }
     public int RetakeNumber { get; set; } = 1;
+    public string? TutorComment { get; set; }
+    public DateTime? GradedAt { get; set; }
 
     public Exam Exam { get; set; } = null!;
     public ApplicationUser Student { get; set; } = null!;

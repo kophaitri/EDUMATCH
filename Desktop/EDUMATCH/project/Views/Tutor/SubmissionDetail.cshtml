@@ -1,0 +1,159 @@
+@model EduMatch.Models.ExamSubmission
+@{
+    ViewData["Title"] = "Xem bài làm chi tiết";
+    var exam = ViewBag.Exam as EduMatch.Models.Exam;
+}
+
+<div class="container mt-4">
+    <div class="d-flex align-items-center mb-4">
+        <a asp-action="ExamSubmissions" asp-route-id="@exam!.Id" class="btn btn-outline-secondary btn-sm me-3">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <h2 class="mb-0">Chi tiết bài làm</h2>
+            <small class="text-muted">@exam.Title — @Model.Student.FullName</small>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h4 class="text-primary">@Model.TotalScore.ToString("0.#")</h4>
+                    <small class="text-muted">Tổng điểm</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h4>@Model.Percentage.ToString("0.#")%</h4>
+                    <small class="text-muted">Tỷ lệ đúng</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h4 class="@(Model.IsPassed ? "text-success" : "text-danger")">
+                        @(Model.IsPassed ? "Đạt" : "Chưa đạt")
+                    </h4>
+                    <small class="text-muted">Kết quả</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h4>Lần @Model.RetakeNumber</h4>
+                    <small class="text-muted">Lần thi</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <table class="table table-sm">
+                <tr><td class="text-muted">Học viên</td><td><strong>@Model.Student.FullName</strong></td></tr>
+                <tr><td class="text-muted">Bắt đầu</td><td>@Model.StartedAt.ToString("dd/MM/yyyy HH:mm")</td></tr>
+                <tr><td class="text-muted">Nộp bài</td><td>@(Model.SubmittedAt?.ToString("dd/MM/yyyy HH:mm") ?? "—")</td></tr>
+                <tr><td class="text-muted">Gian lận</td><td>@(Model.IsFlagged ? "<span class='badge bg-danger'>Bị cờ</span>" : "Không")</td></tr>
+            </table>
+        </div>
+        @if (!string.IsNullOrEmpty(Model.TutorComment))
+        {
+            <div class="col-md-6">
+                <div class="alert alert-info">
+                    <strong><i class="bi bi-chat-quote"></i> Nhận xét của giáo viên:</strong>
+                    <p class="mb-0 mt-1">@Model.TutorComment</p>
+                </div>
+            </div>
+        }
+    </div>
+
+    <h5 class="mb-3">Chi tiết từng câu (@Model.Answers.Count câu)</h5>
+
+    @{
+        string? lastPassage = null;
+    }
+    @foreach (var answer in Model.Answers.OrderBy(a => a.Question.DisplayOrder))
+    {
+        @if (answer.Question.PassageText != null && answer.Question.PassageText != lastPassage)
+        {
+            lastPassage = answer.Question.PassageText;
+            <div class="card shadow-sm mb-3 border-info">
+                <div class="card-header bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-journal-text"></i> <strong>Đoạn văn</strong>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0" style="white-space: pre-wrap;">@answer.Question.PassageText</p>
+                </div>
+            </div>
+        }
+        <div class="card shadow-sm mb-3">
+            <div class="card-header d-flex justify-content-between">
+                <span>
+                    <span class="badge bg-secondary me-1">Câu @answer.Question.DisplayOrder</span>
+                    @if (answer.Question.PartNumber > 0)
+                    {
+                        <span class="badge bg-primary me-1">Part @answer.Question.PartNumber</span>
+                    }
+                    @answer.Question.QuestionText
+                </span>
+                <span class="@(answer.IsCorrect ? "text-success" : "text-danger")">
+                    @if (answer.IsCorrect)
+                    {
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>+@answer.PointsEarned điểm</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-x-circle-fill"></i>
+                        <span>0 điểm</span>
+                    }
+                </span>
+            </div>
+            <div class="card-body">
+                <div class="row g-2">
+                    @foreach (var opt in answer.Question.AnswerOptions.OrderBy(o => o.DisplayOrder))
+                    {
+                        var isSelected = opt.Id == answer.SelectedOptionId;
+                        var optLetter = opt.DisplayOrder == 1 ? "A" : opt.DisplayOrder == 2 ? "B" : opt.DisplayOrder == 3 ? "C" : "D";
+                        <div class="col-md-6">
+                            <div class="p-2 rounded border @(opt.IsCorrect ? "border-success bg-success bg-opacity-10" : isSelected && !opt.IsCorrect ? "border-danger bg-danger bg-opacity-10" : "")">
+                                <span class="fw-bold">@optLetter.</span> @opt.OptionText
+                                @if (opt.IsCorrect)
+                                {
+                                    <i class="bi bi-check-circle-fill text-success ms-1"></i>
+                                }
+                                @if (isSelected && !opt.IsCorrect)
+                                {
+                                    <i class="bi bi-x-circle-fill text-danger ms-1"></i>
+                                }
+                                @if (isSelected)
+                                {
+                                    <span class="badge bg-secondary ms-1">Chọn</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="d-flex gap-2 mt-3">
+        <a asp-action="GradeSubmission" asp-route-examId="@exam.Id" asp-route-subId="@Model.Id"
+           class="btn btn-success">
+            <i class="bi bi-pencil-square"></i> Chấm điểm & nhận xét
+        </a>
+        <a asp-action="FraudWarning" asp-route-examId="@exam.Id" asp-route-subId="@Model.Id"
+           class="btn btn-outline-danger">
+            <i class="bi bi-exclamation-triangle"></i> Cảnh báo gian lận
+        </a>
+        <a asp-action="ExamSubmissions" asp-route-id="@exam.Id" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Quay lại
+        </a>
+    </div>
+</div>
