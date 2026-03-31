@@ -120,7 +120,7 @@ public class AccountController : Controller
             {
                 var roles = await _userManager.GetRolesAsync(user);
                 if (roles.Contains("Admin"))
-                    return RedirectToAction("Transactions", "Admin");
+                    return RedirectToAction("Dashboard", "Admin");
                 if (roles.Contains("Tutor"))
                     return RedirectToAction("Profile", "Account");
             }

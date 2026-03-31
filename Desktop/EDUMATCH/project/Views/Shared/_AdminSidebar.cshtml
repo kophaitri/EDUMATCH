@@ -1,0 +1,180 @@
+@{
+    var action = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+
+    bool Is(string a) =>
+        string.Equals(action, a, StringComparison.OrdinalIgnoreCase);
+    bool IsAny(params string[] actions) =>
+        actions.Any(a => string.Equals(action, a, StringComparison.OrdinalIgnoreCase));
+}
+
+<aside class="admin-sidebar" id="adminSidebar">
+
+    <div class="admin-sidebar-logo">
+        <div class="admin-sidebar-logo-dot"></div>
+        <span class="admin-sidebar-logo-text">EduMatch Admin</span>
+    </div>
+
+    <nav class="admin-nav">
+
+        @* ── Dashboard & Thống kê ──────────────────────────── *@
+        <div class="admin-nav-group">
+            <div class="admin-nav-group-label">Dashboard</div>
+
+            <a asp-controller="Admin" asp-action="Dashboard"
+               class="admin-nav-link @(Is("Dashboard") ? "active" : "")">
+                <i class="bi bi-speedometer2"></i>
+                <span class="admin-nav-link-text">Tổng quan</span>
+            </a>
+
+            <a asp-controller="Admin" asp-action="Stats"
+               class="admin-nav-link @(Is("Stats") ? "active" : "")">
+                <i class="bi bi-bar-chart-line"></i>
+                <span class="admin-nav-link-text">Thống kê hệ thống</span>
+            </a>
+        </div>
+
+        @* ── Quản lý người dùng ────────────────────────────── *@
+        <div class="admin-nav-group">
+            <div class="admin-nav-group-label">Người dùng</div>
+
+            <a asp-controller="Admin" asp-action="Users"
+               class="admin-nav-link @(IsAny("Users", "UserDetail", "ToggleUserActive") ? "active" : "")">
+                <i class="bi bi-people"></i>
+                <span class="admin-nav-link-text">Tất cả User</span>
+            </a>
+
+            <a asp-controller="Admin" asp-action="PendingTutors"
+               class="admin-nav-link @(IsAny("PendingTutors", "VerifyTutor") ? "active" : "")">
+                <i class="bi bi-person-check"></i>
+                <span class="admin-nav-link-text">Gia sư chờ duyệt</span>
+            </a>
+
+            <a asp-controller="Admin" asp-action="Students"
+               class="admin-nav-link @(Is("Students") ? "active" : "")">
+                <i class="bi bi-mortarboard"></i>
+                <span class="admin-nav-link-text">Học viên</span>
+            </a>
+        </div>
+
+        @* ── Quản lý nội dung ──────────────────────────────── *@
+        <div class="admin-nav-group">
+            <div class="admin-nav-group-label">Nội dung</div>
+
+            <a asp-controller="Admin" asp-action="Subjects"
+               class="admin-nav-link @(Is("Subjects") ? "active" : "")">
+                <i class="bi bi-book"></i>
+                <span class="admin-nav-link-text">Môn học</span>
+            </a>
+
+            <a asp-controller="Admin" asp-action="GradeLevels"
+               class="admin-nav-link @(Is("GradeLevels") ? "active" : "")">
+                <i class="bi bi-layers"></i>
+                <span class="admin-nav-link-text">Cấp lớp</span>
+            </a>
+
+            <a asp-controller="Admin" asp-action="TeachingStyles"
+               class="admin-nav-link @(Is("TeachingStyles") ? "active" : "")">
+                <i class="bi bi-lightbulb"></i>
+                <span class="admin-nav-link-text">Phong cách dạy</span>
+            </a>
+
+            <a asp-controller="Admin" asp-action="Banners"
+               class="admin-nav-link @(Is("Banners") ? "active" : "")">
+                <i class="bi bi-image"></i>
+                <span class="admin-nav-link-text">Banner</span>
+            </a>
+        </div>
+
+        @* ── Khiếu nại & Vi phạm ───────────────────────────── *@
+        <div class="admin-nav-group">
+            <div class="admin-nav-group-label">Vi phạm</div>
+
+            <a asp-controller="Admin" asp-action="ReviewComplaints"
+               class="admin-nav-link @(IsAny("ReviewComplaints", "ReviewComplaintDetail", "HandleReviewComplaint") ? "active" : "")">
+                <i class="bi bi-chat-square-text"></i>
+                <span class="admin-nav-link-text">Khiếu nại review</span>
+            </a>
+
+            <a asp-controller="Admin" asp-action="Reports"
+               class="admin-nav-link @(IsAny("Reports", "ReportDetail") ? "active" : "")">
+                <i class="bi bi-flag"></i>
+                <span class="admin-nav-link-text">Báo cáo vi phạm</span>
+            </a>
+
+            <a asp-controller="Admin" asp-action="FraudWarnings"
+               class="admin-nav-link @(Is("FraudWarnings") ? "active" : "")">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span class="admin-nav-link-text">Cảnh báo gian lận</span>
+            </a>
+        </div>
+
+        @* ── Hỗ trợ ─────────────────────────────────────────── *@
+        <div class="admin-nav-group">
+            <div class="admin-nav-group-label">Hỗ trợ</div>
+
+            <a asp-controller="Admin" asp-action="Tickets"
+               class="admin-nav-link @(IsAny("Tickets", "TicketDetail", "ReplyTicket", "AssignTicket", "UpdateTicketStatus") ? "active" : "")">
+                <i class="bi bi-headset"></i>
+                <span class="admin-nav-link-text">Support Tickets</span>
+            </a>
+        </div>
+
+        @* ── Tài chính ──────────────────────────────────────── *@
+        <div class="admin-nav-group">
+            <div class="admin-nav-group-label">Tài chính</div>
+
+            <a asp-controller="Admin" asp-action="Transactions"
+               class="admin-nav-link @(IsAny("Transactions", "TransactionDetail") ? "active" : "")">
+                <i class="bi bi-arrow-left-right"></i>
+                <span class="admin-nav-link-text">Giao dịch</span>
+            </a>
+
+            <a asp-controller="Admin" asp-action="Payments"
+               class="admin-nav-link @(Is("Payments") ? "active" : "")">
+                <i class="bi bi-credit-card"></i>
+                <span class="admin-nav-link-text">Thanh toán</span>
+            </a>
+
+            <a asp-controller="Admin" asp-action="Wallets"
+               class="admin-nav-link @(Is("Wallets") ? "active" : "")">
+                <i class="bi bi-wallet2"></i>
+                <span class="admin-nav-link-text">Ví tiền</span>
+            </a>
+        </div>
+
+        @* ── Email & Thông báo ──────────────────────────────── *@
+        <div class="admin-nav-group">
+            <div class="admin-nav-group-label">Email</div>
+
+            <a asp-controller="Admin" asp-action="EmailTemplates"
+               class="admin-nav-link @(Is("EmailTemplates") ? "active" : "")">
+                <i class="bi bi-envelope-paper"></i>
+                <span class="admin-nav-link-text">Email Templates</span>
+            </a>
+
+            <a asp-controller="Admin" asp-action="EmailLogs"
+               class="admin-nav-link @(IsAny("EmailLogs", "EmailQueue") ? "active" : "")">
+                <i class="bi bi-envelope-open"></i>
+                <span class="admin-nav-link-text">Email Logs</span>
+            </a>
+
+            <a asp-controller="Admin" asp-action="BroadcastNotification"
+               class="admin-nav-link @(Is("BroadcastNotification") ? "active" : "")">
+                <i class="bi bi-megaphone"></i>
+                <span class="admin-nav-link-text">Broadcast</span>
+            </a>
+        </div>
+
+        @* ── Audit & Hệ thống ───────────────────────────────── *@
+        <div class="admin-nav-group">
+            <div class="admin-nav-group-label">Hệ thống</div>
+
+            <a asp-controller="Admin" asp-action="AuditLogs"
+               class="admin-nav-link @(IsAny("AuditLogs", "AuditLogDetail") ? "active" : "")">
+                <i class="bi bi-journal-text"></i>
+                <span class="admin-nav-link-text">Audit Logs</span>
+            </a>
+        </div>
+
+    </nav>
+</aside>

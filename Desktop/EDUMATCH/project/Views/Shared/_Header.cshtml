@@ -5,8 +5,11 @@
             EduMatch
         </a>
         <ul class="nav-links">
-            <li><a asp-controller="Student" asp-action="Search">Tìm gia sư</a></li>
-            <li><a asp-controller="Student" asp-action="Subjects">Môn học</a></li>
+            @if (!User.IsInRole("Tutor") && !User.IsInRole("Admin"))
+            {
+                <li><a asp-controller="Student" asp-action="Search">Tìm gia sư</a></li>
+                <li><a asp-controller="Student" asp-action="Subjects">Môn học</a></li>
+            }
             @if (User?.Identity?.IsAuthenticated == true)
             {
                 @if (User.IsInRole("Student"))
@@ -14,13 +17,16 @@
                     <li><a asp-controller="Student" asp-action="Bookings">Yêu cầu học</a></li>
                     <li><a asp-controller="Student" asp-action="Contracts">Hợp đồng</a></li>
                     <li><a asp-controller="Student" asp-action="Schedule">Lịch học</a></li>
+                    <li><a asp-controller="Support" asp-action="MyTickets">Hỗ trợ</a></li>
                 }
                 @if (User.IsInRole("Tutor"))
                 {
+                    <li><a asp-controller="Tutor" asp-action="Dashboard">Dashboard</a></li>
                     <li><a asp-controller="Tutor" asp-action="ManageSubjects">Môn dạy</a></li>
                     <li><a asp-controller="Tutor" asp-action="Bookings">Yêu cầu dạy</a></li>
                     <li><a asp-controller="Tutor" asp-action="Contracts">Hợp đồng</a></li>
                     <li><a asp-controller="Tutor" asp-action="Posts">Bài viết</a></li>
+                    <li><a asp-controller="Support" asp-action="MyTickets">Hỗ trợ</a></li>
                 }
                 @if (User.IsInRole("Admin"))
                 {
@@ -46,6 +52,10 @@
                 @if (User.IsInRole("Tutor"))
                 {
                     <a asp-controller="Tutor" asp-action="Wallet" class="btn-ghost">Ví tiền</a>
+                }
+                @if (!User.IsInRole("Admin"))
+                {
+                    @await Component.InvokeAsync("NotificationBell")
                 }
                 <a asp-controller="Account" asp-action="Profile" class="btn-ghost">Tài khoản</a>
                 <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline" style="display:inline;margin-left:8px;">

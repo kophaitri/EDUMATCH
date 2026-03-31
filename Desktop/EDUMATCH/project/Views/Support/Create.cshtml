@@ -1,0 +1,51 @@
+@{ ViewData["Title"] = "Gửi yêu cầu hỗ trợ"; }
+
+<div class="container py-4" style="max-width: 640px;">
+    <h4 class="fw-bold mb-1">Gửi yêu cầu hỗ trợ</h4>
+    <p class="text-muted mb-4">
+        Mô tả vấn đề bạn gặp phải. Admin sẽ phản hồi trong thời gian sớm nhất.
+        <a asp-action="MyTickets" class="ms-2">← Xem ticket của tôi</a>
+    </p>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-4">
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        Tiêu đề <span class="text-danger">*</span>
+                    </label>
+                    <input name="subject" class="form-control" required maxlength="200"
+                           placeholder="Tóm tắt ngắn gọn vấn đề của bạn..." />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        Mô tả chi tiết <span class="text-danger">*</span>
+                    </label>
+                    <textarea name="description" class="form-control" rows="6" required maxlength="2000"
+                              placeholder="Mô tả đầy đủ vấn đề, các bước tái hiện, thông tin liên quan..."></textarea>
+                    <div class="form-text">Mô tả càng chi tiết, chúng tôi càng hỗ trợ bạn nhanh hơn.</div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Mức độ ưu tiên</label>
+                    <select name="priority" class="form-select">
+                        <option value="Low">Thấp — Không khẩn cấp</option>
+                        <option value="Medium" selected>Trung bình — Cần hỗ trợ sớm</option>
+                        <option value="High">Cao — Ảnh hưởng đến hoạt động</option>
+                        <option value="Urgent">Khẩn cấp — Cần giải quyết ngay</option>
+                    </select>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-dark px-4">
+                        <i class="bi bi-send me-1"></i>Gửi ticket
+                    </button>
+                    <a asp-action="MyTickets" class="btn btn-outline-secondary">Huỷ</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

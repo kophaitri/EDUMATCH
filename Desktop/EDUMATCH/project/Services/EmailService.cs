@@ -8,11 +8,13 @@ public class EmailService : IEmailService
 {
     private readonly IConfiguration _config;
     private readonly ILogger<EmailService> _logger;
+    private readonly EduMatchDbContext _db;
 
-    public EmailService(IConfiguration config, ILogger<EmailService> logger)
+    public EmailService(IConfiguration config, ILogger<EmailService> logger, EduMatchDbContext db)
     {
         _config = config;
         _logger = logger;
+        _db = db;
     }
 
     public async Task SendPasswordResetEmailAsync(string toEmail, string toName, string resetLink)
@@ -71,26 +73,58 @@ public class EmailService : IEmailService
 
     private async Task SendEmailAsync(string toEmail, string toName, string subject, string htmlBody)
     {
-        var smtpHost = _config["Email:SmtpHost"]!;
-        var smtpPort = int.Parse(_config["Email:SmtpPort"]!);
-        var username = _config["Email:Username"]!;
-        var password = _config["Email:Password"]!;
-        var fromName = _config["Email:FromName"]!;
-        var fromAddress = _config["Email:FromAddress"]!;
+        bool isSuccess = false;
+        string? errorMessage = null;
 
-        var message = new MimeMessage();
-        message.From.Add(new MailboxAddress(fromName, fromAddress));
-        message.To.Add(new MailboxAddress(toName, toEmail));
-        message.Subject = subject;
-        message.Body = new TextPart("html") { Text = htmlBody };
+        try
+        {
+            var smtpHost = _config["Email:SmtpHost"]!;
+            var smtpPort = int.Parse(_config["Email:SmtpPort"]!);
+            var username = _config["Email:Username"]!;
+            var password = _config["Email:Password"]!;
+            var fromName = _config["Email:FromName"]!;
+            var fromAddress = _config["Email:FromAddress"]!;
 
-        using var client = new SmtpClient();
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(fromName, fromAddress));
+            message.To.Add(new MailboxAddress(toName, toEmail));
+            message.Subject = subject;
+            message.Body = new TextPart("html") { Text = htmlBody };
 
-        await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
-        await client.AuthenticateAsync(username, password);
-        await client.SendAsync(message);
-        await client.DisconnectAsync(true);
+            using var client = new SmtpClient();
+            await client.ConnectAsync(smtpHost, smtpPort, SecureSocketOptions.StartTls);
+            await client.AuthenticateAsync(username, password);
+            await client.SendAsync(message);
+            await client.DisconnectAsync(true);
 
-        _logger.LogInformation("Email '{Subject}' sent to {Email}.", subject, toEmail);
+            isSuccess = true;
+            _logger.LogInformation("Email '{Subject}' sent to {Email}.", subject, toEmail);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+            _logger.LogError(ex, "Failed to send email '{Subject}' to {Email}.", subject, toEmail);
+            throw;
+        }
+        finally
+        {
+            // Luôn ghi log kết quả gửi email vào EmailLog (kể cả thất bại)
+            try
+            {
+                _db.EmailLogs.Add(new EmailLog
+                {
+                    ToEmail = toEmail,
+                    Subject = subject,
+                    IsSuccess = isSuccess,
+                    ErrorMessage = errorMessage,
+                    SentAt = DateTime.UtcNow
+                });
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception logEx)
+            {
+                _logger.LogWarning(logEx, "Could not save EmailLog for {Email}.", toEmail);
+            }
+        }
     }
 }

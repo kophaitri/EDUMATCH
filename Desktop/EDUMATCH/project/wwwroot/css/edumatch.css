@@ -344,3 +344,155 @@ input:focus {
 .lightbox-nav .material-symbols-outlined {
     font-size: 2.5rem;
 }
+
+/* ===== Notification Bell (header) ===== */
+
+.nav-notification-bell {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gray-4);
+    text-decoration: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    transition: background 0.2s var(--ease-out), color 0.2s;
+    font-size: 1.1rem;
+    margin-right: 4px;
+}
+
+.nav-notification-bell:hover {
+    background: var(--gray-8);
+    color: var(--black);
+}
+
+.notification-badge {
+    position: absolute;
+    top: 1px;
+    right: 1px;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.55rem;
+    font-weight: 700;
+    min-width: 15px;
+    height: 15px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 3px;
+    line-height: 1;
+    border: 1.5px solid #fff;
+}
+
+/* ===== Notification page ===== */
+
+.notification-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.notification-item {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem 0.75rem;
+    border-radius: 10px;
+    border-bottom: 1px solid var(--gray-7);
+    transition: background 0.15s;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-item.unread {
+    background: #f5f7ff;
+}
+
+.notification-item:hover {
+    background: var(--gray-8);
+}
+
+.notification-item .notif-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: var(--gray-7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 1rem;
+    color: var(--gray-4);
+}
+
+.notification-item.unread .notif-icon {
+    background: #e0e7ff;
+    color: #4f46e5;
+}
+
+.notification-item .notif-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.notification-item .notif-title {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--black);
+    margin-bottom: 0.2rem;
+}
+
+.notification-item .notif-message {
+    font-size: 0.85rem;
+    color: var(--gray-4);
+    line-height: 1.45;
+}
+
+.notification-item .notif-time {
+    font-size: 0.75rem;
+    color: var(--gray-5);
+    margin-top: 0.35rem;
+}
+
+/* ===== Support ticket card (MyTickets) ===== */
+
+.ticket-card {
+    display: block;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--gray-7);
+    border-radius: 10px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: var(--white);
+}
+
+.ticket-card:hover {
+    border-color: var(--gray-5);
+    box-shadow: var(--shadow-soft);
+}
+
+/* ===== Tutor Dashboard stat cards ===== */
+
+.tutor-stat-card {
+    border: 1px solid var(--gray-7) !important;
+    transition: border-color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), transform 0.2s var(--ease-out);
+    cursor: pointer;
+}
+
+.tutor-stat-card:hover {
+    border-color: var(--gray-4) !important;
+    box-shadow: var(--shadow-soft);
+    transform: translateY(-2px);
+}
+
+.tutor-stat-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}

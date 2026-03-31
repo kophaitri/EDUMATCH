@@ -70,18 +70,6 @@
         </div>
     </div>
 
-    <!-- Menu thống kê -->
-    <div class="col-md-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-header"><strong>Thống kê</strong></div>
-            <div class="list-group list-group-flush">
-                <a asp-action="StatsSessions" class="list-group-item list-group-item-action">📅 Buổi học theo tháng</a>
-                <a asp-action="StatsRevenue" class="list-group-item list-group-item-action">💰 Doanh thu theo tháng</a>
-                <a asp-action="StatsReputation" class="list-group-item list-group-item-action">⭐ Uy tín & Đánh giá</a>
-            </div>
-        </div>
-    </div>
-
     <!-- Menu quản lý -->
     <div class="col-md-4">
         <div class="card shadow-sm h-100">
@@ -96,6 +84,59 @@
                 <a asp-action="Posts" class="list-group-item list-group-item-action">Bài đăng của tôi</a>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Thống kê nhanh - 3 card -->
+<h6 class="text-muted text-uppercase fw-semibold mb-3" style="letter-spacing:.08em;font-size:.72rem;">Thống kê</h6>
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <a asp-action="StatsSessions" class="text-decoration-none">
+            <div class="card shadow-sm border-0 h-100 tutor-stat-card">
+                <div class="card-body d-flex align-items-center gap-3 py-3">
+                    <div class="tutor-stat-icon bg-primary-subtle text-primary">
+                        <i class="bi bi-calendar3"></i>
+                    </div>
+                    <div>
+                        <div class="fw-semibold">Thống kê buổi học</div>
+                        <div class="text-muted small">Xem theo tháng / năm</div>
+                    </div>
+                    <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a asp-action="StatsRevenue" class="text-decoration-none">
+            <div class="card shadow-sm border-0 h-100 tutor-stat-card">
+                <div class="card-body d-flex align-items-center gap-3 py-3">
+                    <div class="tutor-stat-icon bg-success-subtle text-success">
+                        <i class="bi bi-cash-coin"></i>
+                    </div>
+                    <div>
+                        <div class="fw-semibold">Doanh thu dự kiến</div>
+                        <div class="text-muted small">Xem theo tháng / năm</div>
+                    </div>
+                    <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-4">
+        <a asp-action="StatsReputation" class="text-decoration-none">
+            <div class="card shadow-sm border-0 h-100 tutor-stat-card">
+                <div class="card-body d-flex align-items-center gap-3 py-3">
+                    <div class="tutor-stat-icon bg-warning-subtle text-warning">
+                        <i class="bi bi-star-half"></i>
+                    </div>
+                    <div>
+                        <div class="fw-semibold">Điểm uy tín</div>
+                        <div class="text-muted small">Đánh giá & lịch sử</div>
+                    </div>
+                    <i class="bi bi-chevron-right ms-auto text-muted"></i>
+                </div>
+            </div>
+        </a>
     </div>
 </div>
 
