@@ -1,0 +1,70 @@
+@model AuditLogDetailDto
+@{ ViewData["Title"] = "Chi tiết Audit Log"; }
+
+<h4 class="mb-1">Audit Log #@Model.Id</h4>
+<a asp-action="AuditLogs" class="btn btn-outline-secondary btn-sm mb-3">← Quay lại</a>
+
+<div class="row">
+    <div class="col-md-5">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header"><strong>Thông tin chung</strong></div>
+            <div class="card-body">
+                <p><strong>Người dùng:</strong> @(Model.UserName ?? "Hệ thống")</p>
+                @if (Model.UserEmail != null)
+                {
+                    <p><strong>Email:</strong> @Model.UserEmail</p>
+                }
+                <p><strong>Hành động:</strong> <span class="badge bg-info text-dark fs-6">@Model.Action</span></p>
+                <p><strong>Entity:</strong> @Model.EntityType</p>
+                <p><strong>Entity ID:</strong> <code>@Model.EntityId</code></p>
+                <p><strong>IP:</strong> @(Model.IpAddress ?? "—")</p>
+                <p><strong>Thời gian:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-7">
+        @if (Model.Changes.Any())
+        {
+            <div class="card shadow-sm mb-3">
+                <div class="card-header"><strong>Thay đổi</strong></div>
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr><th>Trường</th><th class="text-danger">Giá trị cũ</th><th class="text-success">Giá trị mới</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var c in Model.Changes)
+                            {
+                                <tr>
+                                    <td><code>@c.Field</code></td>
+                                    <td class="text-danger">@(c.OldValue ?? "(null)")</td>
+                                    <td class="text-success">@(c.NewValue ?? "(null)")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        @if (Model.OldValues != null || Model.NewValues != null)
+        {
+            <div class="card shadow-sm">
+                <div class="card-header"><strong>Raw JSON</strong></div>
+                <div class="card-body">
+                    @if (Model.OldValues != null)
+                    {
+                        <p class="fw-semibold text-danger mb-1">Old Values:</p>
+                        <pre class="bg-light p-2 rounded small">@Model.OldValues</pre>
+                    }
+                    @if (Model.NewValues != null)
+                    {
+                        <p class="fw-semibold text-success mb-1">New Values:</p>
+                        <pre class="bg-light p-2 rounded small">@Model.NewValues</pre>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>

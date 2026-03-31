@@ -1,0 +1,53 @@
+@model List<EmailQueueListDto>
+@{ ViewData["Title"] = "Hàng đợi Email"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Hàng đợi Email <span class="badge bg-secondary">@Model.Count</span></h4>
+    @if (Model.Count > 0)
+    {
+        <form asp-action="ClearEmailQueue" method="post"
+              onsubmit="return confirm('Xóa toàn bộ hàng đợi?')">
+            @Html.AntiForgeryToken()
+            <button class="btn btn-danger btn-sm">Xóa tất cả</button>
+        </form>
+    }
+</div>
+
+@if (TempData["SuccessMessage"] != null) { <div class="alert alert-success">@TempData["SuccessMessage"]</div> }
+@if (TempData["ErrorMessage"] != null) { <div class="alert alert-danger">@TempData["ErrorMessage"]</div> }
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Hàng đợi email trống.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr><th>#</th><th>Đến</th><th>Tiêu đề</th><th>Độ ưu tiên</th><th>Thử lại</th><th>Lên lịch lúc</th><th>Tạo lúc</th><th></th></tr>
+            </thead>
+            <tbody>
+                @foreach (var q in Model)
+                {
+                    <tr>
+                        <td>@q.Id</td>
+                        <td>@q.ToEmail</td>
+                        <td>@q.Subject</td>
+                        <td><span class="badge bg-@(q.Priority <= 3 ? "danger" : q.Priority <= 6 ? "warning text-dark" : "secondary")">@q.Priority</span></td>
+                        <td>@q.RetryCount</td>
+                        <td>@(q.ScheduledAt?.ToString("dd/MM HH:mm") ?? "—")</td>
+                        <td>@q.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>
+                            <form asp-action="DeleteEmailQueueItem" asp-route-id="@q.Id" method="post"
+                                  onsubmit="return confirm('Xóa mục này?')">
+                                @Html.AntiForgeryToken()
+                                <button class="btn btn-sm btn-outline-danger">Xóa</button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

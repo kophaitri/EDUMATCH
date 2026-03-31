@@ -1,0 +1,61 @@
+@model List<GradeLevelDto>
+@{ ViewData["Title"] = "Cấp lớp"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Cấp lớp</h4>
+    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createModal">+ Thêm cấp lớp</button>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-dark"><tr><th>Thứ tự</th><th>Tên</th><th></th></tr></thead>
+        <tbody>
+            @foreach (var g in Model)
+            {
+                <tr>
+                    <td>@g.DisplayOrder</td>
+                    <td><strong>@g.Name</strong></td>
+                    <td class="d-flex gap-1">
+                        <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editModal-@g.Id">Sửa</button>
+                        <form asp-action="DeleteGradeLevel" asp-route-id="@g.Id" method="post"
+                              onsubmit="return confirm('Xóa cấp lớp @g.Name?')">
+                            @Html.AntiForgeryToken()
+                            <button class="btn btn-sm btn-outline-danger">Xóa</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="modal fade" id="createModal" tabindex="-1">
+    <div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Thêm cấp lớp</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <form asp-action="CreateGradeLevel" method="post">
+            @Html.AntiForgeryToken()
+            <div class="modal-body">
+                <div class="mb-2"><label class="form-label">Tên <span class="text-danger">*</span></label><input name="Name" class="form-control" required /></div>
+                <div class="mb-2"><label class="form-label">Thứ tự hiển thị</label><input name="DisplayOrder" type="number" class="form-control" value="0" /></div>
+            </div>
+            <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn btn-primary">Thêm</button></div>
+        </form>
+    </div></div>
+</div>
+
+@foreach (var g in Model)
+{
+    <div class="modal fade" id="editModal-@g.Id" tabindex="-1">
+        <div class="modal-dialog"><div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Sửa: @g.Name</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <form asp-action="UpdateGradeLevel" asp-route-id="@g.Id" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <div class="mb-2"><label class="form-label">Tên <span class="text-danger">*</span></label><input name="Name" class="form-control" value="@g.Name" required /></div>
+                    <div class="mb-2"><label class="form-label">Thứ tự</label><input name="DisplayOrder" type="number" class="form-control" value="@g.DisplayOrder" /></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button><button type="submit" class="btn btn-primary">Lưu</button></div>
+            </form>
+        </div></div>
+    </div>
+}

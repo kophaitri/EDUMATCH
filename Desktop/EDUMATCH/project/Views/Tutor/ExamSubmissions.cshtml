@@ -1,0 +1,136 @@
+@model List<EduMatch.Models.ExamSubmission>
+@{
+    ViewData["Title"] = "Bài làm học viên";
+    var exam = ViewBag.Exam as EduMatch.Models.Exam;
+}
+
+<div class="container mt-4">
+    <div class="d-flex align-items-center mb-4">
+        <a asp-action="Exams" class="btn btn-outline-secondary btn-sm me-3">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <h2 class="mb-0">Bài làm học viên</h2>
+            <small class="text-muted">Bài thi: <strong>@exam?.Title</strong></small>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
+                <p class="text-muted mt-3">Chưa có học viên nào làm bài thi này.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Học viên</th>
+                                <th>Bắt đầu</th>
+                                <th>Nộp bài</th>
+                                <th>Điểm</th>
+                                <th>%</th>
+                                <th>Kết quả</th>
+                                <th>Trạng thái</th>
+                                <th>Gian lận</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in Model)
+                            {
+                                <tr>
+                                    <td>@s.Student.FullName</td>
+                                    <td><small>@s.StartedAt.ToString("dd/MM/yyyy HH:mm")</small></td>
+                                    <td>
+                                        @if (s.SubmittedAt.HasValue)
+                                        {
+                                            <small>@s.SubmittedAt.Value.ToString("dd/MM/yyyy HH:mm")</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                    <td><strong>@s.TotalScore.ToString("0.#")</strong></td>
+                                    <td>@s.Percentage.ToString("0.#")%</td>
+                                    <td>
+                                        @if (s.IsPassed)
+                                        {
+                                            <span class="badge bg-success">Đạt</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Chưa đạt</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @switch (s.Status)
+                                        {
+                                            case SubmissionStatus.InProgress:
+                                                <span class="badge bg-warning text-dark">Đang làm</span>
+                                                break;
+                                            case SubmissionStatus.Submitted:
+                                                <span class="badge bg-info">Đã nộp</span>
+                                                break;
+                                            case SubmissionStatus.Graded:
+                                                <span class="badge bg-success">Đã chấm</span>
+                                                break;
+                                            case SubmissionStatus.Flagged:
+                                                <span class="badge bg-danger">Bị cờ</span>
+                                                break;
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (s.IsFlagged || s.FraudWarnings.Any())
+                                        {
+                                            <a asp-action="FraudWarning" asp-route-examId="@exam!.Id" asp-route-subId="@s.Id"
+                                               class="badge bg-danger text-decoration-none">
+                                                <i class="bi bi-exclamation-triangle"></i> @s.FraudWarnings.Count
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <a asp-action="SubmissionDetail" asp-route-examId="@exam!.Id" asp-route-subId="@s.Id"
+                                               class="btn btn-sm btn-outline-primary" title="Xem chi tiết">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a asp-action="GradeSubmission" asp-route-examId="@exam!.Id" asp-route-subId="@s.Id"
+                                               class="btn btn-sm btn-outline-success" title="Chấm điểm">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </a>
+                                            <a asp-action="RetakeRequest" asp-route-examId="@exam!.Id" asp-route-subId="@s.Id"
+                                               class="btn btn-sm btn-outline-secondary" title="Yêu cầu làm lại">
+                                                <i class="bi bi-arrow-repeat"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>

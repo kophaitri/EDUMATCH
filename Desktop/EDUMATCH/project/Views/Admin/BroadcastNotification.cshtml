@@ -1,0 +1,47 @@
+@model BroadcastNotificationRequest
+@{ ViewData["Title"] = "Broadcast Thông báo"; }
+
+<h4 class="mb-3">Broadcast Thông báo hệ thống</h4>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["SuccessMessage"]
+        @if (ViewBag.SentCount != null) { <strong> (Đã gửi: @ViewBag.SentCount)</strong> }
+    </div>
+}
+@if (TempData["ErrorMessage"] != null) { <div class="alert alert-danger">@TempData["ErrorMessage"]</div> }
+
+<div class="card shadow-sm" style="max-width:640px">
+    <div class="card-header"><strong>Soạn thông báo</strong></div>
+    <div class="card-body">
+        <form asp-action="BroadcastNotification" method="post">
+            @Html.AntiForgeryToken()
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Đối tượng nhận</label>
+                <select name="TargetRole" class="form-select">
+                    <option value="">Tất cả người dùng</option>
+                    <option value="Tutor">Gia sư</option>
+                    <option value="Student">Học viên</option>
+                    <option value="Admin">Admin</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Tiêu đề <span class="text-danger">*</span></label>
+                <input name="Title" class="form-control" value="@Model?.Title" required maxlength="200" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Nội dung <span class="text-danger">*</span></label>
+                <textarea name="Message" class="form-control" rows="4" required maxlength="1000">@Model?.Message</textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-semibold">URL hành động (tùy chọn)</label>
+                <input name="ActionUrl" class="form-control" value="@Model?.ActionUrl" placeholder="/Admin/Dashboard" />
+            </div>
+            <button type="submit" class="btn btn-warning fw-bold"
+                    onclick="return confirm('Gửi thông báo đến toàn bộ đối tượng đã chọn?')">
+                Gửi thông báo
+            </button>
+        </form>
+    </div>
+</div>

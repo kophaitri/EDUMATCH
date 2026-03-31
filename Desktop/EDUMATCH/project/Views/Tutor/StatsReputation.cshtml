@@ -1,0 +1,101 @@
+@model TutorReputationStatsDto
+@{ ViewData["Title"] = "Thống kê uy tín"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Uy tín & Đánh giá</h4>
+    <a asp-action="Dashboard" class="btn btn-outline-secondary btn-sm">← Dashboard</a>
+</div>
+
+@if (TempData["ErrorMessage"] != null) { <div class="alert alert-danger">@TempData["ErrorMessage"]</div> }
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 bg-warning text-dark text-center shadow-sm">
+            <div class="card-body py-3">
+                <div class="fs-2 fw-bold">@Model.CurrentScore.ToString("F1")</div>
+                <div class="small">Điểm uy tín</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 bg-primary text-white text-center shadow-sm">
+            <div class="card-body py-3">
+                <div class="fs-2 fw-bold">@Model.AvgRating.ToString("F2")</div>
+                <div class="small">Điểm đánh giá TB</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 bg-info text-white text-center shadow-sm">
+            <div class="card-body py-3">
+                <div class="fs-2 fw-bold">@Model.TotalReviews</div>
+                <div class="small">Tổng đánh giá</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Phân bố đánh giá -->
+    <div class="col-md-5">
+        <div class="card shadow-sm">
+            <div class="card-header"><strong>Phân bố đánh giá</strong></div>
+            <div class="card-body">
+                @{
+                    var ratings = new[] {
+                        (5, Model.Rating5),
+                        (4, Model.Rating4),
+                        (3, Model.Rating3),
+                        (2, Model.Rating2),
+                        (1, Model.Rating1)
+                    };
+                }
+                @foreach (var (star, count) in ratings)
+                {
+                    int pct = Model.TotalReviews > 0 ? count * 100 / Model.TotalReviews : 0;
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <span class="text-warning" style="min-width:32px">@star ⭐</span>
+                        <div class="progress flex-grow-1" style="height:16px">
+                            <div class="progress-bar bg-warning" style="width:@pct%"></div>
+                        </div>
+                        <span class="text-muted" style="min-width:28px">@count</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Lịch sử điểm uy tín -->
+    <div class="col-md-7">
+        <div class="card shadow-sm">
+            <div class="card-header"><strong>Lịch sử điểm uy tín (20 gần nhất)</strong></div>
+            @if (!Model.RecentLogs.Any())
+            {
+                <div class="card-body text-muted">Chưa có lịch sử.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm mb-0">
+                        <thead class="table-light">
+                            <tr><th>Hành động</th><th>Thay đổi</th><th>Lý do</th><th>Thời gian</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var log in Model.RecentLogs)
+                            {
+                                <tr>
+                                    <td>@log.Action</td>
+                                    <td class="@(log.PointsChange >= 0 ? "text-success" : "text-danger") fw-bold">
+                                        @(log.PointsChange >= 0 ? "+" : "")@log.PointsChange.ToString("F1")
+                                    </td>
+                                    <td><small class="text-muted">@log.Reason</small></td>
+                                    <td><small>@log.CreatedAt.ToString("dd/MM/yyyy")</small></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>

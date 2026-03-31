@@ -1,0 +1,93 @@
+@model EduMatch.Models.ExamSubmission
+@{
+    ViewData["Title"] = "Cảnh báo gian lận";
+    var exam = ViewBag.Exam as EduMatch.Models.Exam;
+}
+
+<div class="container mt-4">
+    <div class="d-flex align-items-center mb-4">
+        <a asp-action="ExamSubmissions" asp-route-id="@exam!.Id" class="btn btn-outline-secondary btn-sm me-3">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <h2 class="mb-0">Cảnh báo gian lận</h2>
+            <small class="text-muted">@exam.Title — @Model.Student.FullName</small>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h4 class="@(Model.FraudScore > 50 ? "text-danger" : "text-warning")">
+                        @Model.FraudScore.ToString("0.#")
+                    </h4>
+                    <small class="text-muted">Điểm rủi ro gian lận</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h4>@Model.FraudWarnings.Count</h4>
+                    <small class="text-muted">Tổng cảnh báo</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h4 class="@(Model.IsFlagged ? "text-danger" : "text-success")">
+                        @(Model.IsFlagged ? "Bị cờ" : "Bình thường")
+                    </h4>
+                    <small class="text-muted">Trạng thái</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!Model.FraudWarnings.Any())
+    {
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-shield-check text-success" style="font-size: 3rem;"></i>
+                <p class="text-muted mt-3">Không có cảnh báo gian lận nào cho bài làm này.</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <strong><i class="bi bi-exclamation-triangle-fill text-warning"></i> Danh sách cảnh báo (@Model.FraudWarnings.Count)</strong>
+            </div>
+            <div class="list-group list-group-flush">
+                @foreach (var warning in Model.FraudWarnings.OrderByDescending(w => w.DetectedAt))
+                {
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="badge bg-warning text-dark me-2">@warning.WarningType</span>
+                                <p class="mb-0 mt-1">@warning.Details</p>
+                            </div>
+                            <small class="text-muted text-nowrap ms-2">
+                                @warning.DetectedAt.ToString("dd/MM/yyyy HH:mm:ss")
+                            </small>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="d-flex gap-2 mt-3">
+        <a asp-action="SubmissionDetail" asp-route-examId="@exam.Id" asp-route-subId="@Model.Id"
+           class="btn btn-outline-primary">
+            <i class="bi bi-eye"></i> Xem bài làm
+        </a>
+        <a asp-action="GradeSubmission" asp-route-examId="@exam.Id" asp-route-subId="@Model.Id"
+           class="btn btn-outline-success">
+            <i class="bi bi-pencil-square"></i> Chấm điểm
+        </a>
+    </div>
+</div>
