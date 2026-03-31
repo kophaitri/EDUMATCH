@@ -1,0 +1,132 @@
+@model List<EduMatch.ViewModels.ExamListItemViewModel>
+@{ ViewData["Title"] = "Bài kiểm tra của tôi"; }
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Bài kiểm tra của tôi</h2>
+        <a asp-action="CreateExam" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Tạo bài kiểm tra mới
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show">
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-journal-text text-muted" style="font-size: 3rem;"></i>
+                <p class="text-muted mt-3">Bạn chưa có bài kiểm tra nào.</p>
+                <a asp-action="CreateExam" class="btn btn-primary mt-2">Tạo bài kiểm tra đầu tiên</a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tiêu đề</th>
+                        <th>Thời gian</th>
+                        <th>Điểm qua môn</th>
+                        <th>Câu hỏi</th>
+                        <th>Bài làm</th>
+                        <th>Trạng thái</th>
+                        <th>Mở/Đóng</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var exam in Model)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@exam.Title</strong>
+                                @if (!string.IsNullOrEmpty(exam.ExamFileUrl))
+                                {
+                                    <a href="@exam.ExamFileUrl" target="_blank" class="ms-1 text-muted" title="Tải file đề">
+                                        <i class="bi bi-paperclip"></i>
+                                    </a>
+                                }
+                                <br /><small class="text-muted">@exam.CreatedAt.ToString("dd/MM/yyyy")</small>
+                            </td>
+                            <td>@exam.DurationMinutes phút</td>
+                            <td>@exam.PassingScore điểm</td>
+                            <td><span class="badge bg-secondary">@exam.TotalQuestions</span></td>
+                            <td>
+                                <a asp-action="ExamSubmissions" asp-route-id="@exam.Id" class="badge bg-info text-decoration-none">
+                                    @exam.TotalSubmissions bài làm
+                                </a>
+                            </td>
+                            <td>
+                                @switch (exam.Status)
+                                {
+                                    case ExamStatus.Draft:
+                                        <span class="badge bg-secondary">Nháp</span>
+                                        break;
+                                    case ExamStatus.Published:
+                                        <span class="badge bg-success">Đã xuất bản</span>
+                                        break;
+                                    case ExamStatus.Archived:
+                                        <span class="badge bg-dark">Lưu trữ</span>
+                                        break;
+                                }
+                            </td>
+                            <td>
+                                <form asp-action="ToggleExam" asp-route-id="@exam.Id" method="post">
+                                    @Html.AntiForgeryToken()
+                                    @if (exam.IsOpen)
+                                    {
+                                        <button type="submit" class="btn btn-sm btn-warning" title="Đóng bài thi">
+                                            <i class="bi bi-lock"></i> Đóng
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="btn btn-sm btn-success" title="Mở bài thi">
+                                            <i class="bi bi-unlock"></i> Mở
+                                        </button>
+                                    }
+                                </form>
+                                @if (exam.IsOpen && exam.OpenAt.HasValue)
+                                {
+                                    <small class="text-muted d-block mt-1">Mở: @exam.OpenAt.Value.ToString("dd/MM HH:mm")</small>
+                                }
+                            </td>
+                            <td>
+                                <div class="d-flex gap-1">
+                                    <a asp-action="EditExam" asp-route-id="@exam.Id" class="btn btn-sm btn-outline-primary" title="Chỉnh sửa">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a asp-action="ExamSubmissions" asp-route-id="@exam.Id" class="btn btn-sm btn-outline-info" title="Danh sách bài làm">
+                                        <i class="bi bi-people"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    <div class="mt-3">
+        <a asp-controller="Account" asp-action="Profile" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i> Quay lại trang cá nhân
+        </a>
+    </div>
+</div>

@@ -514,6 +514,572 @@ public class TutorController : Controller
     }
 
     // ============================================================
+    // Exam Management
+    // ============================================================
+
+    // GET: /Tutor/Exams
+    public async Task<IActionResult> Exams()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        var exams = await _db.Exams
+            .Include(e => e.Questions)
+            .Include(e => e.Submissions)
+            .Where(e => e.TutorId == userId)
+            .OrderByDescending(e => e.CreatedAt)
+            .ToListAsync();
+
+        var vm = exams.Select(e => new ExamListItemViewModel
+        {
+            Id = e.Id,
+            Title = e.Title,
+            Description = e.Description,
+            DurationMinutes = e.DurationMinutes,
+            PassingScore = e.PassingScore,
+            Status = e.Status,
+            IsOpen = e.IsOpen,
+            OpenAt = e.OpenAt,
+            CloseAt = e.CloseAt,
+            ExamFileUrl = e.ExamFileUrl,
+            CreatedAt = e.CreatedAt,
+            TotalQuestions = e.Questions.Count,
+            TotalSubmissions = e.Submissions.Count
+        }).ToList();
+
+        return View(vm);
+    }
+
+    // GET: /Tutor/CreateExam
+    [HttpGet]
+    public IActionResult CreateExam() => View(new CreateExamViewModel());
+
+    // POST: /Tutor/CreateExam
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateExam(CreateExamViewModel model)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        // Nếu upload file .docx thì parse trực tiếp, bỏ qua form questions
+        if (model.ExamFile != null && model.ExamFile.Length > 0
+            && Path.GetExtension(model.ExamFile.FileName).Equals(".docx", StringComparison.OrdinalIgnoreCase))
+        {
+            return await CreateExamFromDocx(model, userId);
+        }
+
+        if (!ModelState.IsValid) return View(model);
+
+        var exam = new Exam
+        {
+            TutorId = userId,
+            Title = model.Title,
+            Description = model.Description,
+            DurationMinutes = model.DurationMinutes,
+            PassingScore = model.PassingScore,
+            MaxRetakes = model.MaxRetakes,
+            Status = ExamStatus.Draft
+        };
+
+        if (model.Questions != null)
+        {
+            for (int i = 0; i < model.Questions.Count; i++)
+            {
+                var q = model.Questions[i];
+                if (string.IsNullOrWhiteSpace(q.QuestionText)) continue;
+
+                var question = new ExamQuestion
+                {
+                    QuestionText = q.QuestionText,
+                    Points = q.Points > 0 ? q.Points : 1,
+                    DisplayOrder = i + 1,
+                    QuestionType = "MultipleChoice"
+                };
+
+                for (int j = 0; j < q.Options.Count; j++)
+                {
+                    var opt = q.Options[j];
+                    if (string.IsNullOrWhiteSpace(opt.OptionText)) continue;
+                    question.AnswerOptions.Add(new ExamAnswerOption
+                    {
+                        OptionText = opt.OptionText,
+                        IsCorrect = (j == q.CorrectOptionIndex),
+                        DisplayOrder = j + 1
+                    });
+                }
+
+                exam.Questions.Add(question);
+            }
+        }
+
+        if (model.ExamFile != null && model.ExamFile.Length > 0)
+        {
+            var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "exams");
+            Directory.CreateDirectory(uploadsDir);
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(model.ExamFile.FileName)}";
+            var filePath = Path.Combine(uploadsDir, fileName);
+            using var stream = new FileStream(filePath, FileMode.Create);
+            await model.ExamFile.CopyToAsync(stream);
+            exam.ExamFileUrl = $"/uploads/exams/{fileName}";
+        }
+
+        _db.Exams.Add(exam);
+        await _db.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Tạo bài kiểm tra thành công!";
+        return RedirectToAction(nameof(Exams));
+    }
+
+    private async Task<IActionResult> CreateExamFromDocx(CreateExamViewModel model, string userId)
+    {
+        var parsed = DocxExamParser.ParseFromFile(model.ExamFile!);
+
+        if (!parsed.Success)
+        {
+            foreach (var err in parsed.Errors)
+                ModelState.AddModelError(string.Empty, err);
+            return View("CreateExam", model);
+        }
+
+        // Form values override file tags if user filled them in
+        var exam = new Exam
+        {
+            TutorId = userId,
+            Title = !string.IsNullOrWhiteSpace(model.Title) ? model.Title : parsed.Title,
+            Description = !string.IsNullOrWhiteSpace(model.Description) ? model.Description : parsed.Description,
+            DurationMinutes = model.DurationMinutes > 0 ? model.DurationMinutes : parsed.DurationMinutes,
+            PassingScore = model.PassingScore > 0 ? model.PassingScore : parsed.PassingScore,
+            MaxRetakes = model.MaxRetakes >= 0 ? model.MaxRetakes : parsed.MaxRetakes,
+            Status = ExamStatus.Draft
+        };
+
+        // Lưu file docx
+        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "exams");
+        Directory.CreateDirectory(uploadsDir);
+        var fileName = $"{Guid.NewGuid()}.docx";
+        var filePath = Path.Combine(uploadsDir, fileName);
+        using (var stream = new FileStream(filePath, FileMode.Create))
+            await model.ExamFile!.CopyToAsync(stream);
+        exam.ExamFileUrl = $"/uploads/exams/{fileName}";
+
+        // Thêm câu hỏi từ file
+        foreach (var q in parsed.Questions)
+        {
+            var question = new ExamQuestion
+            {
+                QuestionText = q.QuestionText,
+                PassageText = q.PassageText,
+                PartNumber = q.PartNumber,
+                Points = q.Points,
+                DisplayOrder = q.Number,
+                QuestionType = "MultipleChoice"
+            };
+
+            foreach (var opt in q.Options.OrderBy(o => o.Label))
+            {
+                question.AnswerOptions.Add(new ExamAnswerOption
+                {
+                    OptionText = opt.Text,
+                    IsCorrect = opt.Label == q.CorrectKey,
+                    DisplayOrder = opt.Label switch { "A" => 1, "B" => 2, "C" => 3, _ => 4 }
+                });
+            }
+
+            exam.Questions.Add(question);
+        }
+
+        _db.Exams.Add(exam);
+        await _db.SaveChangesAsync();
+
+        if (parsed.Warnings.Any())
+            TempData["WarningMessage"] = string.Join("; ", parsed.Warnings);
+
+        TempData["SuccessMessage"] = $"Import thành công từ file docx! Đã tạo {parsed.Questions.Count} câu hỏi.";
+        return RedirectToAction(nameof(EditExam), new { id = exam.Id });
+    }
+
+    // GET: /Tutor/EditExam/5
+    [HttpGet]
+    public async Task<IActionResult> EditExam(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var exam = await _db.Exams
+            .Include(e => e.Questions).ThenInclude(q => q.AnswerOptions)
+            .FirstOrDefaultAsync(e => e.Id == id && e.TutorId == userId);
+
+        if (exam == null) return NotFound();
+
+        var vm = new EditExamViewModel
+        {
+            Id = exam.Id,
+            Title = exam.Title,
+            Description = exam.Description,
+            DurationMinutes = exam.DurationMinutes,
+            PassingScore = exam.PassingScore,
+            MaxRetakes = exam.MaxRetakes,
+            ExistingFileUrl = exam.ExamFileUrl
+        };
+
+        ViewBag.ExistingQuestions = exam.Questions.OrderBy(q => q.DisplayOrder).ToList();
+        return View(vm);
+    }
+
+    // POST: /Tutor/EditExam/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditExam(EditExamViewModel model)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var exam = await _db.Exams
+            .Include(e => e.Questions).ThenInclude(q => q.AnswerOptions)
+            .FirstOrDefaultAsync(e => e.Id == model.Id && e.TutorId == userId);
+
+        if (exam == null) return NotFound();
+
+        if (!ModelState.IsValid)
+        {
+            ViewBag.ExistingQuestions = exam.Questions.OrderBy(q => q.DisplayOrder).ToList();
+            return View(model);
+        }
+
+        exam.Title = model.Title;
+        exam.Description = model.Description;
+        exam.DurationMinutes = model.DurationMinutes;
+        exam.PassingScore = model.PassingScore;
+        exam.MaxRetakes = model.MaxRetakes;
+
+        if (model.ExamFile != null && model.ExamFile.Length > 0)
+        {
+            var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "exams");
+            Directory.CreateDirectory(uploadsDir);
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(model.ExamFile.FileName)}";
+            var filePath = Path.Combine(uploadsDir, fileName);
+            using var stream = new FileStream(filePath, FileMode.Create);
+            await model.ExamFile.CopyToAsync(stream);
+            exam.ExamFileUrl = $"/uploads/exams/{fileName}";
+        }
+
+        if (model.NewQuestions != null)
+        {
+            int nextOrder = exam.Questions.Count + 1;
+            foreach (var q in model.NewQuestions)
+            {
+                if (string.IsNullOrWhiteSpace(q.QuestionText)) continue;
+
+                var question = new ExamQuestion
+                {
+                    ExamId = exam.Id,
+                    QuestionText = q.QuestionText,
+                    Points = q.Points > 0 ? q.Points : 1,
+                    DisplayOrder = nextOrder++,
+                    QuestionType = "MultipleChoice"
+                };
+
+                for (int j = 0; j < q.Options.Count; j++)
+                {
+                    var opt = q.Options[j];
+                    if (string.IsNullOrWhiteSpace(opt.OptionText)) continue;
+                    question.AnswerOptions.Add(new ExamAnswerOption
+                    {
+                        OptionText = opt.OptionText,
+                        IsCorrect = (j == q.CorrectOptionIndex),
+                        DisplayOrder = j + 1
+                    });
+                }
+
+                _db.ExamQuestions.Add(question);
+            }
+        }
+
+        await _db.SaveChangesAsync();
+        TempData["SuccessMessage"] = "Cập nhật bài thi thành công!";
+        return RedirectToAction(nameof(EditExam), new { id = model.Id });
+    }
+
+    // POST: /Tutor/UpdateExamQuestion
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateExamQuestion(UpdateExamQuestionViewModel model)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var exam = await _db.Exams.FirstOrDefaultAsync(e => e.Id == model.ExamId && e.TutorId == userId);
+        if (exam == null) return NotFound();
+
+        var question = await _db.ExamQuestions
+            .Include(q => q.AnswerOptions)
+            .FirstOrDefaultAsync(q => q.Id == model.QuestionId && q.ExamId == model.ExamId);
+        if (question == null) return NotFound();
+
+        if (!ModelState.IsValid)
+        {
+            TempData["ErrorMessage"] = "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.";
+            return RedirectToAction(nameof(EditExam), new { id = model.ExamId });
+        }
+
+        question.QuestionText = model.QuestionText;
+        question.PassageText = string.IsNullOrWhiteSpace(model.PassageText) ? null : model.PassageText;
+        question.Points = model.Points;
+
+        // Map đáp án theo thứ tự A=1, B=2, C=3, D=4
+        var optionMap = new Dictionary<string, (int order, string text)>
+        {
+            ["A"] = (1, model.OptionA),
+            ["B"] = (2, model.OptionB),
+            ["C"] = (3, model.OptionC),
+            ["D"] = (4, model.OptionD),
+        };
+
+        foreach (var opt in question.AnswerOptions)
+        {
+            var letter = opt.DisplayOrder switch { 1 => "A", 2 => "B", 3 => "C", _ => "D" };
+            if (optionMap.TryGetValue(letter, out var data))
+            {
+                opt.OptionText = data.text;
+                opt.IsCorrect = letter == model.CorrectOption.ToUpper();
+            }
+        }
+
+        await _db.SaveChangesAsync();
+        TempData["SuccessMessage"] = $"Đã cập nhật câu {question.DisplayOrder}.";
+        return RedirectToAction(nameof(EditExam), new { id = model.ExamId });
+    }
+
+    // POST: /Tutor/DeleteExamQuestion/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteExamQuestion(int questionId, int examId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var exam = await _db.Exams.FirstOrDefaultAsync(e => e.Id == examId && e.TutorId == userId);
+        if (exam == null) return NotFound();
+
+        var question = await _db.ExamQuestions
+            .Include(q => q.AnswerOptions)
+            .FirstOrDefaultAsync(q => q.Id == questionId && q.ExamId == examId);
+
+        if (question == null) return NotFound();
+
+        _db.ExamAnswerOptions.RemoveRange(question.AnswerOptions);
+        _db.ExamQuestions.Remove(question);
+        await _db.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Đã xóa câu hỏi.";
+        return RedirectToAction(nameof(EditExam), new { id = examId });
+    }
+
+    // POST: /Tutor/ToggleExam/5
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleExam(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var exam = await _db.Exams.FirstOrDefaultAsync(e => e.Id == id && e.TutorId == userId);
+        if (exam == null) return NotFound();
+
+        if (exam.IsOpen)
+        {
+            exam.IsOpen = false;
+            exam.CloseAt = DateTime.UtcNow;
+            TempData["SuccessMessage"] = "Đã đóng bài thi.";
+        }
+        else
+        {
+            exam.IsOpen = true;
+            exam.OpenAt = DateTime.UtcNow;
+            exam.CloseAt = null;
+            exam.Status = ExamStatus.Published;
+            exam.PublishedAt ??= DateTime.UtcNow;
+            TempData["SuccessMessage"] = "Đã mở bài thi cho học viên.";
+        }
+
+        await _db.SaveChangesAsync();
+        return RedirectToAction(nameof(Exams));
+    }
+
+    // GET: /Tutor/ExamSubmissions/5
+    public async Task<IActionResult> ExamSubmissions(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var exam = await _db.Exams.FirstOrDefaultAsync(e => e.Id == id && e.TutorId == userId);
+        if (exam == null) return NotFound();
+
+        var submissions = await _db.ExamSubmissions
+            .Include(s => s.Student)
+            .Include(s => s.FraudWarnings)
+            .Where(s => s.ExamId == id)
+            .OrderByDescending(s => s.StartedAt)
+            .ToListAsync();
+
+        ViewBag.Exam = exam;
+        return View(submissions);
+    }
+
+    // GET: /Tutor/SubmissionDetail/5/3
+    public async Task<IActionResult> SubmissionDetail(int examId, int subId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var exam = await _db.Exams.FirstOrDefaultAsync(e => e.Id == examId && e.TutorId == userId);
+        if (exam == null) return NotFound();
+
+        var submission = await _db.ExamSubmissions
+            .Include(s => s.Student)
+            .Include(s => s.Answers)
+                .ThenInclude(a => a.Question)
+                    .ThenInclude(q => q.AnswerOptions)
+            .FirstOrDefaultAsync(s => s.Id == subId && s.ExamId == examId);
+
+        if (submission == null) return NotFound();
+
+        ViewBag.Exam = exam;
+        return View(submission);
+    }
+
+    // GET: /Tutor/GradeSubmission/5/3
+    [HttpGet]
+    public async Task<IActionResult> GradeSubmission(int examId, int subId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var exam = await _db.Exams
+            .Include(e => e.Questions)
+            .FirstOrDefaultAsync(e => e.Id == examId && e.TutorId == userId);
+        if (exam == null) return NotFound();
+
+        var submission = await _db.ExamSubmissions
+            .Include(s => s.Student)
+            .FirstOrDefaultAsync(s => s.Id == subId && s.ExamId == examId);
+        if (submission == null) return NotFound();
+
+        var maxScore = exam.Questions.Sum(q => q.Points);
+
+        var vm = new GradeSubmissionViewModel
+        {
+            ExamId = examId,
+            SubmissionId = subId,
+            StudentName = submission.Student.FullName,
+            CurrentScore = submission.TotalScore,
+            MaxScore = maxScore,
+            TutorComment = submission.TutorComment
+        };
+
+        ViewBag.Exam = exam;
+        ViewBag.Submission = submission;
+        return View(vm);
+    }
+
+    // POST: /Tutor/GradeSubmission
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> GradeSubmission(GradeSubmissionViewModel model)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var exam = await _db.Exams
+            .Include(e => e.Questions)
+            .FirstOrDefaultAsync(e => e.Id == model.ExamId && e.TutorId == userId);
+        if (exam == null) return NotFound();
+
+        var submission = await _db.ExamSubmissions
+            .Include(s => s.Student)
+            .FirstOrDefaultAsync(s => s.Id == model.SubmissionId && s.ExamId == model.ExamId);
+        if (submission == null) return NotFound();
+
+        if (!ModelState.IsValid)
+        {
+            model.StudentName = submission.Student.FullName;
+            model.CurrentScore = submission.TotalScore;
+            model.MaxScore = exam.Questions.Sum(q => q.Points);
+            ViewBag.Exam = exam;
+            ViewBag.Submission = submission;
+            return View(model);
+        }
+
+        submission.TutorComment = model.TutorComment;
+        submission.Status = SubmissionStatus.Graded;
+        submission.GradedAt = DateTime.UtcNow;
+
+        if (model.OverrideScore.HasValue)
+        {
+            var maxScore = exam.Questions.Sum(q => q.Points);
+            submission.TotalScore = model.OverrideScore.Value;
+            submission.Percentage = maxScore > 0 ? (model.OverrideScore.Value / maxScore) * 100 : 0;
+            submission.IsPassed = submission.TotalScore >= exam.PassingScore;
+        }
+
+        await _db.SaveChangesAsync();
+        TempData["SuccessMessage"] = "Đã chấm điểm bài làm!";
+        return RedirectToAction(nameof(ExamSubmissions), new { id = model.ExamId });
+    }
+
+    // GET: /Tutor/FraudWarning/5/3
+    public async Task<IActionResult> FraudWarning(int examId, int subId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var exam = await _db.Exams.FirstOrDefaultAsync(e => e.Id == examId && e.TutorId == userId);
+        if (exam == null) return NotFound();
+
+        var submission = await _db.ExamSubmissions
+            .Include(s => s.Student)
+            .Include(s => s.FraudWarnings)
+            .FirstOrDefaultAsync(s => s.Id == subId && s.ExamId == examId);
+        if (submission == null) return NotFound();
+
+        ViewBag.Exam = exam;
+        return View(submission);
+    }
+
+    // GET: /Tutor/RetakeRequest/5/3
+    [HttpGet]
+    public async Task<IActionResult> RetakeRequest(int examId, int subId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var exam = await _db.Exams.FirstOrDefaultAsync(e => e.Id == examId && e.TutorId == userId);
+        if (exam == null) return NotFound();
+
+        var submission = await _db.ExamSubmissions
+            .Include(s => s.Student)
+            .FirstOrDefaultAsync(s => s.Id == subId && s.ExamId == examId);
+        if (submission == null) return NotFound();
+
+        var request = await _db.RetakeRequests
+            .Where(r => r.SubmissionId == subId)
+            .OrderByDescending(r => r.RequestedAt)
+            .FirstOrDefaultAsync();
+
+        ViewBag.Exam = exam;
+        ViewBag.Submission = submission;
+        return View(request);
+    }
+
+    // POST: /Tutor/RetakeRequest
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RetakeRequest(int examId, int subId, bool isApproved, string? responseNote)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var exam = await _db.Exams.FirstOrDefaultAsync(e => e.Id == examId && e.TutorId == userId);
+        if (exam == null) return NotFound();
+
+        var request = await _db.RetakeRequests
+            .Where(r => r.SubmissionId == subId)
+            .OrderByDescending(r => r.RequestedAt)
+            .FirstOrDefaultAsync();
+        if (request == null) return NotFound();
+
+        request.IsApproved = isApproved;
+        request.ResponseNote = responseNote;
+        request.RespondedAt = DateTime.UtcNow;
+
+        if (isApproved)
+        {
+            var submission = await _db.ExamSubmissions.FindAsync(subId);
+            if (submission != null)
+                submission.RetakeNumber++;
+        }
+
+        await _db.SaveChangesAsync();
+        TempData["SuccessMessage"] = isApproved ? "Đã chấp thuận yêu cầu làm lại." : "Đã từ chối yêu cầu làm lại.";
+        return RedirectToAction(nameof(ExamSubmissions), new { id = examId });
+    }
+
+    // ============================================================
     // Wallet Management
     // ============================================================
 
@@ -557,7 +1123,7 @@ public class TutorController : Controller
     // POST: /Tutor/Withdraw
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Withdraw(decimal amount, string bankAccount, string bankName)
+    public async Task<IActionResult> Withdraw(decimal amount, string accountNumber, string bankName, string accountName)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         var wallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == userId);
@@ -570,13 +1136,25 @@ public class TutorController : Controller
             return View();
         }
 
+        // Giữ tiền (trừ tạm) + tạo yêu cầu rút
+        var withdrawalRequest = new WithdrawalRequest
+        {
+            TutorId = userId,
+            Amount = amount,
+            BankName = bankName,
+            AccountNumber = accountNumber,
+            AccountName = accountName,
+            Status = WithdrawalStatus.Pending
+        };
+        _db.WithdrawalRequests.Add(withdrawalRequest);
+
         var transaction = new Transaction
         {
             WalletId = wallet.Id,
             Amount = amount,
             Type = TransactionType.Withdrawal,
             Status = TransactionStatus.Pending,
-            Description = $"Rút tiền về {bankName} - {bankAccount}",
+            Description = $"Yêu cầu rút tiền về {bankName} - {accountNumber}",
             BalanceBefore = wallet.Balance,
             BalanceAfter = wallet.Balance - amount
         };
@@ -587,7 +1165,31 @@ public class TutorController : Controller
 
         await _db.SaveChangesAsync();
 
-        TempData["SuccessMessage"] = $"Yêu cầu rút {amount:N0} VNĐ đã được ghi nhận. Tiền sẽ về trong 1-3 ngày làm việc.";
+        TempData["SuccessMessage"] = $"Yêu cầu rút {amount:N0} VNĐ đã gửi. Admin sẽ xử lý trong 1-3 ngày làm việc.";
         return RedirectToAction("Wallet");
+    }
+
+    // POST: /Tutor/CompleteSession
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CompleteSession(int sessionId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var session = await _db.Sessions
+            .Include(s => s.Contract)
+            .FirstOrDefaultAsync(s => s.Id == sessionId && s.Contract.TutorId == userId);
+
+        if (session == null) return NotFound();
+        if (session.Status != SessionStatus.Scheduled && session.Status != SessionStatus.InProgress)
+            return BadRequest();
+
+        session.Status = SessionStatus.PendingConfirmation;
+        session.TutorCompletedAt = DateTime.UtcNow;
+        session.EndedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Đã đánh dấu hoàn thành. Chờ học viên xác nhận (tự động sau 24h).";
+        return RedirectToAction("ContractDetail", new { id = session.ContractId });
     }
 }

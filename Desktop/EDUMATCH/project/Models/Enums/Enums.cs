@@ -2,6 +2,7 @@ namespace EduMatch.Models.Enums;
 
 public enum BookingStatus
 {
+    PendingPayment,
     Pending,
     Accepted,
     Rejected,
@@ -21,9 +22,17 @@ public enum SessionStatus
 {
     Scheduled,
     InProgress,
+    PendingConfirmation,
     Completed,
     Cancelled,
     NoShow
+}
+
+public enum WithdrawalStatus
+{
+    Pending,
+    Approved,
+    Rejected
 }
 
 public enum ExamStatus

@@ -841,4 +841,84 @@ public class AdminController : Controller
 
         return View(wallets);
     }
+
+    // GET: /Admin/WithdrawalRequests
+    public async Task<IActionResult> WithdrawalRequests()
+    {
+        var requests = await _db.WithdrawalRequests
+            .Include(w => w.Tutor)
+            .OrderByDescending(w => w.CreatedAt)
+            .ToListAsync();
+        return View(requests);
+    }
+
+    // POST: /Admin/ApproveWithdrawal
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ApproveWithdrawal(int id, string? adminNote)
+    {
+        var request = await _db.WithdrawalRequests.Include(w => w.Tutor).FirstOrDefaultAsync(w => w.Id == id);
+        if (request == null) return NotFound();
+        if (request.Status != WithdrawalStatus.Pending) return BadRequest();
+
+        request.Status = WithdrawalStatus.Approved;
+        request.AdminNote = adminNote;
+        request.ProcessedAt = DateTime.UtcNow;
+
+        var wallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == request.TutorId);
+        if (wallet != null)
+        {
+            var transaction = await _db.Transactions
+                .Where(t => t.WalletId == wallet.Id &&
+                            t.Type == TransactionType.Withdrawal &&
+                            t.Status == TransactionStatus.Pending &&
+                            t.Amount == request.Amount)
+                .OrderByDescending(t => t.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (transaction != null)
+                transaction.Status = TransactionStatus.Completed;
+        }
+
+        await _db.SaveChangesAsync();
+        TempData["SuccessMessage"] = $"Đã duyệt rút tiền {request.Amount:N0} VNĐ cho {request.Tutor?.FullName}.";
+        return RedirectToAction("WithdrawalRequests");
+    }
+
+    // POST: /Admin/RejectWithdrawal
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RejectWithdrawal(int id, string? adminNote)
+    {
+        var request = await _db.WithdrawalRequests.Include(w => w.Tutor).FirstOrDefaultAsync(w => w.Id == id);
+        if (request == null) return NotFound();
+        if (request.Status != WithdrawalStatus.Pending) return BadRequest();
+
+        request.Status = WithdrawalStatus.Rejected;
+        request.AdminNote = adminNote;
+        request.ProcessedAt = DateTime.UtcNow;
+
+        // Hoàn tiền lại vào ví tutor
+        var wallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == request.TutorId);
+        if (wallet != null)
+        {
+            wallet.Balance += request.Amount;
+            wallet.UpdatedAt = DateTime.UtcNow;
+
+            var transaction = await _db.Transactions
+                .Where(t => t.WalletId == wallet.Id &&
+                            t.Type == TransactionType.Withdrawal &&
+                            t.Status == TransactionStatus.Pending &&
+                            t.Amount == request.Amount)
+                .OrderByDescending(t => t.CreatedAt)
+                .FirstOrDefaultAsync();
+
+            if (transaction != null)
+                transaction.Status = TransactionStatus.Cancelled;
+        }
+
+        await _db.SaveChangesAsync();
+        TempData["SuccessMessage"] = "Đã từ chối và hoàn tiền vào ví gia sư.";
+        return RedirectToAction("WithdrawalRequests");
+    }
 }

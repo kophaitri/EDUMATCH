@@ -26,7 +26,23 @@
                     <li><a asp-controller="Tutor" asp-action="Bookings">Yêu cầu dạy</a></li>
                     <li><a asp-controller="Tutor" asp-action="Contracts">Hợp đồng</a></li>
                     <li><a asp-controller="Tutor" asp-action="Posts">Bài viết</a></li>
-                    <li><a asp-controller="Support" asp-action="MyTickets">Hỗ trợ</a></li>
+                    <li class="nav-dropdown">
+                        <span class="nav-dropdown-toggle">
+                            Đề thi <i class="bi bi-chevron-down" style="font-size:10px;"></i>
+                        </span>
+                        <div class="nav-dropdown-menu">
+                            <a asp-controller="Tutor" asp-action="Exams">
+                                <i class="bi bi-journal-text"></i> Danh sách đề thi
+                            </a>
+                            <a asp-controller="Tutor" asp-action="CreateExam">
+                                <i class="bi bi-plus-circle"></i> Tạo đề thi mới
+                            </a>
+                            <div class="nav-dropdown-divider"></div>
+                            <a asp-controller="Tutor" asp-action="Exams">
+                                <i class="bi bi-people"></i> Bài làm học viên
+                            </a>
+                        </div>
+                    </li>
                 }
                 @if (User.IsInRole("Admin"))
                 {

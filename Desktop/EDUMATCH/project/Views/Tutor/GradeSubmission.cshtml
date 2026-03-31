@@ -1,0 +1,79 @@
+@model EduMatch.ViewModels.GradeSubmissionViewModel
+@{
+    ViewData["Title"] = "Chấm điểm & nhận xét";
+    var exam = ViewBag.Exam as EduMatch.Models.Exam;
+    var submission = ViewBag.Submission as EduMatch.Models.ExamSubmission;
+}
+
+<div class="container mt-4" style="max-width: 700px;">
+    <div class="d-flex align-items-center mb-4">
+        <a asp-action="ExamSubmissions" asp-route-id="@Model.ExamId" class="btn btn-outline-secondary btn-sm me-3">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <h2 class="mb-0">Chấm điểm & nhận xét</h2>
+            <small class="text-muted">@exam?.Title — @Model.StudentName</small>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row text-center">
+                <div class="col-4">
+                    <h4 class="text-primary">@Model.CurrentScore.ToString("0.#")</h4>
+                    <small class="text-muted">Điểm hiện tại</small>
+                </div>
+                <div class="col-4">
+                    <h4>@Model.MaxScore.ToString("0.#")</h4>
+                    <small class="text-muted">Điểm tối đa</small>
+                </div>
+                <div class="col-4">
+                    <h4>@(Model.MaxScore > 0 ? ((Model.CurrentScore / Model.MaxScore) * 100).ToString("0.#") : "0")%</h4>
+                    <small class="text-muted">Tỷ lệ</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form asp-action="GradeSubmission" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="ExamId" />
+        <input type="hidden" asp-for="SubmissionId" />
+        <input type="hidden" asp-for="StudentName" />
+        <input type="hidden" asp-for="CurrentScore" />
+        <input type="hidden" asp-for="MaxScore" />
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="mb-4">
+                    <label asp-for="TutorComment" class="form-label fw-bold">
+                        <i class="bi bi-chat-quote"></i> Nhận xét của giáo viên
+                    </label>
+                    <textarea asp-for="TutorComment" class="form-control" rows="5"
+                              placeholder="Nhập nhận xét, góp ý cho học viên..."></textarea>
+                </div>
+
+                <div class="mb-4">
+                    <label asp-for="OverrideScore" class="form-label fw-bold">
+                        <i class="bi bi-pencil"></i> Điều chỉnh điểm (tùy chọn)
+                    </label>
+                    <input asp-for="OverrideScore" class="form-control" type="number" step="0.5"
+                           min="0" max="@Model.MaxScore"
+                           placeholder="Để trống nếu giữ nguyên điểm tự động" />
+                    <div class="form-text">Chỉ nhập nếu muốn thay đổi điểm tự động (@Model.CurrentScore.ToString("0.#") điểm)</div>
+                    <span asp-validation-for="OverrideScore" class="text-danger small"></span>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-lg"></i> Lưu chấm điểm
+                    </button>
+                    <a asp-action="SubmissionDetail" asp-route-examId="@Model.ExamId" asp-route-subId="@Model.SubmissionId"
+                       class="btn btn-outline-secondary">
+                        Xem chi tiết bài làm
+                    </a>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>

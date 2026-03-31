@@ -43,6 +43,7 @@ public class EduMatchDbContext : IdentityDbContext<ApplicationUser, ApplicationR
     public DbSet<Wallet> Wallets { get; set; }
     public DbSet<Transaction> Transactions { get; set; }
     public DbSet<PaymentOrder> PaymentOrders { get; set; }
+    public DbSet<WithdrawalRequest> WithdrawalRequests { get; set; }
     public DbSet<TutorRevenueStat> TutorRevenueStats { get; set; }
     public DbSet<ReputationLog> ReputationLogs { get; set; }
 
@@ -244,6 +245,19 @@ public class EduMatchDbContext : IdentityDbContext<ApplicationUser, ApplicationR
             .WithMany()
             .HasForeignKey(x => x.ReportedUserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Exam>()
+            .HasOne(x => x.Tutor)
+            .WithMany()
+            .HasForeignKey(x => x.TutorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Exam>()
+            .HasOne(x => x.Session)
+            .WithMany(x => x.Exams)
+            .HasForeignKey(x => x.SessionId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.SetNull);
 
         builder.Entity<SubmissionAnswer>()
             .HasOne(x => x.Question)
