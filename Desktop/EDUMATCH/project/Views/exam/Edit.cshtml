@@ -1,0 +1,280 @@
+@model EduMatch.Models.Exam
+@{
+    ViewData["Title"] = $"Chỉnh sửa: {Model.Title}";
+    var questions = Model.Questions?.OrderBy(q => q.DisplayOrder).ToList() ?? new();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>✏️ @Model.Title</h2>
+    <div class="btn-group">
+        @if (Model.Status == ExamStatus.Draft)
+        {
+            <form asp-action="Toggle" asp-route-id="@Model.Id" method="post" class="d-inline">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-eye"></i> Công khai bài thi
+                </button>
+            </form>
+        }
+        else if (Model.Status == ExamStatus.Published)
+        {
+            <span class="badge bg-success px-3 py-2">🟢 Đang công khai</span>
+            <form asp-action="Toggle" asp-route-id="@Model.Id" method="post" class="d-inline ms-2">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-warning">
+                    <i class="bi bi-pause"></i> Tạm dừng
+                </button>
+            </form>
+        }
+        else
+        {
+            <span class="badge bg-secondary px-3 py-2">⏸️ Đã đóng</span>
+            <form asp-action="Toggle" asp-route-id="@Model.Id" method="post" class="d-inline ms-2">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-play"></i> Mở lại
+                </button>
+            </form>
+        }
+        <a asp-action="Submissions" asp-route-id="@Model.Id" class="btn btn-info text-white ms-2">
+            <i class="bi bi-clipboard-data"></i> Xem bài làm (@Model.Submissions?.Count ?? 0)
+        </a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<ul class="nav nav-tabs mb-4" id="examTabs" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#info">ℹ️ Thông tin</button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#questions">❓ Câu hỏi (@questions.Count)</button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#file">📄 File đề</button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <!-- Tab 1: Thông tin -->
+    <div class="tab-pane fade show active" id="info">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Session</label>
+                            <select asp-for="SessionId" class="form-select" asp-items="ViewBag.SessionId" disabled>
+                                <option value="">-- Chọn Session --</option>
+                            </select>
+                            <small class="text-muted">Không thể thay đổi session sau khi tạo</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Title" class="form-label">Tiêu đề *</label>
+                            <input asp-for="Title" class="form-control" required />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="DurationMinutes" class="form-label">Thời gian (phút) *</label>
+                            <input asp-for="DurationMinutes" type="number" min="1" max="300" class="form-control" required />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="PassingScore" class="form-label">Điểm đạt (%) *</label>
+                            <input asp-for="PassingScore" type="number" min="0" max="100" class="form-control" required />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="MaxRetakes" class="form-label">Số lần làm lại</label>
+                            <input asp-for="MaxRetakes" type="number" min="0" max="10" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a asp-action="Index" class="btn btn-secondary">Quay lại</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-save"></i> Lưu thay đổi
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 2: Câu hỏi -->
+    <div class="tab-pane fade" id="questions">
+        <div class="d-flex justify-content-between mb-3">
+            <h5>Danh sách câu hỏi</h5>
+            <button class="btn btn-success btn-sm" data-bs-toggle="modal" data-bs-target="#addQuestionModal">
+                <i class="bi bi-plus"></i> Thêm câu hỏi
+            </button>
+        </div>
+
+        @if (!questions.Any())
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> Chưa có câu hỏi nào.
+            </div>
+        }
+        else
+        {
+            <div id="questionsList" class="list-group">
+                @foreach (var q in questions)
+                {
+                    <div class="list-group-item question-item" data-question-id="@q.Id">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <span class="badge bg-primary">@q.DisplayOrder</span>
+                                <strong>@q.QuestionType</strong>
+                                <span class="badge bg-info">@q.Points điểm</span>
+                                <p class="mb-2">@q.QuestionText</p>
+                                @if (q.AnswerOptions?.Any() == true)
+                                {
+                                    <div class="small text-muted">
+                                        @foreach (var opt in q.AnswerOptions.OrderBy(o => o.DisplayOrder))
+                                        {
+                                            <span class="badge @(opt.IsCorrect ? "bg-success" : "bg-light") me-1">
+                                                @(opt.IsCorrect ? "✓" : "○") @opt.OptionText
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-primary btn-edit-question" 
+                                        data-id="@q.Id" data-text="@q.QuestionText" 
+                                        data-type="@q.QuestionType" data-points="@q.Points">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <form asp-action="DeleteQuestion" method="post" class="d-inline"
+                                      onsubmit="return confirm('Xóa câu hỏi này?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="questionId" value="@q.Id" />
+                                    <button type="submit" class="btn btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Tab 3: File đề -->
+    <div class="tab-pane fade" id="file">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                @if (!string.IsNullOrEmpty(Model.Description) && Model.Description.StartsWith("/uploads/"))
+                {
+                    <div class="alert alert-success">
+                        <i class="bi bi-file-earmark-word"></i> 
+                        <strong>File hiện tại:</strong>
+                        <a href="@Model.Description" target="_blank">@Model.Description.Split('/').Last()</a>
+                    </div>
+                }
+                <form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Title" />
+                    <input type="hidden" asp-for="DurationMinutes" />
+                    <input type="hidden" asp-for="PassingScore" />
+                    <input type="hidden" asp-for="MaxRetakes" />
+                    <input type="hidden" asp-for="SessionId" />
+                    
+                    <label class="form-label">🔄 Upload file Word mới</label>
+                    <input type="file" name="examWordFile" class="form-control mb-3" accept=".doc,.docx" />
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-cloud-upload"></i> Upload & Quét lại
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Thêm/Sửa câu hỏi -->
+<div class="modal fade" id="addQuestionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="questionForm" asp-action="AddQuestion" method="post" enctype="multipart/form-data">
+                <div class="modal-header">
+                    <h5 class="modal-title">➕ Thêm câu hỏi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="examId" value="@Model.Id" />
+                    <input type="hidden" id="questionId" name="Id" />
+                    
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label">Nội dung câu hỏi *</label>
+                            <textarea id="questionText" name="QuestionText" class="form-control" rows="4" required></textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Loại câu hỏi *</label>
+                            <select id="questionType" name="QuestionType" class="form-select" asp-items="ViewBag.QuestionTypes"></select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Số điểm *</label>
+                            <input id="questionPoints" name="Points" type="number" min="0.5" step="0.5" class="form-control" value="1" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Thứ tự</label>
+                            <input id="questionOrder" name="DisplayOrder" type="number" min="1" class="form-control" value="@(questions.Count + 1)" />
+                        </div>
+                    </div>
+
+                    <div id="answerOptionsSection" class="mt-4">
+                        <h6>Đáp án</h6>
+                        <div id="optionsContainer"></div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="addOptionBtn">+ Thêm đáp án</button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary" id="saveQuestionBtn">Lưu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        document.getElementById('questionType').addEventListener('change', function() {
+            const section = document.getElementById('answerOptionsSection');
+            section.style.display = ['MultipleChoice', 'TrueFalse'].includes(this.value) ? 'block' : 'none';
+        });
+
+        function addAnswerOption(label = '', isCorrect = false) {
+            const container = document.getElementById('optionsContainer');
+            const index = container.children.length + 1;
+            const html = `
+                <div class="input-group mb-2">
+                    <span class="input-group-text">${label || String.fromCharCode(64 + index)}</span>
+                    <input type="text" name="AnswerOptions[${index-1}].OptionText" class="form-control" required>
+                    <input type="hidden" name="AnswerOptions[${index-1}].DisplayOrder" value="${index}">
+                    <div class="input-group-text">
+                        <input type="checkbox" name="AnswerOptions[${index-1}].IsCorrect" class="form-check-input" ${isCorrect ? 'checked' : ''}>
+                    </div>
+                </div>`;
+            container.insertAdjacentHTML('beforeend', html);
+        }
+
+        document.getElementById('addOptionBtn').addEventListener('click', () => addAnswerOption());
+        
+        if (document.getElementById('questionType').value === 'MultipleChoice') {
+            ['A', 'B', 'C', 'D'].forEach((l, i) => addAnswerOption(l, i === 0));
+        }
+    </script>
+}

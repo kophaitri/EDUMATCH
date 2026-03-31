@@ -1,0 +1,54 @@
+@model IEnumerable<EduMatch.Models.ReviewComplaint>
+@{
+    ViewData["Title"] = "Lịch sử khiếu nại";
+}
+
+<div class="container mt-4">
+    <h2>📜 Lịch sử khiếu nại</h2>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i> Bạn chưa có khiếu nại nào.
+        </div>
+    }
+    else
+    {
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Đánh giá từ</th>
+                    <th>Lý do</th>
+                    <th>Ngày gửi</th>
+                    <th>Trạng thái</th>
+                    <th>Phản hồi</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var complaint in Model)
+                {
+                    <tr>
+                        <td>@complaint.Review.Reviewer.FullName</td>
+                        <td>@complaint.Reason</td>
+                        <td>@complaint.CreatedAt.ToString("dd/MM/yyyy")</td>
+                        <td>
+                            @if (complaint.Status == "Pending")
+                            {
+                                <span class="badge bg-warning text-dark">⏳ Chờ xử lý</span>
+                            }
+                            else if (complaint.Status == "Approved")
+                            {
+                                <span class="badge bg-success">✓ Đã duyệt</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">✗ Từ chối</span>
+                            }
+                        </td>
+                        <td>@complaint.AdminResponse</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

@@ -27,7 +27,7 @@ public static class DatabaseSeeder
         // Seed Admin User
         var adminEmail = configuration["AdminAccount:Email"] ?? "admin@edumatch.vn";
         var adminPassword = configuration["AdminAccount:Password"] ?? "Admin@123456";
-        var adminFullName = configuration["AdminAccount:FullName"] ?? "EduMatch Admin";
+        var adminFullName = configuration["AdminAccount:FullName"] ?? "EduMatchAdmin";
 
         if (await userManager.FindByEmailAsync(adminEmail) is null)
         {
@@ -70,8 +70,185 @@ public static class DatabaseSeeder
             }
         }
 
-        // Seed Master Data
+        // ========================================
+        // 🎯 PHẦN 1: Tạo Tutor Account
+        // ========================================
+        var tutorEmail = "tutor@edumatch.vn";
+        var tutorPassword = "Tutor@123456";
+        ApplicationUser? tutor = null;
+
+        if (await userManager.FindByEmailAsync(tutorEmail) is null)
+        {
+            tutor = new ApplicationUser
+            {
+                UserName = tutorEmail,
+                Email = tutorEmail,
+                FullName = "Nguyễn Văn Tutor",
+                EmailConfirmed = true,
+                IsActive = true,
+                PhoneNumber = "0901234567"
+            };
+
+            var result = await userManager.CreateAsync(tutor, tutorPassword);
+            if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(tutor, "Tutor");
+
+                var tutorProfile = new TutorProfile
+                {
+                    UserId = tutor.Id,
+                    Bio = "Gia sư có kinh nghiệm 5 năm",
+                    HourlyRateMin = 100000,
+                    HourlyRateMax = 300000,
+                    AvgRating = 4.8m,
+                    TotalReviews = 0,
+                    ReputationScore = 100m,
+                    IsVerified = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                dbContext.TutorProfiles.Add(tutorProfile);
+                await dbContext.SaveChangesAsync();
+            }
+        }
+        else
+        {
+            tutor = await userManager.FindByEmailAsync(tutorEmail);
+        }
+
+        // ========================================
+        // ✅ SEED MASTER DATA TRƯỚC (QUAN TRỌNG)
+        // ========================================
         await SeedMasterDataAsync(dbContext);
+
+        // ========================================
+        // 🎯 PHẦN 2: Tạo Contract + Session (SAU KHI ĐÃ CÓ SUBJECTS)
+        // ========================================
+        if (tutor != null)
+        {
+            // Tạo Student
+            var studentEmail = "student1@edumatch.vn";
+            ApplicationUser? student = null;
+            
+            if (await userManager.FindByEmailAsync(studentEmail) is null)
+            {
+                student = new ApplicationUser
+                {
+                    UserName = studentEmail,
+                    Email = studentEmail,
+                    FullName = "Nguyễn Văn Student",
+                    EmailConfirmed = true,
+                    IsActive = true
+                };
+                var result = await userManager.CreateAsync(student, "Student@123456");
+                if (result.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(student, "Student");
+                }
+            }
+            else
+            {
+                student = await userManager.FindByEmailAsync(studentEmail);
+            }
+
+            // ✅ BÂY GIỜ SUBJECTS ĐÃ CÓ → TẠO CONTRACT + SESSION
+            if (student != null && dbContext.Subjects.Any() && dbContext.GradeLevels.Any())
+            {
+                // --- Contract 1: Active (cho test booking flow) ---
+                var existingActiveContract = dbContext.Contracts
+                    .FirstOrDefault(c => c.TutorId == tutor.Id && c.Status == ContractStatus.Active);
+
+                if (existingActiveContract == null)
+                {
+                    var activeContract = new Contract
+                    {
+                        StudentId = student.Id,
+                        TutorId = tutor.Id,
+                        SubjectId = dbContext.Subjects.First().Id,
+                        GradeLevelId = dbContext.GradeLevels.FirstOrDefault(g => g.Name == "Lớp 12")?.Id 
+                                    ?? dbContext.GradeLevels.First().Id,
+                        HourlyRate = 150000,
+                        StartDate = DateTime.UtcNow,
+                        EndDate = DateTime.UtcNow.AddMonths(3),
+                        TotalSessions = 10,
+                        CompletedSessions = 0,
+                        Status = ContractStatus.Active,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    dbContext.Contracts.Add(activeContract);
+                    await dbContext.SaveChangesAsync();
+
+                    // Tạo sessions cho active contract
+                    var existingSessions = dbContext.Sessions
+                        .Where(s => s.ContractId == activeContract.Id)
+                        .ToList();
+
+                    if (!existingSessions.Any())
+                    {
+                        var sessions = new List<Session>();
+                        for (int i = 1; i <= 3; i++)
+                        {
+                            sessions.Add(new Session
+                            {
+                                ContractId = activeContract.Id,
+                                ScheduledAt = DateTime.UtcNow.AddDays(i * 7),
+                                DurationMinutes = 90,
+                                Status = SessionStatus.Scheduled,
+                                CreatedAt = DateTime.UtcNow
+                            });
+                        }
+                        dbContext.Sessions.AddRange(sessions);
+                        await dbContext.SaveChangesAsync();
+                    }
+                }
+
+                // --- Contract 2: COMPLETED (CHO TEST REVIEW) 🎯 ---
+                var existingCompletedContract = dbContext.Contracts
+                    .FirstOrDefault(c => c.TutorId == tutor.Id && c.Status == ContractStatus.Completed);
+
+                if (existingCompletedContract == null)
+                {
+                    var completedContract = new Contract
+                    {
+                        StudentId = student.Id,
+                        TutorId = tutor.Id,
+                        SubjectId = dbContext.Subjects.First().Id,
+                        GradeLevelId = dbContext.GradeLevels.FirstOrDefault(g => g.Name == "Lớp 12")?.Id 
+                                    ?? dbContext.GradeLevels.First().Id,
+                        HourlyRate = 150000,
+                        StartDate = DateTime.UtcNow.AddMonths(-4),  // ← Bắt đầu 4 tháng trước
+                        EndDate = DateTime.UtcNow.AddMonths(-1),    // ← Kết thúc 1 tháng trước (ĐÃ HOÀN THÀNH)
+                        TotalSessions = 10,
+                        CompletedSessions = 10,                      // ← Đã hoàn thành tất cả buổi
+                        Status = ContractStatus.Completed,           // ← QUAN TRỌNG: Status = Completed
+                        CreatedAt = DateTime.UtcNow.AddMonths(-4)
+                    };
+
+                    dbContext.Contracts.Add(completedContract);
+                    await dbContext.SaveChangesAsync();
+
+                    // Tạo sessions đã completed cho contract này
+                    var completedSessions = new List<Session>();
+                    for (int i = 1; i <= 10; i++)
+                    {
+                        completedSessions.Add(new Session
+                        {
+                            ContractId = completedContract.Id,
+                            ScheduledAt = DateTime.UtcNow.AddMonths(-4).AddDays(i * 3),  // Các buổi trong quá khứ
+                            DurationMinutes = 90,
+                            Status = SessionStatus.Completed,  // ← Sessions đã hoàn thành
+                            CreatedAt = DateTime.UtcNow.AddMonths(-4)
+                        });
+                    }
+                    dbContext.Sessions.AddRange(completedSessions);
+                    await dbContext.SaveChangesAsync();
+                }
+            }
+        }
+        // ========================================
+        // ✅ HOÀN TẤT
+        // ========================================
     }
 
     private static async Task SeedMasterDataAsync(EduMatchDbContext db)

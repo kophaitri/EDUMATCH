@@ -1,0 +1,106 @@
+@model IEnumerable<EduMatch.Controllers.Tutor.ExamListViewModel>
+@{
+    ViewData["Title"] = "Quản lý bài thi";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>📋 Danh sách bài thi</h2>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Tạo bài thi mới
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> Chưa có bài thi nào. 
+        <a asp-action="Create">Tạo bài thi đầu tiên</a> ngay!
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Tên bài thi</th>
+                    <th>Session</th>
+                    <th>Thời gian</th>
+                    <th>Điểm đạt</th>
+                    <th>Câu hỏi</th>
+                    <th>Bài làm</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var exam in Model)
+                {
+                    <tr>
+                        <td>
+                            <strong>@exam.Title</strong><br>
+                            <small class="text-muted">@exam.PublishedAt?.ToString("dd/MM/yyyy")</small>
+                        </td>
+                        <td>
+                            <small class="d-block fw-semibold">@exam.SessionName</small>
+                            <small class="text-muted">@exam.ScheduledAt.ToString("dd/MM HH:mm")</small>
+                        </td>
+                        <td>@exam.DurationMinutes' phút</td>
+                        <td>@exam.PassingScore%</td>
+                        <td><span class="badge bg-info">@exam.QuestionCount</span></td>
+                        <td><span class="badge bg-secondary">@exam.SubmissionCount</span></td>
+                        <td>
+                            @{
+                                var badgeClass = exam.Status switch
+                                {
+                                    ExamStatus.Draft => "bg-warning text-dark",
+                                    ExamStatus.Published => "bg-success",
+                                    ExamStatus.Closed => "bg-secondary",
+                                    _ => "bg-light text-dark"
+                                };
+                            }
+                            <span class="badge @badgeClass">@exam.Status</span>
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a asp-action="Edit" asp-route-id="@exam.Id" class="btn btn-outline-primary" title="Chỉnh sửa">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <a asp-action="Submissions" asp-route-id="@exam.Id" class="btn btn-outline-info" title="Xem bài làm">
+                                    <i class="bi bi-clipboard-data"></i>
+                                </a>
+                                @if (exam.Status == ExamStatus.Draft)
+                                {
+                                    <form asp-action="Delete" asp-route-id="@exam.Id" method="post" 
+                                          onsubmit="return confirm('Bạn có chắc muốn xóa bài thi này?');"
+                                          class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-outline-danger" title="Xóa">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
