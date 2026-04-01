@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 namespace EduMatch.Controllers.Tutor
 {
     [Authorize(Roles = "Tutor")]
-    [Route("tutor/exams")]
+    [Route("tutor/exam")]
     public class ExamController : Controller
     {
         private readonly EduMatchDbContext _context;
@@ -457,6 +457,7 @@ namespace EduMatch.Controllers.Tutor
         #endregion
 
         #region 📊 5. Danh sách bài làm học viên
+        [HttpGet("{id}/submissions")]
         public async Task<IActionResult> Submissions(int id)
         {
             var tutorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -496,6 +497,7 @@ namespace EduMatch.Controllers.Tutor
         #endregion
 
         #region 👁️ 6. Xem bài làm chi tiết
+        [HttpGet("{examId}/submissions/{subId}")]
         public async Task<IActionResult> SubmissionDetail(int examId, int subId)
         {
             var tutorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -556,6 +558,7 @@ namespace EduMatch.Controllers.Tutor
         #endregion
 
         #region ⚠️ 7. Xem cảnh báo gian lận
+        [HttpGet("{examId}/fraud/{subId}")]
         public async Task<IActionResult> FraudWarnings(int examId, int subId)
         {
             var tutorId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -601,6 +604,7 @@ namespace EduMatch.Controllers.Tutor
         #endregion
 
         #region 🔄 8. Yêu cầu làm lại bài
+        [HttpGet("{examId}/retake/{subId}")]
         public async Task<IActionResult> RetakeRequests(int examId, int subId)
         {
             var tutorId = User.FindFirstValue(ClaimTypes.NameIdentifier);

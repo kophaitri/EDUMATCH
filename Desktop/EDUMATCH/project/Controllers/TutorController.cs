@@ -908,6 +908,24 @@ public class TutorController : Controller
         return RedirectToAction(nameof(Exams));
     }
 
+    // GET: /Tutor/AllSubmissions
+    [HttpGet("[action]")]
+    public async Task<IActionResult> AllSubmissions()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        var exams = await _db.Exams
+            .Include(e => e.Submissions)
+                .ThenInclude(s => s.Student)
+            .Include(e => e.Submissions)
+                .ThenInclude(s => s.FraudWarnings)
+            .Where(e => e.TutorId == userId && e.Submissions.Any())
+            .OrderByDescending(e => e.CreatedAt)
+            .ToListAsync();
+
+        return View(exams);
+    }
+
     // GET: /Tutor/ExamSubmissions/5
     [HttpGet("[action]")]
     public async Task<IActionResult> ExamSubmissions(int id)

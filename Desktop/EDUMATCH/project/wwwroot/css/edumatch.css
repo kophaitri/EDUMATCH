@@ -384,6 +384,15 @@ input:focus {
     transform: scaleX(1);
 }
 
+.nav-dropdown-menu::before {
+    content: "";
+    position: absolute;
+    top: -14px;
+    left: 0;
+    right: 0;
+    height: 14px;
+}
+
 .nav-dropdown-menu {
     display: none;
     position: absolute;
