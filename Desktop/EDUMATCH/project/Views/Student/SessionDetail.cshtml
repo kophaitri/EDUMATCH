@@ -17,11 +17,23 @@
                     {
                         case SessionStatus.Scheduled: <span class="badge bg-info text-dark">Sắp tới</span> break;
                         case SessionStatus.InProgress: <span class="badge bg-primary">Đang diễn ra</span> break;
+                        case SessionStatus.PendingConfirmation: <span class="badge bg-warning text-dark">Chờ xác nhận</span> break;
                         case SessionStatus.Completed: <span class="badge bg-success">Hoàn thành</span> break;
                         case SessionStatus.NoShow: <span class="badge bg-dark">Vắng mặt</span> break;
                         default: <span class="badge bg-secondary">Đã huỷ</span> break;
                     }
                 </p>
+                @if (Model.Status == SessionStatus.PendingConfirmation)
+                {
+                    <form asp-action="ConfirmSession" method="post" class="mt-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="sessionId" value="@Model.Id" />
+                        <button type="submit" class="btn btn-success"
+                                onclick="return confirm('Xác nhận buổi học đã hoàn thành?')">
+                            Xác nhận hoàn thành
+                        </button>
+                    </form>
+                }
                 @if (Model.StartedAt.HasValue)
                 {
                     <p><strong>Bắt đầu lúc:</strong> @Model.StartedAt.Value.ToString("HH:mm dd/MM/yyyy")</p>
@@ -32,6 +44,24 @@
                 }
             </div>
             <div class="col-md-6">
+                @if (Model.Status == SessionStatus.Scheduled || Model.Status == SessionStatus.InProgress)
+                {
+                    <div class="mb-3">
+                        <strong>Phòng học:</strong>
+                        @if (!string.IsNullOrEmpty(Model.MeetingLink))
+                        {
+                            <div class="mt-1">
+                                <a href="@Model.MeetingLink" target="_blank" class="btn btn-success">
+                                    🔗 Vào phòng học (Meet/Zoom)
+                                </a>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-muted mt-1"><em>Gia sư chưa cập nhật đường dẫn phòng học.</em></div>
+                        }
+                    </div>
+                }
                 @if (!string.IsNullOrEmpty(Model.Notes))
                 {
                     <div class="mb-3">

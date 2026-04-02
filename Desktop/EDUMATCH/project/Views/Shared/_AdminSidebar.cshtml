@@ -56,6 +56,29 @@
             </a>
         </div>
 
+        @* ── Tài chính ──────────────────────────────────────── *@
+        <div class="admin-nav-group">
+            <div class="admin-nav-group-label">Tài chính</div>
+
+            <a asp-controller="Admin" asp-action="Wallets"
+               class="admin-nav-link @(Is("Wallets") ? "active" : "")">
+                <i class="bi bi-wallet2"></i>
+                <span class="admin-nav-link-text">Ví tiền</span>
+            </a>
+
+            <a asp-controller="Admin" asp-action="Transactions"
+               class="admin-nav-link @(IsAny("Transactions", "TransactionDetail") ? "active" : "")">
+                <i class="bi bi-arrow-left-right"></i>
+                <span class="admin-nav-link-text">Giao dịch</span>
+            </a>
+
+            <a asp-controller="Admin" asp-action="WithdrawalRequests"
+               class="admin-nav-link @(Is("WithdrawalRequests") ? "active" : "")">
+                <i class="bi bi-cash-stack"></i>
+                <span class="admin-nav-link-text">Rút tiền</span>
+            </a>
+        </div>
+
         @* ── Quản lý nội dung ──────────────────────────────── *@
         <div class="admin-nav-group">
             <div class="admin-nav-group-label">Nội dung</div>
@@ -116,29 +139,6 @@
                class="admin-nav-link @(IsAny("Tickets", "TicketDetail", "ReplyTicket", "AssignTicket", "UpdateTicketStatus") ? "active" : "")">
                 <i class="bi bi-headset"></i>
                 <span class="admin-nav-link-text">Support Tickets</span>
-            </a>
-        </div>
-
-        @* ── Tài chính ──────────────────────────────────────── *@
-        <div class="admin-nav-group">
-            <div class="admin-nav-group-label">Tài chính</div>
-
-            <a asp-controller="Admin" asp-action="Transactions"
-               class="admin-nav-link @(IsAny("Transactions", "TransactionDetail") ? "active" : "")">
-                <i class="bi bi-arrow-left-right"></i>
-                <span class="admin-nav-link-text">Giao dịch</span>
-            </a>
-
-            <a asp-controller="Admin" asp-action="Payments"
-               class="admin-nav-link @(Is("Payments") ? "active" : "")">
-                <i class="bi bi-credit-card"></i>
-                <span class="admin-nav-link-text">Thanh toán</span>
-            </a>
-
-            <a asp-controller="Admin" asp-action="Wallets"
-               class="admin-nav-link @(Is("Wallets") ? "active" : "")">
-                <i class="bi bi-wallet2"></i>
-                <span class="admin-nav-link-text">Ví tiền</span>
             </a>
         </div>
 

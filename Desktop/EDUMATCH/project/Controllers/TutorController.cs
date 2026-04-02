@@ -418,11 +418,6 @@ public class TutorController : Controller
         booking.Status = BookingStatus.Accepted;
         booking.RespondedAt = DateTime.UtcNow;
 
-        var tutorSubject = await _db.TutorSubjects
-            .FirstOrDefaultAsync(ts => ts.TutorId == userId && ts.SubjectId == booking.SubjectId && ts.GradeLevelId == booking.GradeLevelId);
-
-        var hourlyRate = tutorSubject?.HourlyRate ?? 0;
-
         var contract = new Contract
         {
             BookingRequestId = booking.Id,
@@ -430,7 +425,7 @@ public class TutorController : Controller
             TutorId = userId,
             SubjectId = booking.SubjectId,
             GradeLevelId = booking.GradeLevelId,
-            HourlyRate = hourlyRate,
+            HourlyRate = booking.HourlyRate,
             TotalSessions = booking.SessionsPerWeek * booking.DurationWeeks,
             StartDate = booking.PreferredStartDate,
             EndDate = booking.PreferredStartDate.AddDays(booking.DurationWeeks * 7),
@@ -505,24 +500,78 @@ public class TutorController : Controller
     // POST: /Tutor/AddSession
     [HttpPost("[action]")]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AddSession(int contractId, DateTime scheduledAt, int durationMinutes)
+    public async Task<IActionResult> AddSession(int contractId, DateTime scheduledAt, int durationMinutes, string? meetingLink)
     {
         var userId = GetUserId()!;
 
-        var contract = await _db.Contracts.FirstOrDefaultAsync(c => c.Id == contractId && c.TutorId == userId);
+        var contract = await _db.Contracts
+            .FirstOrDefaultAsync(c => c.Id == contractId && c.TutorId == userId);
         if (contract == null) return NotFound();
+
+        var newEnd = scheduledAt.AddMinutes(durationMinutes);
+
+        // Kiểm tra trùng lịch của gia sư (tất cả hợp đồng)
+        var tutorConflict = await _db.Sessions
+            .Include(s => s.Contract)
+            .Where(s => s.Contract.TutorId == userId
+                && s.Status != SessionStatus.Cancelled
+                && s.ScheduledAt < newEnd
+                && s.ScheduledAt.AddMinutes(s.DurationMinutes) > scheduledAt)
+            .AnyAsync();
+
+        if (tutorConflict)
+        {
+            TempData["ErrorMessage"] = "Gia sư đã có buổi học trùng thời gian này. Vui lòng chọn thời gian khác (cách buổi cũ ít nhất bằng thời lượng buổi học).";
+            return RedirectToAction("ContractDetail", new { id = contractId });
+        }
+
+        // Kiểm tra trùng lịch của học sinh
+        var studentConflict = await _db.Sessions
+            .Include(s => s.Contract)
+            .Where(s => s.Contract.StudentId == contract.StudentId
+                && s.Status != SessionStatus.Cancelled
+                && s.ScheduledAt < newEnd
+                && s.ScheduledAt.AddMinutes(s.DurationMinutes) > scheduledAt)
+            .AnyAsync();
+
+        if (studentConflict)
+        {
+            TempData["ErrorMessage"] = "Học sinh đã có buổi học trùng thời gian này. Vui lòng chọn thời gian khác.";
+            return RedirectToAction("ContractDetail", new { id = contractId });
+        }
 
         _db.Sessions.Add(new Session
         {
             ContractId = contractId,
             ScheduledAt = scheduledAt,
             DurationMinutes = durationMinutes,
+            MeetingLink = string.IsNullOrWhiteSpace(meetingLink) ? null : meetingLink.Trim(),
             Status = SessionStatus.Scheduled
         });
         await _db.SaveChangesAsync();
 
         TempData["SuccessMessage"] = "Đã thêm buổi học thành công!";
         return RedirectToAction("ContractDetail", new { id = contractId });
+    }
+
+    // POST: /Tutor/UpdateSessionLink
+    [HttpPost("[action]")]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateSessionLink(int sessionId, string? meetingLink)
+    {
+        var userId = GetUserId()!;
+
+        var session = await _db.Sessions
+            .Include(s => s.Contract)
+            .FirstOrDefaultAsync(s => s.Id == sessionId && s.Contract.TutorId == userId);
+
+        if (session == null) return NotFound();
+
+        session.MeetingLink = string.IsNullOrWhiteSpace(meetingLink) ? null : meetingLink.Trim();
+        await _db.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Đã cập nhật đường dẫn phòng học!";
+        return RedirectToAction("ContractDetail", new { id = session.ContractId });
     }
 
     // ============================================================
@@ -908,6 +957,24 @@ public class TutorController : Controller
         return RedirectToAction(nameof(Exams));
     }
 
+    // GET: /Tutor/AllSubmissions
+    [HttpGet("[action]")]
+    public async Task<IActionResult> AllSubmissions()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
+        var exams = await _db.Exams
+            .Include(e => e.Submissions)
+                .ThenInclude(s => s.Student)
+            .Include(e => e.Submissions)
+                .ThenInclude(s => s.FraudWarnings)
+            .Where(e => e.TutorId == userId && e.Submissions.Any())
+            .OrderByDescending(e => e.CreatedAt)
+            .ToListAsync();
+
+        return View(exams);
+    }
+
     // GET: /Tutor/ExamSubmissions/5
     [HttpGet("[action]")]
     public async Task<IActionResult> ExamSubmissions(int id)
@@ -1206,10 +1273,86 @@ public class TutorController : Controller
         session.TutorCompletedAt = DateTime.UtcNow;
         session.EndedAt = DateTime.UtcNow;
 
+        // Giải ngân cho gia sư ngay khi đánh dấu hoàn thành
+        await ReleaseTutorEarningAsync(session);
+
+        // Cập nhật số buổi đã hoàn thành trên hợp đồng
+        var contract = session.Contract;
+        contract.CompletedSessions += 1;
+        if (contract.CompletedSessions >= contract.TotalSessions)
+            contract.Status = ContractStatus.Completed;
+
         await _db.SaveChangesAsync();
 
-        TempData["SuccessMessage"] = "Đã đánh dấu hoàn thành. Chờ học viên xác nhận (tự động sau 24h).";
+        TempData["SuccessMessage"] = "Đã hoàn thành buổi học. Tiền đã được chuyển vào ví của bạn!";
         return RedirectToAction("ContractDetail", new { id = session.ContractId });
+    }
+
+    private async Task ReleaseTutorEarningAsync(Session session)
+    {
+        if (session.EarningReleased) return;
+
+        var contract = session.Contract ?? await _db.Contracts.FindAsync(session.ContractId);
+        if (contract == null) return;
+
+        var tutorWallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == contract.TutorId);
+        if (tutorWallet == null)
+        {
+            tutorWallet = new Wallet { UserId = contract.TutorId };
+            _db.Wallets.Add(tutorWallet);
+            await _db.SaveChangesAsync();
+        }
+
+        const decimal platformFee = 0.15m;
+        var sessionEarning = contract.HourlyRate * (session.DurationMinutes / 60m);
+        var tutorEarning = sessionEarning * (1 - platformFee);
+        var platformEarning = sessionEarning * platformFee;
+
+        var tutorTx = new Transaction
+        {
+            WalletId = tutorWallet.Id,
+            Amount = tutorEarning,
+            Type = TransactionType.Earning,
+            Status = TransactionStatus.Completed,
+            Description = $"Thu nhập buổi học #{session.Id}",
+            ReferenceId = session.Id.ToString(),
+            BalanceBefore = tutorWallet.Balance,
+            BalanceAfter = tutorWallet.Balance + tutorEarning
+        };
+        _db.Transactions.Add(tutorTx);
+        tutorWallet.Balance += tutorEarning;
+        tutorWallet.TotalEarned += tutorEarning;
+        tutorWallet.UpdatedAt = DateTime.UtcNow;
+
+        // Phí nền tảng vào ví admin
+        var adminRoleId = await _db.Roles.Where(r => r.Name == "Admin").Select(r => r.Id).FirstOrDefaultAsync();
+        var adminUserId = await _db.UserRoles.Where(ur => ur.RoleId == adminRoleId).Select(ur => ur.UserId).FirstOrDefaultAsync();
+        if (adminUserId != null)
+        {
+            var adminWallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == adminUserId);
+            if (adminWallet == null)
+            {
+                adminWallet = new Wallet { UserId = adminUserId };
+                _db.Wallets.Add(adminWallet);
+                await _db.SaveChangesAsync();
+            }
+            var adminTx = new Transaction
+            {
+                WalletId = adminWallet.Id,
+                Amount = platformEarning,
+                Type = TransactionType.Earning,
+                Status = TransactionStatus.Completed,
+                Description = $"Phí nền tảng buổi học #{session.Id}",
+                ReferenceId = session.Id.ToString(),
+                BalanceBefore = adminWallet.Balance,
+                BalanceAfter = adminWallet.Balance + platformEarning
+            };
+            _db.Transactions.Add(adminTx);
+            adminWallet.Balance += platformEarning;
+            adminWallet.UpdatedAt = DateTime.UtcNow;
+        }
+
+        session.EarningReleased = true;
     }
 
 

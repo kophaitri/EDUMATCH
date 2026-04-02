@@ -64,6 +64,7 @@ public class Session
     public DateTime? EndedAt { get; set; }
     public SessionStatus Status { get; set; } = SessionStatus.Scheduled;
     public string? Notes { get; set; }
+    public string? MeetingLink { get; set; }
     public string? CancellationReason { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? TutorCompletedAt { get; set; }

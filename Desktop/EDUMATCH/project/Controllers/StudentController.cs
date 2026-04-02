@@ -164,7 +164,13 @@ public class StudentController : Controller
         var totalSessions = sessionsPerWeek * durationWeeks;
         var totalAmount = hourlyRate * sessionDurationHours * totalSessions;
 
-        var refCode = "BK" + Guid.NewGuid().ToString("N")[..8].ToUpper();
+        // Kiểm tra số dư ví
+        var studentWallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == userId);
+        if (studentWallet == null || studentWallet.Balance < totalAmount)
+        {
+            TempData["ErrorMessage"] = $"Số dư ví không đủ. Cần {totalAmount:N0} VNĐ, hiện có {studentWallet?.Balance ?? 0:N0} VNĐ.";
+            return RedirectToAction("TopUp");
+        }
 
         var booking = new BookingRequest
         {
@@ -179,14 +185,31 @@ public class StudentController : Controller
             SessionDurationHours = sessionDurationHours,
             HourlyRate = hourlyRate,
             TotalAmount = totalAmount,
-            PaymentOrderId = refCode,
-            Status = BookingStatus.PendingPayment
+            Status = BookingStatus.Pending
         };
 
         _db.BookingRequests.Add(booking);
         await _db.SaveChangesAsync();
 
-        return RedirectToAction("BookingPaymentQR", new { bookingId = booking.Id });
+        // Trừ tiền từ ví học sinh
+        var deductTx = new Transaction
+        {
+            WalletId = studentWallet.Id,
+            Amount = totalAmount,
+            Type = TransactionType.Payment,
+            Status = TransactionStatus.Completed,
+            Description = $"Thanh toán khóa học #{booking.Id}",
+            ReferenceId = booking.Id.ToString(),
+            BalanceBefore = studentWallet.Balance,
+            BalanceAfter = studentWallet.Balance - totalAmount
+        };
+        _db.Transactions.Add(deductTx);
+        studentWallet.Balance -= totalAmount;
+        studentWallet.UpdatedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Đã gửi yêu cầu đặt lịch thành công!";
+        return RedirectToAction("Bookings");
     }
 
     // GET: /Student/BookingPaymentQR
@@ -252,28 +275,62 @@ public class StudentController : Controller
         if (contract == null) return;
 
         var tutorWallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == contract.TutorId);
-        if (tutorWallet == null) return;
+        if (tutorWallet == null)
+        {
+            tutorWallet = new Wallet { UserId = contract.TutorId };
+            _db.Wallets.Add(tutorWallet);
+            await _db.SaveChangesAsync();
+        }
 
         const decimal platformFee = 0.15m;
         var sessionEarning = contract.HourlyRate * (session.DurationMinutes / 60m);
         var tutorEarning = sessionEarning * (1 - platformFee);
+        var platformEarning = sessionEarning * platformFee;
 
-        var transaction = new Transaction
+        // Chuyển tiền vào ví gia sư
+        var tutorTx = new Transaction
         {
             WalletId = tutorWallet.Id,
             Amount = tutorEarning,
             Type = TransactionType.Earning,
             Status = TransactionStatus.Completed,
-            Description = $"Thu nhập buổi học #{session.Id} (sau chiết khấu 15%)",
+            Description = $"Thu nhập buổi học #{session.Id}",
             ReferenceId = session.Id.ToString(),
             BalanceBefore = tutorWallet.Balance,
             BalanceAfter = tutorWallet.Balance + tutorEarning
         };
-        _db.Transactions.Add(transaction);
-
+        _db.Transactions.Add(tutorTx);
         tutorWallet.Balance += tutorEarning;
         tutorWallet.TotalEarned += tutorEarning;
         tutorWallet.UpdatedAt = DateTime.UtcNow;
+
+        // Chiết khấu vào ví admin (xử lý ngầm)
+        var adminRoleId = await _db.Roles.Where(r => r.Name == "Admin").Select(r => r.Id).FirstOrDefaultAsync();
+        var adminUserId = await _db.UserRoles.Where(ur => ur.RoleId == adminRoleId).Select(ur => ur.UserId).FirstOrDefaultAsync();
+        if (adminUserId != null)
+        {
+            var adminWallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == adminUserId);
+            if (adminWallet == null)
+            {
+                adminWallet = new Wallet { UserId = adminUserId };
+                _db.Wallets.Add(adminWallet);
+                await _db.SaveChangesAsync();
+            }
+            var adminTx = new Transaction
+            {
+                WalletId = adminWallet.Id,
+                Amount = platformEarning,
+                Type = TransactionType.Earning,
+                Status = TransactionStatus.Completed,
+                Description = $"Phí nền tảng buổi học #{session.Id}",
+                ReferenceId = session.Id.ToString(),
+                BalanceBefore = adminWallet.Balance,
+                BalanceAfter = adminWallet.Balance + platformEarning
+            };
+            _db.Transactions.Add(adminTx);
+            adminWallet.Balance += platformEarning;
+            adminWallet.UpdatedAt = DateTime.UtcNow;
+        }
 
         session.EarningReleased = true;
     }
@@ -406,6 +463,13 @@ public class StudentController : Controller
             .Include(w => w.Transactions)
             .FirstOrDefaultAsync(w => w.UserId == userId);
 
+        if (wallet == null)
+        {
+            wallet = new Wallet { UserId = userId };
+            _db.Wallets.Add(wallet);
+            await _db.SaveChangesAsync();
+        }
+
         return View(wallet);
     }
 
@@ -426,7 +490,12 @@ public class StudentController : Controller
 
         var userId = GetUserId()!;
         var wallet = await _db.Wallets.FirstOrDefaultAsync(w => w.UserId == userId);
-        if (wallet == null) return NotFound();
+        if (wallet == null)
+        {
+            wallet = new Wallet { UserId = userId };
+            _db.Wallets.Add(wallet);
+            await _db.SaveChangesAsync();
+        }
 
         var refCode = "DT" + Guid.NewGuid().ToString("N")[..8].ToUpper();
 
@@ -509,7 +578,7 @@ public class StudentController : Controller
             {
                 Id = e.Id,
                 Title = e.Title,
-                SubjectName = e.Session.Contract.Subject.Name,
+                SubjectName = e.Session != null ? e.Session.Contract.Subject.Name : "—",
                 DurationMinutes = e.DurationMinutes,
                 PassingScore = e.PassingScore,
                 MaxRetakes = e.MaxRetakes,
@@ -654,8 +723,10 @@ public class StudentController : Controller
         var submission = await _db.ExamSubmissions
             .Include(s => s.Exam)
                 .ThenInclude(e => e.Questions)
+                    .ThenInclude(q => q.AnswerOptions)
             .Include(s => s.Answers)
                 .ThenInclude(a => a.Question)
+                    .ThenInclude(q => q.AnswerOptions)
             .Include(s => s.Answers)
                 .ThenInclude(a => a.SelectedOption)
             .FirstOrDefaultAsync(s => s.Id == subId && s.StudentId == studentId);
@@ -681,15 +752,16 @@ public class StudentController : Controller
         var submissions = await _db.ExamSubmissions
             .Include(s => s.Exam)
                 .ThenInclude(e => e.Session)
-                    .ThenInclude(s => s.Contract)
+                    .ThenInclude(s => s!.Contract)
                         .ThenInclude(c => c.Subject)
             .Where(s => s.StudentId == studentId)
             .OrderByDescending(s => s.SubmittedAt)
             .Select(s => new StudentSubmissionHistoryViewModel
             {
                 Id = s.Id,
+                ExamId = s.ExamId,
                 ExamTitle = s.Exam.Title,
-                SubjectName = s.Exam.Session.Contract.Subject.Name,
+                SubjectName = s.Exam.Session != null ? s.Exam.Session.Contract.Subject.Name : "—",
                 SubmittedAt = s.SubmittedAt,
                 TotalScore = s.TotalScore,
                 Percentage = s.Percentage,
@@ -935,6 +1007,7 @@ public class StudentController : Controller
     public class StudentSubmissionHistoryViewModel
     {
         public int Id { get; set; }
+        public int ExamId { get; set; }
         public string ExamTitle { get; set; } = string.Empty;
         public string SubjectName { get; set; } = string.Empty;
         public DateTime? SubmittedAt { get; set; }

@@ -4,6 +4,7 @@
 <h4 class="mb-3">Chi tiết hợp đồng</h4>
 <a asp-action="Contracts" class="btn btn-outline-secondary btn-sm mb-3">← Quay lại</a>
 @if (TempData["SuccessMessage"] != null) { <div class="alert alert-success">@TempData["SuccessMessage"]</div> }
+@if (TempData["ErrorMessage"] != null) { <div class="alert alert-danger">@TempData["ErrorMessage"]</div> }
 
 <div class="row">
     <div class="col-md-4 mb-3">
@@ -36,6 +37,10 @@
                             <label class="form-label small">Thời lượng (phút)</label>
                             <input type="number" name="durationMinutes" value="90" class="form-control form-control-sm" min="30" required />
                         </div>
+                        <div class="mb-2">
+                            <label class="form-label small">Đường dẫn phòng học (Meet/Zoom)</label>
+                            <input type="url" name="meetingLink" class="form-control form-control-sm" placeholder="https://meet.google.com/..." />
+                        </div>
                         <button type="submit" class="btn btn-primary btn-sm w-100">Thêm buổi học</button>
                     </form>
                 </div>
@@ -55,7 +60,7 @@
                 <div class="table-responsive">
                     <table class="table table-sm mb-0">
                         <thead class="table-light">
-                            <tr><th>Thời gian</th><th>Thời lượng</th><th>Ghi chú</th><th>Trạng thái</th></tr>
+                            <tr><th>Thời gian</th><th>Thời lượng</th><th>Phòng học</th><th>Trạng thái</th><th></th></tr>
                         </thead>
                         <tbody>
                             @foreach (var s in Model.Sessions.OrderBy(x => x.ScheduledAt))
@@ -63,15 +68,52 @@
                                 <tr>
                                     <td>@s.ScheduledAt.ToString("dd/MM HH:mm")</td>
                                     <td>@s.DurationMinutes phút</td>
-                                    <td>@s.Notes</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(s.MeetingLink))
+                                        {
+                                            <a href="@s.MeetingLink" target="_blank" class="btn btn-xs btn-outline-success btn-sm">
+                                                🔗 Vào phòng
+                                            </a>
+                                        }
+                                        @if (s.Status == SessionStatus.Scheduled || s.Status == SessionStatus.InProgress)
+                                        {
+                                            <button type="button" class="btn btn-xs btn-outline-secondary btn-sm ms-1"
+                                                    data-bs-toggle="collapse" data-bs-target="#link-form-@s.Id">
+                                                ✏️
+                                            </button>
+                                            <div class="collapse mt-1" id="link-form-@s.Id">
+                                                <form asp-action="UpdateSessionLink" method="post" class="d-flex gap-1">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="sessionId" value="@s.Id" />
+                                                    <input type="url" name="meetingLink" value="@s.MeetingLink"
+                                                           class="form-control form-control-sm" placeholder="https://meet.google.com/..." />
+                                                    <button type="submit" class="btn btn-sm btn-primary">Lưu</button>
+                                                </form>
+                                            </div>
+                                        }
+                                    </td>
                                     <td>
                                         @switch (s.Status)
                                         {
                                             case SessionStatus.Scheduled: <span class="badge bg-info text-dark">Sắp tới</span> break;
                                             case SessionStatus.InProgress: <span class="badge bg-primary">Đang diễn ra</span> break;
+                                            case SessionStatus.PendingConfirmation: <span class="badge bg-warning text-dark">Chờ xác nhận</span> break;
                                             case SessionStatus.Completed: <span class="badge bg-success">Hoàn thành</span> break;
                                             case SessionStatus.NoShow: <span class="badge bg-dark">Vắng mặt</span> break;
                                             default: <span class="badge bg-secondary">Đã huỷ</span> break;
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (s.Status == SessionStatus.Scheduled || s.Status == SessionStatus.InProgress)
+                                        {
+                                            <form asp-action="CompleteSession" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="sessionId" value="@s.Id" />
+                                                <button type="submit" class="btn btn-sm btn-success"
+                                                        onclick="return confirm('Xác nhận kết thúc buổi học này?')">
+                                                    Kết thúc
+                                                </button>
+                                            </form>
                                         }
                                     </td>
                                 </tr>

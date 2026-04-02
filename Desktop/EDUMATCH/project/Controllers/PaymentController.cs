@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json.Serialization;
 
@@ -10,12 +11,14 @@ public class PaymentController : ControllerBase
     private readonly EduMatchDbContext _db;
     private readonly IConfiguration _config;
     private readonly ILogger<PaymentController> _logger;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public PaymentController(EduMatchDbContext db, IConfiguration config, ILogger<PaymentController> logger)
+    public PaymentController(EduMatchDbContext db, IConfiguration config, ILogger<PaymentController> logger, UserManager<ApplicationUser> userManager)
     {
         _db = db;
         _config = config;
         _logger = logger;
+        _userManager = userManager;
     }
 
     [HttpPost("sepay-webhook")]
@@ -35,25 +38,6 @@ public class PaymentController : ControllerBase
             return Ok(new { success = true });
 
         var content = payload.Content ?? payload.Description ?? "";
-
-        // Kiểm tra booking payment (BK...) trước
-        var bookings = await _db.BookingRequests
-            .Where(b => b.Status == BookingStatus.PendingPayment && b.PaymentOrderId != null)
-            .ToListAsync();
-
-        var booking = bookings.FirstOrDefault(b =>
-            content.Contains(b.PaymentOrderId!, StringComparison.OrdinalIgnoreCase));
-
-        if (booking != null)
-        {
-            if (payload.TransferAmount >= booking.TotalAmount)
-            {
-                booking.Status = BookingStatus.Pending; // chờ tutor chấp nhận
-                await _db.SaveChangesAsync();
-                _logger.LogInformation("SePay webhook: booking {Id} payment confirmed", booking.Id);
-            }
-            return Ok(new { success = true });
-        }
 
         // Kiểm tra wallet top-up (DT...)
         var orders = await _db.PaymentOrders

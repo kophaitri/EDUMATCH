@@ -33,3 +33,36 @@
         </div>
     </div>
 </div>
+
+@if (Model.Answers?.Any() == true)
+{
+    <div class="card shadow-sm mt-4">
+        <div class="card-header"><strong>Chi tiết bài làm</strong></div>
+        <div class="card-body">
+            @foreach (var answer in Model.Answers.OrderBy(a => a.Question.DisplayOrder))
+            {
+                <div class="border-bottom py-3">
+                    <p class="mb-1"><strong>Câu @answer.Question.DisplayOrder:</strong> @answer.Question.QuestionText</p>
+                    <p class="mb-1">
+                        <span class="text-muted">Đáp án của bạn:</span>
+                        <strong>@(answer.SelectedOption?.OptionText ?? answer.TextAnswer ?? "Không trả lời")</strong>
+                    </p>
+                    @if (!answer.IsCorrect)
+                    {
+                        var correctOption = answer.Question.AnswerOptions?.FirstOrDefault(o => o.IsCorrect);
+                        @if (correctOption != null)
+                        {
+                            <p class="mb-1">
+                                <span class="text-muted">Đáp án đúng:</span>
+                                <strong class="text-success">@correctOption.OptionText</strong>
+                            </p>
+                        }
+                    }
+                    <span class="badge @(answer.IsCorrect ? "bg-success" : "bg-danger")">
+                        @(answer.IsCorrect ? "✓ Đúng" : "✗ Sai") — @answer.PointsEarned điểm
+                    </span>
+                </div>
+            }
+        </div>
+    </div>
+}

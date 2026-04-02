@@ -154,19 +154,42 @@ public static class DatabaseSeeder
             // ✅ BÂY GIỜ SUBJECTS ĐÃ CÓ → TẠO CONTRACT + SESSION
             if (student != null && dbContext.Subjects.Any() && dbContext.GradeLevels.Any())
             {
+                var subjectId = dbContext.Subjects.First().Id;
+                var gradeLevelId = dbContext.GradeLevels.FirstOrDefault(g => g.Name == "Lớp 12")?.Id
+                                ?? dbContext.GradeLevels.First().Id;
+
                 // --- Contract 1: Active (cho test booking flow) ---
                 var existingActiveContract = dbContext.Contracts
                     .FirstOrDefault(c => c.TutorId == tutor.Id && c.Status == ContractStatus.Active);
 
                 if (existingActiveContract == null)
                 {
-                    var activeContract = new Contract
+                    var booking1 = new BookingRequest
                     {
                         StudentId = student.Id,
                         TutorId = tutor.Id,
-                        SubjectId = dbContext.Subjects.First().Id,
-                        GradeLevelId = dbContext.GradeLevels.FirstOrDefault(g => g.Name == "Lớp 12")?.Id 
-                                    ?? dbContext.GradeLevels.First().Id,
+                        SubjectId = subjectId,
+                        GradeLevelId = gradeLevelId,
+                        Message = "Seed data - active contract",
+                        PreferredStartDate = DateTime.UtcNow,
+                        SessionsPerWeek = 2,
+                        DurationWeeks = 5,
+                        SessionDurationHours = 1.5m,
+                        HourlyRate = 150000,
+                        TotalAmount = 150000 * 1.5m * 10,
+                        Status = BookingStatus.Accepted,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    dbContext.BookingRequests.Add(booking1);
+                    await dbContext.SaveChangesAsync();
+
+                    var activeContract = new Contract
+                    {
+                        BookingRequestId = booking1.Id,
+                        StudentId = student.Id,
+                        TutorId = tutor.Id,
+                        SubjectId = subjectId,
+                        GradeLevelId = gradeLevelId,
                         HourlyRate = 150000,
                         StartDate = DateTime.UtcNow,
                         EndDate = DateTime.UtcNow.AddMonths(3),
@@ -175,32 +198,23 @@ public static class DatabaseSeeder
                         Status = ContractStatus.Active,
                         CreatedAt = DateTime.UtcNow
                     };
-
                     dbContext.Contracts.Add(activeContract);
                     await dbContext.SaveChangesAsync();
 
-                    // Tạo sessions cho active contract
-                    var existingSessions = dbContext.Sessions
-                        .Where(s => s.ContractId == activeContract.Id)
-                        .ToList();
-
-                    if (!existingSessions.Any())
+                    var sessions = new List<Session>();
+                    for (int i = 1; i <= 3; i++)
                     {
-                        var sessions = new List<Session>();
-                        for (int i = 1; i <= 3; i++)
+                        sessions.Add(new Session
                         {
-                            sessions.Add(new Session
-                            {
-                                ContractId = activeContract.Id,
-                                ScheduledAt = DateTime.UtcNow.AddDays(i * 7),
-                                DurationMinutes = 90,
-                                Status = SessionStatus.Scheduled,
-                                CreatedAt = DateTime.UtcNow
-                            });
-                        }
-                        dbContext.Sessions.AddRange(sessions);
-                        await dbContext.SaveChangesAsync();
+                            ContractId = activeContract.Id,
+                            ScheduledAt = DateTime.UtcNow.AddDays(i * 7),
+                            DurationMinutes = 90,
+                            Status = SessionStatus.Scheduled,
+                            CreatedAt = DateTime.UtcNow
+                        });
                     }
+                    dbContext.Sessions.AddRange(sessions);
+                    await dbContext.SaveChangesAsync();
                 }
 
                 // --- Contract 2: COMPLETED (CHO TEST REVIEW) 🎯 ---
@@ -209,35 +223,52 @@ public static class DatabaseSeeder
 
                 if (existingCompletedContract == null)
                 {
-                    var completedContract = new Contract
+                    var booking2 = new BookingRequest
                     {
                         StudentId = student.Id,
                         TutorId = tutor.Id,
-                        SubjectId = dbContext.Subjects.First().Id,
-                        GradeLevelId = dbContext.GradeLevels.FirstOrDefault(g => g.Name == "Lớp 12")?.Id 
-                                    ?? dbContext.GradeLevels.First().Id,
+                        SubjectId = subjectId,
+                        GradeLevelId = gradeLevelId,
+                        Message = "Seed data - completed contract",
+                        PreferredStartDate = DateTime.UtcNow.AddMonths(-4),
+                        SessionsPerWeek = 2,
+                        DurationWeeks = 5,
+                        SessionDurationHours = 1.5m,
                         HourlyRate = 150000,
-                        StartDate = DateTime.UtcNow.AddMonths(-4),  // ← Bắt đầu 4 tháng trước
-                        EndDate = DateTime.UtcNow.AddMonths(-1),    // ← Kết thúc 1 tháng trước (ĐÃ HOÀN THÀNH)
-                        TotalSessions = 10,
-                        CompletedSessions = 10,                      // ← Đã hoàn thành tất cả buổi
-                        Status = ContractStatus.Completed,           // ← QUAN TRỌNG: Status = Completed
+                        TotalAmount = 150000 * 1.5m * 10,
+                        Status = BookingStatus.Accepted,
                         CreatedAt = DateTime.UtcNow.AddMonths(-4)
                     };
+                    dbContext.BookingRequests.Add(booking2);
+                    await dbContext.SaveChangesAsync();
 
+                    var completedContract = new Contract
+                    {
+                        BookingRequestId = booking2.Id,
+                        StudentId = student.Id,
+                        TutorId = tutor.Id,
+                        SubjectId = subjectId,
+                        GradeLevelId = gradeLevelId,
+                        HourlyRate = 150000,
+                        StartDate = DateTime.UtcNow.AddMonths(-4),
+                        EndDate = DateTime.UtcNow.AddMonths(-1),
+                        TotalSessions = 10,
+                        CompletedSessions = 10,
+                        Status = ContractStatus.Completed,
+                        CreatedAt = DateTime.UtcNow.AddMonths(-4)
+                    };
                     dbContext.Contracts.Add(completedContract);
                     await dbContext.SaveChangesAsync();
 
-                    // Tạo sessions đã completed cho contract này
                     var completedSessions = new List<Session>();
                     for (int i = 1; i <= 10; i++)
                     {
                         completedSessions.Add(new Session
                         {
                             ContractId = completedContract.Id,
-                            ScheduledAt = DateTime.UtcNow.AddMonths(-4).AddDays(i * 3),  // Các buổi trong quá khứ
+                            ScheduledAt = DateTime.UtcNow.AddMonths(-4).AddDays(i * 3),
                             DurationMinutes = 90,
-                            Status = SessionStatus.Completed,  // ← Sessions đã hoàn thành
+                            Status = SessionStatus.Completed,
                             CreatedAt = DateTime.UtcNow.AddMonths(-4)
                         });
                     }
@@ -246,6 +277,126 @@ public static class DatabaseSeeder
                 }
             }
         }
+        // ========================================
+        // 🎯 PHẦN 3: Tutor Toán
+        // ========================================
+        var tutorMathEmail = "tutor.toan@edumatch.vn";
+        if (await userManager.FindByEmailAsync(tutorMathEmail) is null)
+        {
+            var tutorMath = new ApplicationUser
+            {
+                UserName = tutorMathEmail,
+                Email = tutorMathEmail,
+                FullName = "Trần Thị Toán",
+                EmailConfirmed = true,
+                IsActive = true,
+                PhoneNumber = "0912345678"
+            };
+
+            var result = await userManager.CreateAsync(tutorMath, "Tutor@123456");
+            if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(tutorMath, "Tutor");
+
+                var profile = new TutorProfile
+                {
+                    UserId = tutorMath.Id,
+                    Bio = "Giáo viên Toán 10 năm kinh nghiệm, chuyên luyện thi THPT",
+                    Education = "Đại học Sư phạm Hà Nội - Cử nhân Toán",
+                    YearsOfExperience = 10,
+                    HourlyRateMin = 150000,
+                    HourlyRateMax = 350000,
+                    AvgRating = 4.9m,
+                    TotalReviews = 0,
+                    ReputationScore = 100m,
+                    IsVerified = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+                dbContext.TutorProfiles.Add(profile);
+                await dbContext.SaveChangesAsync();
+
+                var mathSubject = dbContext.Subjects.FirstOrDefault(s => s.Name == "Toán học");
+                if (mathSubject != null)
+                {
+                    var gradeLevels = dbContext.GradeLevels
+                        .Where(g => g.Name == "Lớp 10" || g.Name == "Lớp 11" || g.Name == "Lớp 12")
+                        .ToList();
+
+                    foreach (var grade in gradeLevels)
+                    {
+                        dbContext.TutorSubjects.Add(new TutorSubject
+                        {
+                            TutorId = profile.Id,
+                            SubjectId = mathSubject.Id,
+                            GradeLevelId = grade.Id,
+                            HourlyRate = 1000
+                        });
+                    }
+                    await dbContext.SaveChangesAsync();
+                }
+            }
+        }
+
+        // ========================================
+        // 🎯 PHẦN 4: Tutor Tiếng Anh
+        // ========================================
+        var tutorEngEmail = "tutor.english@edumatch.vn";
+        if (await userManager.FindByEmailAsync(tutorEngEmail) is null)
+        {
+            var tutorEng = new ApplicationUser
+            {
+                UserName = tutorEngEmail,
+                Email = tutorEngEmail,
+                FullName = "Lê Văn English",
+                EmailConfirmed = true,
+                IsActive = true,
+                PhoneNumber = "0987654321"
+            };
+
+            var result = await userManager.CreateAsync(tutorEng, "Tutor@123456");
+            if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(tutorEng, "Tutor");
+
+                var profile = new TutorProfile
+                {
+                    UserId = tutorEng.Id,
+                    Bio = "Giáo viên Tiếng Anh IELTS 8.0, chuyên luyện thi và giao tiếp",
+                    Education = "Đại học Ngoại ngữ - Cử nhân Tiếng Anh",
+                    YearsOfExperience = 7,
+                    HourlyRateMin = 120000,
+                    HourlyRateMax = 300000,
+                    AvgRating = 4.7m,
+                    TotalReviews = 0,
+                    ReputationScore = 100m,
+                    IsVerified = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+                dbContext.TutorProfiles.Add(profile);
+                await dbContext.SaveChangesAsync();
+
+                var engSubject = dbContext.Subjects.FirstOrDefault(s => s.Name == "Tiếng Anh");
+                if (engSubject != null)
+                {
+                    var gradeLevels = dbContext.GradeLevels
+                        .Where(g => g.Name == "Lớp 10" || g.Name == "Lớp 11" || g.Name == "Lớp 12")
+                        .ToList();
+
+                    foreach (var grade in gradeLevels)
+                    {
+                        dbContext.TutorSubjects.Add(new TutorSubject
+                        {
+                            TutorId = profile.Id,
+                            SubjectId = engSubject.Id,
+                            GradeLevelId = grade.Id,
+                            HourlyRate = 1000
+                        });
+                    }
+                    await dbContext.SaveChangesAsync();
+                }
+            }
+        }
+
         // ========================================
         // ✅ HOÀN TẤT
         // ========================================
