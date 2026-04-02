@@ -60,6 +60,11 @@ public class EduMatchDbContext : IdentityDbContext<ApplicationUser, ApplicationR
     // Support
     public DbSet<TicketReply> TicketReplies { get; set; }
 
+    // Anti-Cheat
+    public DbSet<ExamBehaviorLog> ExamBehaviorLogs { get; set; }
+    public DbSet<ExamSuspiciousScore> ExamSuspiciousScores { get; set; }
+    public DbSet<StudentWritingProfile> StudentWritingProfiles { get; set; }
+
     // Email
     public DbSet<EmailTemplate> EmailTemplates { get; set; }
     public DbSet<EmailQueue> EmailQueue { get; set; }
@@ -280,5 +285,32 @@ public class EduMatchDbContext : IdentityDbContext<ApplicationUser, ApplicationR
             .WithMany()
             .HasForeignKey(sa => sa.SelectedOptionId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Anti-Cheat
+        builder.Entity<ExamBehaviorLog>()
+            .HasOne(x => x.Submission)
+            .WithMany(x => x.BehaviorLogs)
+            .HasForeignKey(x => x.SubmissionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<ExamSuspiciousScore>()
+            .HasOne(x => x.Submission)
+            .WithOne(x => x.SuspiciousScore)
+            .HasForeignKey<ExamSuspiciousScore>(x => x.SubmissionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<ExamSuspiciousScore>()
+            .HasIndex(x => x.SubmissionId)
+            .IsUnique();
+
+        builder.Entity<StudentWritingProfile>()
+            .HasOne(x => x.Student)
+            .WithOne()
+            .HasForeignKey<StudentWritingProfile>(x => x.StudentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<StudentWritingProfile>()
+            .HasIndex(x => x.StudentId)
+            .IsUnique();
     }
 }
