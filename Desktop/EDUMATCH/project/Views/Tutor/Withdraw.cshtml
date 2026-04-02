@@ -1,7 +1,10 @@
-@{ ViewData["Title"] = "Rút tiền"; }
+@{
+    ViewData["Title"] = "Rút tiền";
+    decimal balance = (decimal)ViewBag.Balance;
+}
 
 <h4 class="mb-3">Rút tiền</h4>
-<p>Số dư hiện tại: <strong class="text-success">@((decimal)ViewBag.Balance).ToString("N0") VNĐ</strong></p>
+<p>Số dư hiện tại: <strong class="text-success">@balance.ToString("N0") VNĐ</strong></p>
 
 <div class="row justify-content-center">
     <div class="col-md-5">
