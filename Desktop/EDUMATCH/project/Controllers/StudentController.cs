@@ -16,13 +16,17 @@ public class StudentController : Controller
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly ITutorService _tutorService;
     private readonly IConfiguration _config;
+    private readonly ISuspiciousScoreService _suspiciousScoreService;
+    private readonly WritingStyleAnalyzer _writingStyleAnalyzer;
 
-    public StudentController(EduMatchDbContext db, UserManager<ApplicationUser> userManager, ITutorService tutorService, IConfiguration config)
+    public StudentController(EduMatchDbContext db, UserManager<ApplicationUser> userManager, ITutorService tutorService, IConfiguration config, ISuspiciousScoreService suspiciousScoreService, WritingStyleAnalyzer writingStyleAnalyzer)
     {
         _db = db;
         _userManager = userManager;
         _tutorService = tutorService;
         _config = config;
+        _suspiciousScoreService = suspiciousScoreService;
+        _writingStyleAnalyzer = writingStyleAnalyzer;
     }
 
     private string? GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -620,6 +624,24 @@ public class StudentController : Controller
             return RedirectToAction("Exams");
         }
 
+        // Reuse existing InProgress submission or create a new one for behavior tracking
+        var activeSubmission = await _db.ExamSubmissions
+            .FirstOrDefaultAsync(s => s.ExamId == examId && s.StudentId == studentId && s.Status == SubmissionStatus.InProgress);
+
+        if (activeSubmission == null)
+        {
+            activeSubmission = new ExamSubmission
+            {
+                ExamId = examId,
+                StudentId = studentId,
+                StartedAt = DateTime.UtcNow,
+                Status = SubmissionStatus.InProgress,
+                RetakeNumber = submissionCount + 1
+            };
+            _db.ExamSubmissions.Add(activeSubmission);
+            await _db.SaveChangesAsync();
+        }
+
         var questions = exam.Questions
             .OrderBy(q => q.DisplayOrder)
             .Select(q => new ExamQuestionViewModel
@@ -643,6 +665,7 @@ public class StudentController : Controller
         ViewBag.ExamTitle = exam.Title;
         ViewBag.Duration = exam.DurationMinutes;
         ViewBag.QuestionCount = questions.Count;
+        ViewBag.SubmissionId = activeSubmission.Id;
 
         return View(questions);
     }
@@ -663,16 +686,25 @@ public class StudentController : Controller
         if (exam == null)
             return NotFound();
 
-        var submission = new ExamSubmission
+        // Reuse the InProgress submission created in TakeExam
+        var submission = await _db.ExamSubmissions
+            .FirstOrDefaultAsync(s => s.ExamId == examId && s.StudentId == studentId && s.Status == SubmissionStatus.InProgress);
+
+        if (submission == null)
         {
-            ExamId = examId,
-            StudentId = studentId,
-            StartedAt = DateTime.UtcNow,
-            SubmittedAt = DateTime.UtcNow,
-            Status = SubmissionStatus.Submitted,
-            RetakeNumber = await _db.ExamSubmissions
-                .CountAsync(s => s.ExamId == examId && s.StudentId == studentId) + 1
-        };
+            submission = new ExamSubmission
+            {
+                ExamId = examId,
+                StudentId = studentId,
+                StartedAt = DateTime.UtcNow,
+                RetakeNumber = await _db.ExamSubmissions
+                    .CountAsync(s => s.ExamId == examId && s.StudentId == studentId) + 1
+            };
+            _db.ExamSubmissions.Add(submission);
+        }
+
+        submission.SubmittedAt = DateTime.UtcNow;
+        submission.Status = SubmissionStatus.Submitted;
 
         decimal totalScore = 0;
         var submissionAnswers = new List<SubmissionAnswer>();
@@ -704,8 +736,16 @@ public class StudentController : Controller
             : 0m;
         submission.IsPassed = submission.Percentage >= exam.PassingScore;
 
-        _db.ExamSubmissions.Add(submission);
         await _db.SaveChangesAsync();
+
+        // Anti-cheat: calculate suspicious score and update writing profile
+        await _suspiciousScoreService.CalculateAndSaveAsync(submission.Id);
+
+        var writtenAnswers = string.Join(" ",
+            submissionAnswers
+                .Where(a => !string.IsNullOrWhiteSpace(a.TextAnswer))
+                .Select(a => a.TextAnswer!));
+        await _writingStyleAnalyzer.UpdateProfileAsync(studentId, writtenAnswers, _db);
 
         TempData["Success"] = "✅ Nộp bài thành công!";
         return RedirectToAction("ExamResult", new { examId, subId = submission.Id });

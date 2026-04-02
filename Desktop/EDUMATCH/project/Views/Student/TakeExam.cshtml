@@ -70,7 +70,7 @@
     <script>
         let timeRemaining = @duration * 60;
         const timerElement = document.getElementById('timer');
-        
+
         const timer = setInterval(() => {
             const minutes = Math.floor(timeRemaining / 60);
             const seconds = timeRemaining % 60;
@@ -83,4 +83,6 @@
             timeRemaining--;
         }, 1000);
     </script>
+    <script src="~/js/exam-tracker.js"></script>
+    <script>new ExamTracker(@ViewBag.SubmissionId)</script>
 }

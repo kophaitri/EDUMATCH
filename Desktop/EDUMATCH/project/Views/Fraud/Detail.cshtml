@@ -1,0 +1,125 @@
+@model EduMatch.Services.FraudDetailDto
+@{
+    ViewData["Title"] = "Chi tiết giám sát - " + Model.StudentName;
+
+    string LevelLabel(string level) => level switch
+    {
+        "Clean" => "An toàn",
+        "Suspicious" => "Nghi ngờ",
+        "Flagged" => "Cảnh báo",
+        _ => level
+    };
+
+    string EventLabel(string key) => key switch
+    {
+        "PASTE" => "Dán nội dung",
+        "COPY" => "Sao chép",
+        "TAB_LEAVE" => "Rời tab",
+        "TAB_RETURN" => "Quay lại tab",
+        "WINDOW_BLUR" => "Mất focus cửa sổ",
+        "WINDOW_FOCUS" => "Focus cửa sổ",
+        _ => key
+    };
+}
+
+<div class="fraud-detail-page mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1"><i class="bi bi-shield-exclamation"></i> Chi tiết giám sát</h4>
+            <p class="text-muted mb-0">@Model.StudentName &mdash; @Model.ExamTitle</p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Quay lại
+        </a>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card fraud-total-card">
+                <div class="card-body text-center">
+                    <h6 class="text-muted">Tổng điểm nghi ngờ</h6>
+                    <div class="fraud-total-score fraud-total-score--@Model.Level.ToLower()">
+                        @Model.TotalScore.ToString("F0")<span class="fraud-total-max">/100</span>
+                    </div>
+                    <span class="badge fraud-badge fraud-badge--@Model.Level.ToLower() mt-2">
+                        @LevelLabel(Model.Level)
+                    </span>
+                    <div class="text-muted mt-2" style="font-size: 0.85rem;">
+                        Phân tích lúc @Model.CalculatedAt.ToString("dd/MM/yyyy HH:mm")
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h5 class="mb-3">Phân tích 4 tín hiệu</h5>
+    <div class="row g-3 mb-4">
+        @{
+            var signals = new (string Label, float Score, string Icon)[] {
+                ("Copy/Paste", Model.PasteScore, "bi-clipboard"),
+                ("Chuyển tab", Model.TabScore, "bi-window-stack"),
+                ("Thời gian", Model.TimeScore, "bi-clock-history"),
+                ("Phong cách viết", Model.StyleScore, "bi-pen")
+            };
+        }
+
+        @foreach (var signal in signals)
+        {
+            <div class="col-md-3 col-6">
+                <div class="card fraud-signal-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="bi @signal.Icon me-2"></i>
+                            <span class="fw-semibold">@signal.Label</span>
+                        </div>
+                        <div class="fraud-signal-bar">
+                            <div class="fraud-signal-fill" style="width: @signal.Score%"></div>
+                        </div>
+                        <div class="text-end mt-1" style="font-size: 0.85rem;">@signal.Score.ToString("F0") / 100</div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (Model.Reasons.Count > 0)
+    {
+        <h5 class="mb-3">Lý do</h5>
+        <div class="card mb-4">
+            <div class="card-body">
+                <ul class="mb-0">
+                    @foreach (var reason in Model.Reasons)
+                    {
+                        <li>@reason</li>
+                    }
+                </ul>
+            </div>
+        </div>
+    }
+
+    @if (Model.BehaviorEventCounts.Count > 0)
+    {
+        <h5 class="mb-3">Sự kiện hành vi</h5>
+        <div class="card mb-4">
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Loại sự kiện</th>
+                            <th>Số lần</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var kvp in Model.BehaviorEventCounts.OrderByDescending(x => x.Value))
+                        {
+                            <tr>
+                                <td>@EventLabel(kvp.Key)</td>
+                                <td><span class="badge bg-secondary">@kvp.Value</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

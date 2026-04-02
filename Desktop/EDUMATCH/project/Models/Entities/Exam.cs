@@ -73,6 +73,8 @@ public class ExamSubmission
     public ICollection<SubmissionAnswer> Answers { get; set; } = new List<SubmissionAnswer>();
     public ICollection<FraudWarning> FraudWarnings { get; set; } = new List<FraudWarning>();
     public ICollection<RetakeRequest> RetakeRequests { get; set; } = new List<RetakeRequest>();
+    public ICollection<ExamBehaviorLog> BehaviorLogs { get; set; } = new List<ExamBehaviorLog>();
+    public ExamSuspiciousScore? SuspiciousScore { get; set; }
 }
 
 public class SubmissionAnswer
@@ -111,4 +113,46 @@ public class RetakeRequest
     public DateTime? RespondedAt { get; set; }
 
     public ExamSubmission Submission { get; set; } = null!;
+}
+
+public class ExamBehaviorLog
+{
+    public int Id { get; set; }
+    public int SubmissionId { get; set; }
+    public string EventType { get; set; } = string.Empty;
+    public long TimestampMs { get; set; }
+    public string? Meta { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public ExamSubmission Submission { get; set; } = null!;
+}
+
+public class ExamSuspiciousScore
+{
+    public int Id { get; set; }
+    public int SubmissionId { get; set; }
+    public float TotalScore { get; set; }
+    public float PasteScore { get; set; }
+    public float TabScore { get; set; }
+    public float TimeScore { get; set; }
+    public float StyleScore { get; set; }
+    public string Level { get; set; } = "Clean";
+    public string ReasonsJson { get; set; } = "[]";
+    public DateTime CalculatedAt { get; set; } = DateTime.UtcNow;
+
+    public ExamSubmission Submission { get; set; } = null!;
+}
+
+public class StudentWritingProfile
+{
+    public int Id { get; set; }
+    public string StudentId { get; set; } = string.Empty;
+    public float AvgWordLength { get; set; }
+    public float AvgSentenceLength { get; set; }
+    public float VocabRichness { get; set; }
+    public float PunctuationRatio { get; set; }
+    public int SampleCount { get; set; }
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    public ApplicationUser Student { get; set; } = null!;
 }

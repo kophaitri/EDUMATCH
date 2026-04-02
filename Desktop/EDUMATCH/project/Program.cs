@@ -26,6 +26,12 @@ builder.Services.AddScoped<IAdminEmailService, AdminEmailService>();
 builder.Services.AddScoped<IAdminAuditService, AdminAuditService>();
 builder.Services.AddScoped<ITutorDashboardService, TutorDashboardService>();
 
+// Anti-Cheat Services
+builder.Services.AddScoped<WritingStyleAnalyzer>();
+builder.Services.AddScoped<ISuspiciousScoreService, SuspiciousScoreService>();
+builder.Services.AddScoped<IExamBehaviorService, ExamBehaviorService>();
+builder.Services.AddScoped<IFraudService, FraudService>();
+
 // Identity
 builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
 {
