@@ -104,6 +104,11 @@
                            class="w-full mt-6 flex items-center justify-center rounded-full h-12 bg-black text-white text-sm font-semibold transition-all hover:opacity-90 no-underline btn-transition">
                             Gửi yêu cầu học
                         </a>
+                        <a asp-controller="Student" asp-action="ReportUser" asp-route-userId="@Model.UserId"
+                           class="w-full mt-2 flex items-center justify-center rounded-full h-10 bg-red-50 text-red-600 text-xs font-semibold border border-red-200 hover:bg-red-100 transition-all no-underline btn-transition">
+                            <span class="material-symbols-outlined mr-1" style="font-size:14px">flag</span>
+                            Báo cáo vi phạm
+                        </a>
                     }
                 </div>
             </div>

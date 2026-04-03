@@ -6,8 +6,22 @@ namespace EduMatch.Controllers;
 
 public class HomeController : Controller
 {
-    public IActionResult Index()
+    private readonly EduMatchDbContext _db;
+
+    public HomeController(EduMatchDbContext db)
     {
+        _db = db;
+    }
+
+    public async Task<IActionResult> Index()
+    {
+        var now = DateTime.UtcNow;
+        var banners = await _db.Banners
+            .Where(b => b.IsActive && b.StartAt <= now && b.EndAt >= now)
+            .OrderBy(b => b.DisplayOrder)
+            .ToListAsync();
+
+        ViewBag.Banners = banners;
         return View();
     }
 

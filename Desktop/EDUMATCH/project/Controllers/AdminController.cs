@@ -310,9 +310,12 @@ public class AdminController : Controller
         return View(list);
     }
 
-    // GET: /Admin/BannerDetail/{id}
+    // GET: /Admin/BannerDetail/{id}  (id=0 = tạo mới)
     public async Task<IActionResult> BannerDetail(int id)
     {
+        if (id == 0)
+            return View(new BannerDto { StartAt = DateTime.UtcNow, EndAt = DateTime.UtcNow.AddMonths(1), IsActive = true });
+
         var banner = await _adminContentService.GetBannerByIdAsync(id);
         if (banner == null) return NotFound();
         return View(banner);
@@ -528,6 +531,28 @@ public class AdminController : Controller
             TempData["ErrorMessage"] = "Không thể tải danh sách cảnh báo gian lận: " + ex.Message;
             return View(new List<FraudWarningListDto>());
         }
+    }
+
+    // POST: /Admin/ToggleFraudFlag/{id}
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleFraudFlag(int id)
+    {
+        var (success, message) = await _adminComplaintService.ToggleFraudFlagAsync(id);
+        if (success) TempData["SuccessMessage"] = message;
+        else TempData["ErrorMessage"] = message;
+        return RedirectToAction("FraudWarnings");
+    }
+
+    // POST: /Admin/DismissFraudWarning/{id}
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DismissFraudWarning(int id)
+    {
+        var (success, message) = await _adminComplaintService.DismissFraudWarningAsync(id);
+        if (success) TempData["SuccessMessage"] = message;
+        else TempData["ErrorMessage"] = message;
+        return RedirectToAction("FraudWarnings");
     }
 
     // ===================== TRANSACTIONS (existing) =====================

@@ -1,0 +1,123 @@
+@{
+    ViewData["Title"] = "Phong cách dạy";
+    var allStyles = ViewBag.AllStyles as List<TeachingStyle> ?? new List<TeachingStyle>();
+    var myStyleIds = ViewBag.MyStyleIds as List<int> ?? new List<int>();
+}
+
+@section Styles {
+    @await Html.PartialAsync("_AuthStyles")
+}
+
+<div class="min-h-screen max-w-[1200px] mx-auto px-6 py-12 font-body">
+    <!-- Header -->
+    <header class="mb-16">
+        <div class="flex items-center gap-2 mb-4">
+            <a asp-action="Dashboard" class="text-[10px] tracking-[0.2em] font-bold uppercase text-gray-5 no-underline hover:text-black transition-colors">EDUMATCH / DASHBOARD</a>
+            <span class="text-[10px] text-gray-5">/</span>
+            <span class="text-[10px] tracking-[0.2em] font-bold uppercase text-gray-5">PHONG CÁCH DẠY</span>
+        </div>
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+                <h1 class="title-main text-5xl md:text-6xl leading-none mb-2">Phong cách dạy</h1>
+                <p class="accent-italic text-lg text-gray-5">Chọn phong cách giảng dạy phù hợp với bạn</p>
+            </div>
+            <span class="px-4 py-2 bg-gray-8 text-gray-4 text-[10px] font-bold tracking-widest uppercase rounded-full">
+                @myStyleIds.Count / @allStyles.Count đã chọn
+            </span>
+        </div>
+    </header>
+
+    <!-- Flash messages -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="mb-8 p-4 rounded-[14px] bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-medium">
+            <span class="material-symbols-outlined text-sm align-middle mr-1">check_circle</span>
+            @TempData["SuccessMessage"]
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="mb-8 p-4 rounded-[14px] bg-red-50 border border-red-200 text-red-800 text-sm font-medium">
+            <span class="material-symbols-outlined text-sm align-middle mr-1">error</span>
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    @if (!allStyles.Any())
+    {
+        <div class="bg-white rounded-[14px] p-12 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 border-dashed text-center">
+            <span class="material-symbols-outlined text-gray-6 text-5xl mb-4 block">auto_awesome</span>
+            <p class="text-gray-5 text-lg">Chưa có phong cách dạy nào. Admin cần tạo trước.</p>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach (var style in allStyles)
+            {
+                bool isSelected = myStyleIds.Contains(style.Id);
+                <div class="bg-white rounded-[14px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border @(isSelected ? "border-gray-1" : "border-gray-7") card-fade-in transition-all">
+                    <div class="flex items-start justify-between gap-4 mb-4">
+                        <div class="w-12 h-12 rounded-full @(isSelected ? "bg-gray-1" : "bg-gray-8") flex items-center justify-center flex-shrink-0 transition-colors">
+                            <span class="material-symbols-outlined @(isSelected ? "text-white" : "text-gray-4") text-xl">
+                                @(isSelected ? "check_circle" : "auto_awesome")
+                            </span>
+                        </div>
+                        @if (isSelected)
+                        {
+                            <span class="px-3 py-1 bg-gray-1 text-white text-[10px] font-bold tracking-widest uppercase rounded-full">Đang dùng</span>
+                        }
+                    </div>
+
+                    <h3 class="text-lg font-bold mb-1">@style.Name</h3>
+                    @if (!string.IsNullOrEmpty(style.Description))
+                    {
+                        <p class="text-sm text-gray-5 leading-relaxed mb-4">@style.Description</p>
+                    }
+                    else
+                    {
+                        <p class="text-sm text-gray-6 italic mb-4">Không có mô tả.</p>
+                    }
+
+                    @if (isSelected)
+                    {
+                        <form asp-action="RemoveTeachingStyle" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="teachingStyleId" value="@style.Id" />
+                            <button type="submit"
+                                    class="w-full flex items-center justify-center rounded-full h-10 bg-red-50 text-red-600 text-sm font-semibold border border-red-200 hover:bg-red-100 transition-all btn-transition">
+                                <span class="material-symbols-outlined text-sm mr-2">remove_circle</span>
+                                Bỏ chọn
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form asp-action="AddTeachingStyle" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="teachingStyleId" value="@style.Id" />
+                            <button type="submit"
+                                    class="w-full flex items-center justify-center rounded-full h-10 bg-black text-white text-sm font-semibold hover:opacity-90 transition-all btn-transition">
+                                <span class="material-symbols-outlined text-sm mr-2">add_circle</span>
+                                Chọn phong cách này
+                            </button>
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+
+        @if (myStyleIds.Any())
+        {
+            <div class="mt-10 p-6 rounded-[14px] bg-gray-8 border border-gray-7">
+                <p class="text-[10px] font-bold uppercase tracking-widest text-gray-5 mb-3">Phong cách bạn đang dùng</p>
+                <div class="flex flex-wrap gap-2">
+                    @foreach (var style in allStyles.Where(s => myStyleIds.Contains(s.Id)))
+                    {
+                        <span class="px-4 py-2 bg-gray-1 text-white text-sm font-semibold rounded-full">@style.Name</span>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>

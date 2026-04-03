@@ -590,4 +590,131 @@ public class TutorController : Controller
         TempData["SuccessMessage"] = $"Yêu cầu rút {amount:N0} VNĐ đã được ghi nhận. Tiền sẽ về trong 1-3 ngày làm việc.";
         return RedirectToAction("Wallet");
     }
+
+    // ============================================================
+    // Teaching Style Management
+    // ============================================================
+
+    // GET: /Tutor/TeachingStyles
+    public async Task<IActionResult> TeachingStyles()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var profile = await _db.TutorProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (profile == null) return NotFound();
+
+        var myStyleIds = await _db.TutorTeachingStyles
+            .Where(ts => ts.TutorId == profile.Id)
+            .Select(ts => ts.TeachingStyleId)
+            .ToListAsync();
+
+        ViewBag.AllStyles = await _db.TeachingStyles.OrderBy(s => s.Name).ToListAsync();
+        ViewBag.MyStyleIds = myStyleIds;
+        return View();
+    }
+
+    // POST: /Tutor/AddTeachingStyle
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddTeachingStyle(int teachingStyleId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var profile = await _db.TutorProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (profile == null) return NotFound();
+
+        var exists = await _db.TutorTeachingStyles
+            .AnyAsync(ts => ts.TutorId == profile.Id && ts.TeachingStyleId == teachingStyleId);
+
+        if (!exists)
+        {
+            _db.TutorTeachingStyles.Add(new TutorTeachingStyle
+            {
+                TutorId = profile.Id,
+                TeachingStyleId = teachingStyleId
+            });
+            await _db.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Đã thêm phong cách dạy.";
+        }
+        return RedirectToAction("TeachingStyles");
+    }
+
+    // POST: /Tutor/RemoveTeachingStyle
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RemoveTeachingStyle(int teachingStyleId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var profile = await _db.TutorProfiles.FirstOrDefaultAsync(p => p.UserId == userId);
+        if (profile == null) return NotFound();
+
+        var item = await _db.TutorTeachingStyles
+            .FirstOrDefaultAsync(ts => ts.TutorId == profile.Id && ts.TeachingStyleId == teachingStyleId);
+
+        if (item != null)
+        {
+            _db.TutorTeachingStyles.Remove(item);
+            await _db.SaveChangesAsync();
+            TempData["SuccessMessage"] = "Đã xóa phong cách dạy.";
+        }
+        return RedirectToAction("TeachingStyles");
+    }
+
+    // ============================================================
+    // Review Complaints
+    // ============================================================
+
+    // GET: /Tutor/ComplainReview/{reviewId}
+    [HttpGet]
+    public async Task<IActionResult> ComplainReview(int reviewId)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var review = await _db.Reviews
+            .Include(r => r.Reviewer)
+            .FirstOrDefaultAsync(r => r.Id == reviewId && r.RevieweeId == userId);
+
+        if (review == null) return NotFound();
+
+        var alreadyComplained = await _db.ReviewComplaints
+            .AnyAsync(c => c.ReviewId == reviewId && c.ComplainantId == userId);
+
+        if (alreadyComplained)
+        {
+            TempData["ErrorMessage"] = "Bạn đã khiếu nại đánh giá này rồi.";
+            return RedirectToAction("Dashboard");
+        }
+
+        ViewBag.Review = review;
+        return View();
+    }
+
+    // POST: /Tutor/ComplainReview
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ComplainReview(int reviewId, string reason)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var review = await _db.Reviews
+            .FirstOrDefaultAsync(r => r.Id == reviewId && r.RevieweeId == userId);
+
+        if (review == null) return NotFound();
+
+        var alreadyComplained = await _db.ReviewComplaints
+            .AnyAsync(c => c.ReviewId == reviewId && c.ComplainantId == userId);
+
+        if (alreadyComplained)
+        {
+            TempData["ErrorMessage"] = "Bạn đã khiếu nại đánh giá này rồi.";
+            return RedirectToAction("Dashboard");
+        }
+
+        _db.ReviewComplaints.Add(new ReviewComplaint
+        {
+            ReviewId = reviewId,
+            ComplainantId = userId,
+            Reason = reason
+        });
+        await _db.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Khiếu nại đã được gửi. Admin sẽ xem xét trong thời gian sớm nhất.";
+        return RedirectToAction("Dashboard");
+    }
 }

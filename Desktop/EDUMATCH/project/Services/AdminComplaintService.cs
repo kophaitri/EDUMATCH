@@ -211,4 +211,29 @@ public class AdminComplaintService : IAdminComplaintService
             })
             .ToListAsync();
     }
+
+    public async Task<(bool Success, string Message)> ToggleFraudFlagAsync(int fraudWarningId)
+    {
+        var warning = await _db.FraudWarnings
+            .Include(f => f.Submission)
+            .FirstOrDefaultAsync(f => f.Id == fraudWarningId);
+
+        if (warning == null) return (false, "Không tìm thấy cảnh báo.");
+
+        warning.Submission.IsFlagged = !warning.Submission.IsFlagged;
+        await _db.SaveChangesAsync();
+
+        return (true, warning.Submission.IsFlagged ? "Đã đánh cờ đỏ bài nộp." : "Đã bỏ cờ đỏ bài nộp.");
+    }
+
+    public async Task<(bool Success, string Message)> DismissFraudWarningAsync(int fraudWarningId)
+    {
+        var warning = await _db.FraudWarnings.FindAsync(fraudWarningId);
+        if (warning == null) return (false, "Không tìm thấy cảnh báo.");
+
+        _db.FraudWarnings.Remove(warning);
+        await _db.SaveChangesAsync();
+
+        return (true, "Đã bỏ qua cảnh báo gian lận.");
+    }
 }

@@ -3,6 +3,9 @@
 
 <h4 class="mb-3">Cảnh báo gian lận thi</h4>
 
+@if (TempData["SuccessMessage"] != null) { <div class="alert alert-success">@TempData["SuccessMessage"]</div> }
+@if (TempData["ErrorMessage"] != null) { <div class="alert alert-danger">@TempData["ErrorMessage"]</div> }
+
 <form method="get" class="d-flex gap-2 mb-4">
     <select name="flaggedOnly" class="form-select w-auto">
         <option value="">-- Tất cả --</option>
@@ -22,7 +25,16 @@ else
     <div class="table-responsive">
         <table class="table table-hover align-middle">
             <thead class="table-dark">
-                <tr><th>#</th><th>Học sinh</th><th>Bài thi</th><th>Loại cảnh báo</th><th>Fraud Score</th><th>Cờ đỏ</th><th>Phát hiện lúc</th></tr>
+                <tr>
+                    <th>#</th>
+                    <th>Học sinh</th>
+                    <th>Bài thi</th>
+                    <th>Loại cảnh báo</th>
+                    <th>Fraud Score</th>
+                    <th>Cờ đỏ</th>
+                    <th>Phát hiện lúc</th>
+                    <th>Xử lý</th>
+                </tr>
             </thead>
             <tbody>
                 @foreach (var f in Model)
@@ -46,10 +58,36 @@ else
                             else              { <i class="bi bi-flag text-muted"></i> }
                         </td>
                         <td><small>@f.DetectedAt.ToString("dd/MM/yyyy HH:mm")</small></td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <!-- Toggle cờ đỏ -->
+                                <form asp-action="ToggleFraudFlag" asp-route-id="@f.Id" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit"
+                                            class="btn btn-sm @(f.IsFlagged ? "btn-outline-secondary" : "btn-outline-danger")"
+                                            title="@(f.IsFlagged ? "Bỏ cờ đỏ" : "Đánh cờ đỏ")">
+                                        <i class="bi @(f.IsFlagged ? "bi-flag" : "bi-flag-fill")"></i>
+                                    </button>
+                                </form>
+                                <!-- Bỏ qua cảnh báo -->
+                                <form asp-action="DismissFraudWarning" asp-route-id="@f.Id" method="post"
+                                      onsubmit="return confirm('Bỏ qua cảnh báo này? Thao tác không thể hoàn tác.')">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-success" title="Bỏ qua (đã xem xét)">
+                                        <i class="bi bi-check-circle"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
                     </tr>
                 }
             </tbody>
         </table>
     </div>
-    <div class="text-muted small">Tổng: @Model.Count cảnh báo | Bị cờ đỏ: @Model.Count(f => f.IsFlagged)</div>
+    <div class="text-muted small">
+        Tổng: @Model.Count cảnh báo | Bị cờ đỏ: @Model.Count(f => f.IsFlagged)
+        &nbsp;·&nbsp;
+        <i class="bi bi-flag-fill text-danger"></i> = Đánh cờ đỏ &nbsp;
+        <i class="bi bi-check-circle text-success"></i> = Bỏ qua (đã xem xét)
+    </div>
 }

@@ -1,0 +1,102 @@
+@{
+    ViewData["Title"] = "Khiếu nại đánh giá";
+    var review = ViewBag.Review as Review;
+}
+
+@section Styles {
+    @await Html.PartialAsync("_AuthStyles")
+}
+
+<div class="min-h-screen max-w-[680px] mx-auto px-6 py-12 font-body">
+    <header class="mb-10">
+        <div class="flex items-center gap-2 mb-4">
+            <a asp-action="Dashboard" class="text-[10px] tracking-[0.2em] font-bold uppercase text-gray-5 no-underline hover:text-black transition-colors">DASHBOARD</a>
+            <span class="text-[10px] text-gray-5">/</span>
+            <span class="text-[10px] tracking-[0.2em] font-bold uppercase text-gray-5">KHIẾU NẠI ĐÁNH GIÁ</span>
+        </div>
+        <h1 class="title-main text-4xl md:text-5xl leading-none mb-2">Khiếu nại</h1>
+        <p class="accent-italic text-lg text-gray-5">Gửi khiếu nại về đánh giá không phù hợp</p>
+    </header>
+
+    <!-- Review hiện tại -->
+    @if (review != null)
+    {
+        <div class="bg-white rounded-[14px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 mb-8 card-fade-in">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-5 mb-4">Đánh giá bị khiếu nại</p>
+            <div class="flex items-start gap-4">
+                <div class="w-10 h-10 rounded-full bg-gray-7 flex items-center justify-center flex-shrink-0 text-sm font-bold text-gray-5">
+                    @if (review.IsAnonymous)
+                    {
+                        <span class="material-symbols-outlined text-gray-5 text-base">person_off</span>
+                    }
+                    else
+                    {
+                        @review.Reviewer.FullName.Substring(0, 1).ToUpper()
+                    }
+                </div>
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="font-bold text-sm">@(review.IsAnonymous ? "Ẩn danh" : review.Reviewer.FullName)</span>
+                        <span class="text-sm" style="color:#f5a623;">
+                            @for (int i = 0; i < review.Rating; i++) { <text>★</text> }
+                        </span>
+                        <span class="text-sm" style="color:#e5e7eb;">
+                            @for (int i = review.Rating; i < 5; i++) { <text>★</text> }
+                        </span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(review.Comment))
+                    {
+                        <p class="text-sm leading-relaxed m-0 mb-1">@review.Comment</p>
+                    }
+                    <span class="text-[11px] text-gray-5">@review.CreatedAt.ToString("dd/MM/yyyy")</span>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Form khiếu nại -->
+    <div class="bg-white rounded-[14px] p-8 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 card-fade-in">
+        <h3 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-5 mb-6 flex items-center gap-3">
+            <span class="material-symbols-outlined text-sm">flag</span>
+            Nội dung khiếu nại
+        </h3>
+
+        <form asp-action="ComplainReview" method="post" class="space-y-5">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="reviewId" value="@review?.Id" />
+
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-5 mb-2">
+                    Lý do khiếu nại <span class="text-red-500">*</span>
+                </label>
+                <select name="reason" required
+                        class="w-full h-12 px-4 rounded-[10px] border border-gray-7 bg-gray-8 text-sm font-medium focus:outline-none focus:border-gray-4 transition-colors appearance-none">
+                    <option value="">— Chọn lý do —</option>
+                    <option value="Đánh giá không đúng sự thật">Đánh giá không đúng sự thật</option>
+                    <option value="Nội dung xúc phạm, thô lỗ">Nội dung xúc phạm, thô lỗ</option>
+                    <option value="Đánh giá từ người không học">Đánh giá từ người không học</option>
+                    <option value="Spam / lặp lại nhiều lần">Spam / lặp lại nhiều lần</option>
+                    <option value="Thông tin cá nhân bị tiết lộ">Thông tin cá nhân bị tiết lộ</option>
+                    <option value="Lý do khác">Lý do khác</option>
+                </select>
+            </div>
+
+            <div class="p-4 rounded-[10px] bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+                <span class="material-symbols-outlined text-sm align-middle mr-1">info</span>
+                Khiếu nại sẽ được Admin xem xét. Đánh giá sẽ bị xóa nếu vi phạm quy định.
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <button type="submit"
+                        class="flex items-center justify-center rounded-full h-12 px-8 bg-black text-white text-sm font-semibold hover:opacity-90 transition-all btn-transition">
+                    <span class="material-symbols-outlined text-sm mr-2">send</span>
+                    Gửi khiếu nại
+                </button>
+                <a asp-action="Dashboard"
+                   class="flex items-center justify-center rounded-full h-12 px-6 bg-gray-8 text-gray-4 text-sm font-semibold hover:bg-gray-7 transition-all no-underline btn-transition">
+                    Hủy
+                </a>
+            </div>
+        </form>
+    </div>
+</div>

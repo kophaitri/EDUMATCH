@@ -16,4 +16,6 @@ public interface IAdminComplaintService
 
     // Fraud Warnings
     Task<List<FraudWarningListDto>> GetFraudWarningsAsync(bool? flaggedOnly = null);
+    Task<(bool Success, string Message)> ToggleFraudFlagAsync(int fraudWarningId);
+    Task<(bool Success, string Message)> DismissFraudWarningAsync(int fraudWarningId);
 }

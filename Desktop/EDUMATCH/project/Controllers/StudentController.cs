@@ -332,4 +332,50 @@ public class StudentController : Controller
         ViewBag.Wallet = wallet;
         return View(transactions);
     }
+
+    // ============================================================
+    // Report User
+    // ============================================================
+
+    // GET: /Student/ReportUser/{userId}
+    [HttpGet]
+    [Authorize(Policy = "StudentOnly")]
+    public async Task<IActionResult> ReportUser(string userId)
+    {
+        var reportedUser = await _userManager.FindByIdAsync(userId);
+        if (reportedUser == null) return NotFound();
+
+        ViewBag.ReportedUser = reportedUser;
+        return View();
+    }
+
+    // POST: /Student/ReportUser
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Authorize(Policy = "StudentOnly")]
+    public async Task<IActionResult> ReportUser(string reportedUserId, string reason, string? details)
+    {
+        var reporterId = GetUserId()!;
+
+        if (reporterId == reportedUserId)
+        {
+            TempData["ErrorMessage"] = "Bạn không thể báo cáo chính mình.";
+            return RedirectToAction("Search");
+        }
+
+        var reportedUser = await _userManager.FindByIdAsync(reportedUserId);
+        if (reportedUser == null) return NotFound();
+
+        _db.Reports.Add(new Report
+        {
+            ReporterId = reporterId,
+            ReportedUserId = reportedUserId,
+            Reason = reason,
+            Details = details
+        });
+        await _db.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Báo cáo đã được gửi. Admin sẽ xem xét trong thời gian sớm nhất.";
+        return RedirectToAction("TutorProfile", new { id = reportedUserId });
+    }
 }

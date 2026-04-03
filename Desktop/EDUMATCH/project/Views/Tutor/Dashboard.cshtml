@@ -81,6 +81,7 @@
                 </a>
                 <a asp-action="Contracts" class="list-group-item list-group-item-action">Hợp đồng của tôi</a>
                 <a asp-action="ManageSubjects" class="list-group-item list-group-item-action">Môn dạy & Học phí</a>
+                <a asp-action="TeachingStyles" class="list-group-item list-group-item-action">Phong cách dạy</a>
                 <a asp-action="Posts" class="list-group-item list-group-item-action">Bài đăng của tôi</a>
             </div>
         </div>
@@ -149,9 +150,16 @@
             @foreach (var r in Model.RecentReviews)
             {
                 <div class="px-3 py-2 border-bottom">
-                    <div class="d-flex justify-content-between">
-                        <strong>@r.ReviewerName</strong>
-                        <span class="text-warning">@string.Concat(Enumerable.Repeat("⭐", r.Rating))</span>
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>@r.ReviewerName</strong>
+                            <span class="text-warning ms-2">@string.Concat(Enumerable.Repeat("⭐", r.Rating))</span>
+                        </div>
+                        <a asp-action="ComplainReview" asp-route-reviewId="@r.Id"
+                           class="btn btn-outline-danger btn-sm py-0 px-2" title="Khiếu nại đánh giá này"
+                           style="font-size:11px">
+                            <i class="bi bi-flag"></i> Khiếu nại
+                        </a>
                     </div>
                     @if (r.Comment != null) { <p class="mb-0 text-muted small">@r.Comment</p> }
                     <small class="text-muted">@r.CreatedAt.ToString("dd/MM/yyyy")</small>
