@@ -1,0 +1,102 @@
+@{
+    ViewData["Title"] = "Báo cáo vi phạm";
+    var reportedUser = ViewBag.ReportedUser as ApplicationUser;
+}
+
+@section Styles {
+    @await Html.PartialAsync("_AuthStyles")
+}
+
+<div class="min-h-screen max-w-[680px] mx-auto px-6 py-12 font-body">
+    <header class="mb-10">
+        <div class="flex items-center gap-2 mb-4">
+            <a asp-action="Search" class="text-[10px] tracking-[0.2em] font-bold uppercase text-gray-5 no-underline hover:text-black transition-colors">TÌM GIA SƯ</a>
+            <span class="text-[10px] text-gray-5">/</span>
+            <span class="text-[10px] tracking-[0.2em] font-bold uppercase text-gray-5">BÁO CÁO VI PHẠM</span>
+        </div>
+        <h1 class="title-main text-4xl md:text-5xl leading-none mb-2">Báo cáo</h1>
+        <p class="accent-italic text-lg text-gray-5">Giúp cộng đồng EduMatch an toàn hơn</p>
+    </header>
+
+    <!-- Người bị báo cáo -->
+    @if (reportedUser != null)
+    {
+        <div class="bg-white rounded-[14px] p-6 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 mb-8 card-fade-in">
+            <p class="text-[10px] font-bold uppercase tracking-widest text-gray-5 mb-4">Người bị báo cáo</p>
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-full bg-gray-7 overflow-hidden flex items-center justify-center flex-shrink-0">
+                    @if (!string.IsNullOrEmpty(reportedUser.AvatarUrl))
+                    {
+                        <img src="@reportedUser.AvatarUrl" alt="" class="w-full h-full object-cover" />
+                    }
+                    else
+                    {
+                        <span class="text-xl font-bold text-gray-4">@reportedUser.FullName.Substring(0, 1).ToUpper()</span>
+                    }
+                </div>
+                <div>
+                    <div class="font-bold text-base">@reportedUser.FullName</div>
+                    <div class="text-sm text-gray-5">@reportedUser.Email</div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Form báo cáo -->
+    <div class="bg-white rounded-[14px] p-8 shadow-[0_4px_40px_rgba(0,0,0,0.07)] border border-gray-7 card-fade-in">
+        <h3 class="text-xs font-bold uppercase tracking-[0.3em] text-gray-5 mb-6 flex items-center gap-3">
+            <span class="material-symbols-outlined text-sm">report</span>
+            Nội dung báo cáo
+        </h3>
+
+        <form asp-action="ReportUser" method="post" class="space-y-5">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="reportedUserId" value="@reportedUser?.Id" />
+
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-5 mb-2">
+                    Lý do báo cáo <span class="text-red-500">*</span>
+                </label>
+                <select name="reason" required
+                        class="w-full h-12 px-4 rounded-[10px] border border-gray-7 bg-gray-8 text-sm font-medium focus:outline-none focus:border-gray-4 transition-colors appearance-none">
+                    <option value="">— Chọn lý do —</option>
+                    <option value="Lừa đảo / gian lận">Lừa đảo / gian lận</option>
+                    <option value="Hành vi không phù hợp">Hành vi không phù hợp</option>
+                    <option value="Nội dung xúc phạm, quấy rối">Nội dung xúc phạm, quấy rối</option>
+                    <option value="Thông tin hồ sơ giả mạo">Thông tin hồ sơ giả mạo</option>
+                    <option value="Không dạy theo cam kết">Không dạy theo cam kết</option>
+                    <option value="Vi phạm quy định khác">Vi phạm quy định khác</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-5 mb-2">
+                    Mô tả chi tiết <span class="text-gray-6 font-normal normal-case text-xs">(không bắt buộc)</span>
+                </label>
+                <textarea name="details" rows="4"
+                          class="w-full px-4 py-3 rounded-[10px] border border-gray-7 bg-gray-8 text-sm font-medium focus:outline-none focus:border-gray-4 transition-colors resize-none"
+                          placeholder="Mô tả thêm về sự việc để Admin có thể xem xét chính xác hơn..."></textarea>
+            </div>
+
+            <div class="p-4 rounded-[10px] bg-red-50 border border-red-200 text-red-800 text-sm">
+                <span class="material-symbols-outlined text-sm align-middle mr-1">warning</span>
+                Báo cáo sai sự thật có thể dẫn đến tài khoản của bạn bị hạn chế.
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <button type="submit"
+                        class="flex items-center justify-center rounded-full h-12 px-8 bg-black text-white text-sm font-semibold hover:opacity-90 transition-all btn-transition">
+                    <span class="material-symbols-outlined text-sm mr-2">send</span>
+                    Gửi báo cáo
+                </button>
+                @if (reportedUser != null)
+                {
+                    <a asp-action="TutorProfile" asp-route-id="@reportedUser.Id"
+                       class="flex items-center justify-center rounded-full h-12 px-6 bg-gray-8 text-gray-4 text-sm font-semibold hover:bg-gray-7 transition-all no-underline btn-transition">
+                        Hủy
+                    </a>
+                }
+            </div>
+        </form>
+    </div>
+</div>

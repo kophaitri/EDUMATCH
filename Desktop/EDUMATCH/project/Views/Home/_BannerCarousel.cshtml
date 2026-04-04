@@ -1,0 +1,95 @@
+@{
+    var banners = ViewBag.Banners as List<Banner> ?? new List<Banner>();
+}
+
+@if (banners.Any())
+{
+    <section class="banner-carousel-section">
+        <div id="homeBannerCarousel" class="carousel slide" data-bs-ride="carousel" data-bs-interval="5000">
+            <!-- Indicators -->
+            @if (banners.Count > 1)
+            {
+                <div class="carousel-indicators">
+                    @for (int i = 0; i < banners.Count; i++)
+                    {
+                        <button type="button" data-bs-target="#homeBannerCarousel"
+                                data-bs-slide-to="@i"
+                                class="@(i == 0 ? "active" : "")"
+                                aria-label="Banner @(i + 1)"></button>
+                    }
+                </div>
+            }
+
+            <!-- Slides -->
+            <div class="carousel-inner">
+                @for (int i = 0; i < banners.Count; i++)
+                {
+                    var b = banners[i];
+                    <div class="carousel-item @(i == 0 ? "active" : "")">
+                        @if (!string.IsNullOrEmpty(b.LinkUrl))
+                        {
+                            <a href="@b.LinkUrl" class="d-block banner-carousel-link" target="_blank" rel="noopener">
+                                @if (!string.IsNullOrEmpty(b.ImageUrl))
+                                {
+                                    <img src="@b.ImageUrl" class="banner-carousel-img" alt="@b.Title" />
+                                }
+                                else
+                                {
+                                    <div class="banner-carousel-placeholder">
+                                        <span class="banner-carousel-title-only">@b.Title</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(b.Title))
+                                {
+                                    <div class="carousel-caption banner-carousel-caption">
+                                        <h5 class="banner-carousel-caption-title">@b.Title</h5>
+                                        @if (!string.IsNullOrEmpty(b.Description))
+                                        {
+                                            <p class="banner-carousel-caption-desc">@b.Description</p>
+                                        }
+                                    </div>
+                                }
+                            </a>
+                        }
+                        else
+                        {
+                            <div class="banner-carousel-link">
+                                @if (!string.IsNullOrEmpty(b.ImageUrl))
+                                {
+                                    <img src="@b.ImageUrl" class="banner-carousel-img" alt="@b.Title" />
+                                }
+                                else
+                                {
+                                    <div class="banner-carousel-placeholder">
+                                        <span class="banner-carousel-title-only">@b.Title</span>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(b.Title))
+                                {
+                                    <div class="carousel-caption banner-carousel-caption">
+                                        <h5 class="banner-carousel-caption-title">@b.Title</h5>
+                                        @if (!string.IsNullOrEmpty(b.Description))
+                                        {
+                                            <p class="banner-carousel-caption-desc">@b.Description</p>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- Controls -->
+            @if (banners.Count > 1)
+            {
+                <button class="carousel-control-prev" type="button" data-bs-target="#homeBannerCarousel" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon"></span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#homeBannerCarousel" data-bs-slide="next">
+                    <span class="carousel-control-next-icon"></span>
+                </button>
+            }
+        </div>
+    </section>
+}

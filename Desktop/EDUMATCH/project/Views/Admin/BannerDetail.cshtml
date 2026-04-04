@@ -5,63 +5,201 @@
     string formAction = isNew ? "CreateBanner" : "UpdateBanner";
 }
 
-<h4 class="mb-1">@(isNew ? "Thêm Banner mới" : $"Sửa Banner: {Model!.Title}")</h4>
-<a asp-action="Banners" class="btn btn-outline-secondary btn-sm mb-3">← Quay lại</a>
+<div class="d-flex align-items-center gap-2 mb-1">
+    <a asp-action="Banners" class="btn btn-outline-secondary btn-sm">← Quay lại</a>
+    <h4 class="mb-0 ms-2">@(isNew ? "Thêm Banner mới" : $"Sửa Banner: {Model!.Title}")</h4>
+</div>
 
-<div class="card shadow-sm" style="max-width:640px">
-    <div class="card-body">
-        @{
-            string actionUrl = isNew
-                ? Url.Action("CreateBanner", "Admin")!
-                : Url.Action("UpdateBanner", "Admin", new { id = Model!.Id })!;
-        }
-        <form action="@actionUrl" method="post">
-            @Html.AntiForgeryToken()
-
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Tiêu đề <span class="text-danger">*</span></label>
-                <input name="Title" class="form-control" value="@Model?.Title" required />
-            </div>
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Mô tả</label>
-                <input name="Description" class="form-control" value="@Model?.Description" />
-            </div>
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Image URL</label>
-                <input name="ImageUrl" class="form-control" value="@Model?.ImageUrl" />
-                @if (Model?.ImageUrl != null)
-                {
-                    <img src="@Model.ImageUrl" class="mt-2 img-thumbnail" style="max-height:120px" alt="" />
+<div class="row g-4 mt-1">
+    <!-- Form -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header"><strong>Thông tin banner</strong></div>
+            <div class="card-body">
+                @{
+                    string actionUrl = isNew
+                        ? Url.Action("CreateBanner", "Admin")!
+                        : Url.Action("UpdateBanner", "Admin", new { id = Model!.Id })!;
                 }
+                <form action="@actionUrl" method="post" id="bannerForm">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tiêu đề <span class="text-danger">*</span></label>
+                        <input name="Title" id="inputTitle" class="form-control" value="@Model?.Title" required
+                               placeholder="VD: Khuyến mãi tháng 4" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Mô tả</label>
+                        <input name="Description" id="inputDesc" class="form-control" value="@Model?.Description"
+                               placeholder="Mô tả ngắn hiển thị dưới tiêu đề" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Image URL</label>
+                        <input name="ImageUrl" id="inputImage" class="form-control" value="@Model?.ImageUrl"
+                               placeholder="https://example.com/banner.jpg" />
+                        <div class="form-text">Dán URL ảnh để xem preview bên phải.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Link URL <span class="text-muted small fw-normal">(khi click vào banner)</span></label>
+                        <input name="LinkUrl" class="form-control" value="@Model?.LinkUrl" placeholder="https://..." />
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Hiển thị từ <span class="text-danger">*</span></label>
+                            <input name="StartAt" type="datetime-local" class="form-control"
+                                   value="@(Model?.StartAt.ToString("yyyy-MM-ddTHH:mm") ?? DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm"))" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Hiển thị đến <span class="text-danger">*</span></label>
+                            <input name="EndAt" type="datetime-local" class="form-control"
+                                   value="@(Model?.EndAt.ToString("yyyy-MM-ddTHH:mm") ?? DateTime.UtcNow.AddMonths(1).ToString("yyyy-MM-ddTHH:mm"))" required />
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Thứ tự hiển thị</label>
+                            <input name="DisplayOrder" type="number" class="form-control" value="@(Model?.DisplayOrder ?? 0)" min="0" />
+                            <div class="form-text">Số nhỏ hiển thị trước.</div>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end pb-1">
+                            <div class="form-check">
+                                <input name="IsActive" type="checkbox" class="form-check-input" id="chkActive" value="true"
+                                       @(isNew || Model!.IsActive ? "checked" : "") />
+                                <label class="form-check-label fw-semibold" for="chkActive">Kích hoạt ngay</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-check-lg me-1"></i>@(isNew ? "Tạo banner" : "Lưu thay đổi")
+                        </button>
+                        <a asp-action="Banners" class="btn btn-outline-secondary">Hủy</a>
+                    </div>
+                </form>
             </div>
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Link URL</label>
-                <input name="LinkUrl" class="form-control" value="@Model?.LinkUrl" placeholder="https://..." />
+        </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <strong>Preview</strong>
+                <span class="badge bg-secondary" id="previewBadge">Chưa có ảnh</span>
             </div>
-            <div class="row g-2 mb-3">
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">Hiển thị từ <span class="text-danger">*</span></label>
-                    <input name="StartAt" type="datetime-local" class="form-control"
-                           value="@(Model?.StartAt.ToString("yyyy-MM-ddTHH:mm") ?? DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm"))" required />
+            <div class="card-body p-0 d-flex flex-column">
+                <!-- Banner image preview -->
+                <div id="previewImageWrap" class="position-relative overflow-hidden bg-light"
+                     style="min-height:180px; max-height:260px;">
+                    @if (!string.IsNullOrEmpty(Model?.ImageUrl))
+                    {
+                        <img id="previewImg" src="@Model.ImageUrl"
+                             class="w-100 h-100 object-fit-cover"
+                             style="display:block; max-height:260px; object-fit:cover;"
+                             alt="banner preview" />
+                    }
+                    else
+                    {
+                        <img id="previewImg" src=""
+                             style="display:none; width:100%; max-height:260px; object-fit:cover;"
+                             alt="banner preview" />
+                    }
+                    <div id="previewPlaceholder" class="d-flex align-items-center justify-content-center text-muted"
+                         style="min-height:180px; @(!string.IsNullOrEmpty(Model?.ImageUrl) ? "display:none!important" : "")">
+                        <div class="text-center">
+                            <i class="bi bi-image fs-1 opacity-25"></i>
+                            <p class="small mt-2 opacity-50">Dán URL ảnh để xem preview</p>
+                        </div>
+                    </div>
+                    <!-- Overlay text -->
+                    <div id="previewOverlay" class="position-absolute bottom-0 start-0 end-0 p-3"
+                         style="background:linear-gradient(transparent,rgba(0,0,0,0.6)); display:@(!string.IsNullOrEmpty(Model?.Title) ? "block" : "none")">
+                        <div class="text-white fw-bold" id="previewTitle" style="font-size:1.1rem">@Model?.Title</div>
+                        <div class="text-white-50 small" id="previewDescText">@Model?.Description</div>
+                    </div>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">Hiển thị đến <span class="text-danger">*</span></label>
-                    <input name="EndAt" type="datetime-local" class="form-control"
-                           value="@(Model?.EndAt.ToString("yyyy-MM-ddTHH:mm") ?? DateTime.UtcNow.AddMonths(1).ToString("yyyy-MM-ddTHH:mm"))" required />
+
+                <!-- Preview meta -->
+                <div class="p-3 border-top small text-muted">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <i class="bi bi-eye me-1"></i>
+                            <span id="previewStatus" class="fw-semibold">
+                                @if (!isNew && Model!.IsCurrentlyActive) { <text>Đang hiển thị</text> }
+                                else { <text>Chưa kích hoạt</text> }
+                            </span>
+                        </div>
+                        <div class="col-6 text-end">
+                            <i class="bi bi-sort-numeric-up me-1"></i>
+                            Thứ tự: <span id="previewOrder">@(Model?.DisplayOrder ?? 0)</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="mb-3">
-                <label class="form-label fw-semibold">Thứ tự hiển thị</label>
-                <input name="DisplayOrder" type="number" class="form-control" value="@(Model?.DisplayOrder ?? 0)" />
-            </div>
-            <div class="mb-3">
-                <div class="form-check">
-                    <input name="IsActive" type="checkbox" class="form-check-input" value="true"
-                           @(isNew || Model!.IsActive ? "checked" : "") />
-                    <label class="form-check-label">Kích hoạt</label>
-                </div>
-            </div>
-            <button type="submit" class="btn btn-primary">@(isNew ? "Tạo banner" : "Lưu thay đổi")</button>
-        </form>
+        </div>
     </div>
 </div>
+
+@section Scripts {
+<script>
+    const imgInput = document.getElementById('inputImage');
+    const titleInput = document.getElementById('inputTitle');
+    const descInput = document.getElementById('inputDesc');
+    const previewImg = document.getElementById('previewImg');
+    const previewPlaceholder = document.getElementById('previewPlaceholder');
+    const previewBadge = document.getElementById('previewBadge');
+    const previewOverlay = document.getElementById('previewOverlay');
+    const previewTitle = document.getElementById('previewTitle');
+    const previewDescText = document.getElementById('previewDescText');
+
+    function updateImagePreview() {
+        const url = imgInput.value.trim();
+        if (url) {
+            previewImg.src = url;
+            previewImg.style.display = 'block';
+            previewPlaceholder.style.display = 'none';
+            previewBadge.textContent = 'Có ảnh';
+            previewBadge.className = 'badge bg-success';
+        } else {
+            previewImg.style.display = 'none';
+            previewPlaceholder.style.display = 'flex';
+            previewBadge.textContent = 'Chưa có ảnh';
+            previewBadge.className = 'badge bg-secondary';
+        }
+    }
+
+    function updateOverlay() {
+        const title = titleInput.value.trim();
+        const desc = descInput ? descInput.value.trim() : '';
+        previewTitle.textContent = title || '(Tiêu đề banner)';
+        previewDescText.textContent = desc;
+        previewOverlay.style.display = 'block';
+    }
+
+    imgInput.addEventListener('input', updateImagePreview);
+    imgInput.addEventListener('change', updateImagePreview);
+    titleInput.addEventListener('input', updateOverlay);
+    if (descInput) descInput.addEventListener('input', updateOverlay);
+
+    previewImg.addEventListener('error', function () {
+        previewImg.style.display = 'none';
+        previewPlaceholder.style.display = 'flex';
+        previewBadge.textContent = 'URL lỗi';
+        previewBadge.className = 'badge bg-danger';
+    });
+
+    previewImg.addEventListener('load', function () {
+        if (previewImg.src && previewImg.src !== window.location.href) {
+            previewBadge.textContent = 'Ảnh OK';
+            previewBadge.className = 'badge bg-success';
+        }
+    });
+</script>
+}
