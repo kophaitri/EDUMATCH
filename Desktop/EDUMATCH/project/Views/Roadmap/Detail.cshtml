@@ -155,7 +155,7 @@
         <div class="roadmap-ask-row">
             <input type="text" id="aiQuestion" class="form-control"
                    placeholder="Nhập câu hỏi của bạn..." autocomplete="off" />
-            <button class="btn-solid" id="askBtn">Hỏi</button>
+            <button type="button" class="btn-solid" id="askBtn">Hỏi</button>
         </div>
     </div>
 </div>
@@ -168,6 +168,7 @@
     const history = document.getElementById('aiChatHistory');
     const input   = document.getElementById('aiQuestion');
     const btn     = document.getElementById('askBtn');
+    let asking    = false;
 
     function appendMessage(text, role) {
         const msg = document.createElement('div');
@@ -179,8 +180,10 @@
     }
 
     async function ask() {
+        if (asking) return;
         const question = input.value.trim();
         if (!question) return;
+        asking = true;
 
         appendMessage(question, 'user');
         input.value   = '';
@@ -210,6 +213,7 @@
             typing.remove();
             appendMessage('Lỗi kết nối. Vui lòng thử lại.', 'ai');
         } finally {
+            asking          = false;
             btn.disabled    = false;
             btn.textContent = 'Hỏi';
             input.focus();
@@ -217,7 +221,7 @@
     }
 
     btn.addEventListener('click', ask);
-    input.addEventListener('keydown', e => { if (e.key === 'Enter') ask(); });
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ask(); } });
 })();
 </script>
 }
