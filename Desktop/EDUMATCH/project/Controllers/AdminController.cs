@@ -921,4 +921,128 @@ public class AdminController : Controller
         TempData["SuccessMessage"] = "Đã từ chối và hoàn tiền vào ví gia sư.";
         return RedirectToAction("WithdrawalRequests");
     }
+
+    // ===================== ENTRY EXAMS =====================
+
+    // GET: /Admin/EntryExams
+    public async Task<IActionResult> EntryExams()
+    {
+        var exams = await _db.Exams
+            .Include(e => e.Subject)
+            .Include(e => e.Questions)
+            .Where(e => e.IsEntryExam)
+            .OrderBy(e => e.Subject!.Name)
+            .ToListAsync();
+
+        var subjects = await _db.Subjects.Where(s => s.IsActive).OrderBy(s => s.Name).ToListAsync();
+        ViewBag.Subjects = subjects;
+        return View(exams);
+    }
+
+    // POST: /Admin/EntryExams/Create
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateEntryExam(IFormFile examFile, int subjectId, string title,
+        string? description, int durationMinutes, int passingScore)
+    {
+        if (examFile == null || examFile.Length == 0 || subjectId == 0)
+        {
+            TempData["ErrorMessage"] = "Vui lòng chọn môn học và file đề thi.";
+            return RedirectToAction(nameof(EntryExams));
+        }
+
+        var parsed = Services.DocxExamParser.ParseFromFile(examFile);
+        if (!parsed.Success)
+        {
+            TempData["ErrorMessage"] = "Lỗi đọc file: " + string.Join(", ", parsed.Errors);
+            return RedirectToAction(nameof(EntryExams));
+        }
+
+        var adminId = _userManager.GetUserId(User)!;
+        var exam = new Exam
+        {
+            TutorId         = adminId,
+            SubjectId       = subjectId,
+            IsEntryExam     = true,
+            Title           = !string.IsNullOrWhiteSpace(title) ? title : parsed.Title,
+            Description     = !string.IsNullOrWhiteSpace(description) ? description : parsed.Description,
+            DurationMinutes = durationMinutes > 0 ? durationMinutes : parsed.DurationMinutes,
+            PassingScore    = passingScore > 0 ? passingScore : parsed.PassingScore,
+            MaxRetakes      = 99,
+            IsOpen          = true,
+            Status          = ExamStatus.Published,
+            PublishedAt     = DateTime.UtcNow,
+            CreatedAt       = DateTime.UtcNow
+        };
+
+        // Save docx file
+        var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "exams");
+        Directory.CreateDirectory(uploadsDir);
+        var fileName = $"{Guid.NewGuid()}.docx";
+        var filePath = Path.Combine(uploadsDir, fileName);
+        using (var stream = new FileStream(filePath, FileMode.Create))
+            await examFile.CopyToAsync(stream);
+        exam.ExamFileUrl = $"/uploads/exams/{fileName}";
+
+        foreach (var q in parsed.Questions)
+        {
+            var question = new ExamQuestion
+            {
+                QuestionText = q.QuestionText,
+                PassageText  = q.PassageText,
+                PartNumber   = q.PartNumber,
+                Points       = q.Points,
+                DisplayOrder = q.Number,
+                QuestionType = q.QuestionType,
+                TopicTag     = q.TopicTag
+            };
+
+            bool isEssay = q.QuestionType == "Essay" || q.QuestionType == "ShortAnswer";
+            if (isEssay)
+            {
+                if (!string.IsNullOrWhiteSpace(q.ModelAnswer))
+                    question.AnswerOptions.Add(new ExamAnswerOption { OptionText = q.ModelAnswer, IsCorrect = true, DisplayOrder = 1 });
+            }
+            else
+            {
+                foreach (var opt in q.Options.OrderBy(o => o.Label))
+                    question.AnswerOptions.Add(new ExamAnswerOption
+                    {
+                        OptionText   = opt.Text,
+                        IsCorrect    = opt.Label == q.CorrectKey,
+                        DisplayOrder = opt.Label switch { "A" => 1, "B" => 2, "C" => 3, _ => 4 }
+                    });
+            }
+            exam.Questions.Add(question);
+        }
+
+        _db.Exams.Add(exam);
+        await _db.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = $"Đã tạo bài kiểm tra đầu vào \"{exam.Title}\" thành công.";
+        return RedirectToAction(nameof(EntryExams));
+    }
+
+    // POST: /Admin/EntryExams/Delete/{id}
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteEntryExam(int id)
+    {
+        var exam = await _db.Exams
+            .Include(e => e.Questions).ThenInclude(q => q.AnswerOptions)
+            .Include(e => e.Submissions)
+            .FirstOrDefaultAsync(e => e.Id == id && e.IsEntryExam);
+
+        if (exam == null)
+        {
+            TempData["ErrorMessage"] = "Không tìm thấy bài kiểm tra.";
+            return RedirectToAction(nameof(EntryExams));
+        }
+
+        _db.Exams.Remove(exam);
+        await _db.SaveChangesAsync();
+
+        TempData["SuccessMessage"] = "Đã xóa bài kiểm tra đầu vào.";
+        return RedirectToAction(nameof(EntryExams));
+    }
 }

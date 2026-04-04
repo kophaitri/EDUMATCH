@@ -4,6 +4,7 @@ using EduMatch.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EduMatch.Migrations
 {
     [DbContext(typeof(EduMatchDbContext))]
-    partial class EduMatchDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260402172535_mer")]
+    partial class mer
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -537,9 +540,6 @@ namespace EduMatch.Migrations
                     b.Property<string>("ExamFileUrl")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("IsEntryExam")
-                        .HasColumnType("bit");
-
                     b.Property<bool>("IsOpen")
                         .HasColumnType("bit");
 
@@ -561,9 +561,6 @@ namespace EduMatch.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
-                    b.Property<int?>("SubjectId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -575,8 +572,6 @@ namespace EduMatch.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("SessionId");
-
-                    b.HasIndex("SubjectId");
 
                     b.HasIndex("TutorId");
 
@@ -671,9 +666,6 @@ namespace EduMatch.Migrations
 
                     b.Property<string>("QuestionType")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("TopicTag")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -835,94 +827,6 @@ namespace EduMatch.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("GradeLevels");
-                });
-
-            modelBuilder.Entity("EduMatch.Models.LearningProgressLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<float>("HoursStudied")
-                        .HasColumnType("real");
-
-                    b.Property<DateTime>("LoggedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("ScoreAfter")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ScoreBefore")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("SessionId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("StudentId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("SubjectId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("TopicName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SessionId");
-
-                    b.HasIndex("StudentId");
-
-                    b.HasIndex("SubjectId");
-
-                    b.ToTable("LearningProgressLogs");
-                });
-
-            modelBuilder.Entity("EduMatch.Models.LearningRoadmap", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("GeneratedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("GeneratedBy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("LastAdjustedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("LlmExplanation")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("StudentId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("SubjectId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SubjectId");
-
-                    b.HasIndex("StudentId", "SubjectId", "IsActive");
-
-                    b.ToTable("LearningRoadmaps");
                 });
 
             modelBuilder.Entity("EduMatch.Models.Message", b =>
@@ -1317,47 +1221,6 @@ namespace EduMatch.Migrations
                     b.ToTable("ReviewReplies");
                 });
 
-            modelBuilder.Entity("EduMatch.Models.RoadmapPhase", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<float>("EstimatedWeeks")
-                        .HasColumnType("real");
-
-                    b.Property<bool>("IsCompleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Note")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Priority")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("RoadmapId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SessionsPerWeek")
-                        .HasColumnType("int");
-
-                    b.Property<string>("TopicName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("WeekNumber")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RoadmapId");
-
-                    b.ToTable("RoadmapPhases");
-                });
-
             modelBuilder.Entity("EduMatch.Models.Session", b =>
                 {
                     b.Property<int>("Id")
@@ -1423,17 +1286,11 @@ namespace EduMatch.Migrations
                     b.Property<string>("CurrentGrade")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int?>("GradeLevelId")
-                        .HasColumnType("int");
-
                     b.Property<string>("LearningGoals")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SchoolName")
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("TotalSessionsCompleted")
-                        .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -1442,12 +1299,7 @@ namespace EduMatch.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int>("WeeklyAvailableHours")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("GradeLevelId");
 
                     b.HasIndex("UserId")
                         .IsUnique();
@@ -1652,45 +1504,6 @@ namespace EduMatch.Migrations
                     b.HasIndex("TicketId");
 
                     b.ToTable("TicketReplies");
-                });
-
-            modelBuilder.Entity("EduMatch.Models.TopicAssessment", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("Score")
-                        .HasColumnType("int");
-
-                    b.Property<string>("StudentId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("SubjectId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SubmissionId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("TakenAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("TopicName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("StudentId");
-
-                    b.HasIndex("SubjectId");
-
-                    b.HasIndex("SubmissionId");
-
-                    b.ToTable("TopicAssessments");
                 });
 
             modelBuilder.Entity("EduMatch.Models.Transaction", b =>
@@ -2352,11 +2165,6 @@ namespace EduMatch.Migrations
                         .HasForeignKey("SessionId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("EduMatch.Models.Subject", "Subject")
-                        .WithMany()
-                        .HasForeignKey("SubjectId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("EduMatch.Models.ApplicationUser", "Tutor")
                         .WithMany()
                         .HasForeignKey("TutorId")
@@ -2364,8 +2172,6 @@ namespace EduMatch.Migrations
                         .IsRequired();
 
                     b.Navigation("Session");
-
-                    b.Navigation("Subject");
 
                     b.Navigation("Tutor");
                 });
@@ -2442,51 +2248,6 @@ namespace EduMatch.Migrations
                         .IsRequired();
 
                     b.Navigation("Submission");
-                });
-
-            modelBuilder.Entity("EduMatch.Models.LearningProgressLog", b =>
-                {
-                    b.HasOne("EduMatch.Models.Session", "Session")
-                        .WithMany()
-                        .HasForeignKey("SessionId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("EduMatch.Models.ApplicationUser", "Student")
-                        .WithMany()
-                        .HasForeignKey("StudentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("EduMatch.Models.Subject", "Subject")
-                        .WithMany()
-                        .HasForeignKey("SubjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Session");
-
-                    b.Navigation("Student");
-
-                    b.Navigation("Subject");
-                });
-
-            modelBuilder.Entity("EduMatch.Models.LearningRoadmap", b =>
-                {
-                    b.HasOne("EduMatch.Models.ApplicationUser", "Student")
-                        .WithMany()
-                        .HasForeignKey("StudentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("EduMatch.Models.Subject", "Subject")
-                        .WithMany()
-                        .HasForeignKey("SubjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Student");
-
-                    b.Navigation("Subject");
                 });
 
             modelBuilder.Entity("EduMatch.Models.Message", b =>
@@ -2639,17 +2400,6 @@ namespace EduMatch.Migrations
                     b.Navigation("Review");
                 });
 
-            modelBuilder.Entity("EduMatch.Models.RoadmapPhase", b =>
-                {
-                    b.HasOne("EduMatch.Models.LearningRoadmap", "Roadmap")
-                        .WithMany("Phases")
-                        .HasForeignKey("RoadmapId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Roadmap");
-                });
-
             modelBuilder.Entity("EduMatch.Models.Session", b =>
                 {
                     b.HasOne("EduMatch.Models.Contract", "Contract")
@@ -2663,11 +2413,6 @@ namespace EduMatch.Migrations
 
             modelBuilder.Entity("EduMatch.Models.StudentProfile", b =>
                 {
-                    b.HasOne("EduMatch.Models.GradeLevel", null)
-                        .WithMany()
-                        .HasForeignKey("GradeLevelId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("EduMatch.Models.ApplicationUser", "User")
                         .WithOne("StudentProfile")
                         .HasForeignKey("EduMatch.Models.StudentProfile", "UserId")
@@ -2748,33 +2493,6 @@ namespace EduMatch.Migrations
                     b.Navigation("Sender");
 
                     b.Navigation("Ticket");
-                });
-
-            modelBuilder.Entity("EduMatch.Models.TopicAssessment", b =>
-                {
-                    b.HasOne("EduMatch.Models.ApplicationUser", "Student")
-                        .WithMany()
-                        .HasForeignKey("StudentId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("EduMatch.Models.Subject", "Subject")
-                        .WithMany()
-                        .HasForeignKey("SubjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("EduMatch.Models.ExamSubmission", "Submission")
-                        .WithMany()
-                        .HasForeignKey("SubmissionId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Student");
-
-                    b.Navigation("Subject");
-
-                    b.Navigation("Submission");
                 });
 
             modelBuilder.Entity("EduMatch.Models.Transaction", b =>
@@ -3050,11 +2768,6 @@ namespace EduMatch.Migrations
             modelBuilder.Entity("EduMatch.Models.GradeLevel", b =>
                 {
                     b.Navigation("TutorSubjects");
-                });
-
-            modelBuilder.Entity("EduMatch.Models.LearningRoadmap", b =>
-                {
-                    b.Navigation("Phases");
                 });
 
             modelBuilder.Entity("EduMatch.Models.Review", b =>

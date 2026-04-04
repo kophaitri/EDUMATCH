@@ -18,8 +18,10 @@ public class StudentController : Controller
     private readonly IConfiguration _config;
     private readonly ISuspiciousScoreService _suspiciousScoreService;
     private readonly WritingStyleAnalyzer _writingStyleAnalyzer;
+    private readonly IRoadmapService _roadmapService;
+    private readonly ILogger<StudentController> _logger;
 
-    public StudentController(EduMatchDbContext db, UserManager<ApplicationUser> userManager, ITutorService tutorService, IConfiguration config, ISuspiciousScoreService suspiciousScoreService, WritingStyleAnalyzer writingStyleAnalyzer)
+    public StudentController(EduMatchDbContext db, UserManager<ApplicationUser> userManager, ITutorService tutorService, IConfiguration config, ISuspiciousScoreService suspiciousScoreService, WritingStyleAnalyzer writingStyleAnalyzer, IRoadmapService roadmapService, ILogger<StudentController> logger)
     {
         _db = db;
         _userManager = userManager;
@@ -27,6 +29,8 @@ public class StudentController : Controller
         _config = config;
         _suspiciousScoreService = suspiciousScoreService;
         _writingStyleAnalyzer = writingStyleAnalyzer;
+        _roadmapService = roadmapService;
+        _logger = logger;
     }
 
     private string? GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -577,7 +581,7 @@ public class StudentController : Controller
                 .ThenInclude(s => s.Contract)
                     .ThenInclude(c => c.Subject)
             .Include(e => e.Submissions)
-            .Where(e => e.Status == ExamStatus.Published)
+            .Where(e => e.Status == ExamStatus.Published && !e.IsEntryExam)
             .Select(e => new StudentExamViewModel
             {
                 Id = e.Id,
@@ -673,11 +677,11 @@ public class StudentController : Controller
     [HttpPost("Exams/Submit/{examId}")]  // ← Route rõ ràng
     [ValidateAntiForgeryToken]
     [Authorize(Policy = "StudentOnly")]
-    public async Task<IActionResult> SubmitExam(int examId, List<SubmissionAnswerViewModel> answers)
+    public async Task<IActionResult> SubmitExam(int examId, List<SubmissionAnswerViewModel> answers, bool isFraud = false)
     {
         var studentId = GetUserId();
         if (string.IsNullOrEmpty(studentId)) return Challenge();
-        
+
         var exam = await _db.Exams
             .Include(e => e.Questions)
                 .ThenInclude(q => q.AnswerOptions)
@@ -692,6 +696,14 @@ public class StudentController : Controller
 
         if (submission == null)
         {
+            // Guard: duplicate submit (timer + fraud race) — already submitted, just redirect
+            var alreadySubmitted = await _db.ExamSubmissions
+                .OrderByDescending(s => s.SubmittedAt)
+                .FirstOrDefaultAsync(s => s.ExamId == examId && s.StudentId == studentId
+                    && s.Status != SubmissionStatus.InProgress);
+            if (alreadySubmitted != null)
+                return RedirectToAction("ExamResult", new { examId, subId = alreadySubmitted.Id });
+
             submission = new ExamSubmission
             {
                 ExamId = examId,
@@ -701,9 +713,46 @@ public class StudentController : Controller
                     .CountAsync(s => s.ExamId == examId && s.StudentId == studentId) + 1
             };
             _db.ExamSubmissions.Add(submission);
+            // Save immediately so submission.Id is populated before any FK references
+            await _db.SaveChangesAsync();
         }
 
         submission.SubmittedAt = DateTime.UtcNow;
+
+        // Fraud: tab-switch 3 times — force score = 0
+        bool isFraudSubmission = isFraud || submission.IsFlagged;
+        if (isFraudSubmission)
+        {
+            submission.IsFlagged = true;
+            submission.TotalScore = 0;
+            submission.Percentage = 0;
+            submission.IsPassed = false;
+            submission.Status = SubmissionStatus.Submitted;
+
+            // Record empty answers (preserve question refs for review)
+            var fraudAnswers = exam.Questions.Select(q => new SubmissionAnswer
+            {
+                QuestionId = q.Id,
+                IsCorrect = false,
+                PointsEarned = 0
+            }).ToList();
+            submission.Answers = fraudAnswers;
+
+            _db.FraudWarnings.Add(new FraudWarning
+            {
+                SubmissionId = submission.Id,   // Id guaranteed non-zero after SaveChangesAsync above
+                WarningType = "FORCED_SUBMIT_ZERO",
+                Details = "Bài thi tự động nộp điểm 0 do chuyển tab 3 lần",
+                DetectedAt = DateTime.UtcNow
+            });
+
+            await _db.SaveChangesAsync();
+            await _suspiciousScoreService.CalculateAndSaveAsync(submission.Id);
+
+            TempData["Error"] = "❌ Bài thi bị nộp tự động do gian lận (chuyển tab 3 lần). Điểm: 0.";
+            return RedirectToAction("ExamResult", new { examId, subId = submission.Id });
+        }
+
         submission.Status = SubmissionStatus.Submitted;
 
         decimal totalScore = 0;
@@ -714,31 +763,47 @@ public class StudentController : Controller
             var question = exam.Questions.FirstOrDefault(q => q.Id == answerVm.QuestionId);
             if (question == null) continue;
 
-            var correctOption = question.AnswerOptions.FirstOrDefault(o => o.IsCorrect);
-            var isCorrect = answerVm.SelectedOptionId == correctOption?.Id;
+            bool isCorrect = false;
+            int pointsEarned = 0;
 
-            var submissionAnswer = new SubmissionAnswer
+            if (question.QuestionType == "Essay" || question.QuestionType == "ShortAnswer")
+            {
+                // Essay/ShortAnswer: saved as text, graded manually by tutor
+                isCorrect = false;
+                pointsEarned = 0;
+            }
+            else
+            {
+                var correctOption = question.AnswerOptions.FirstOrDefault(o => o.IsCorrect);
+                isCorrect = answerVm.SelectedOptionId == correctOption?.Id;
+                pointsEarned = isCorrect ? question.Points : 0;
+            }
+
+            submissionAnswers.Add(new SubmissionAnswer
             {
                 QuestionId = question.Id,
                 SelectedOptionId = answerVm.SelectedOptionId,
+                TextAnswer = answerVm.TextAnswer,
                 IsCorrect = isCorrect,
-                PointsEarned = isCorrect ? question.Points : 0
-            };
-
-            submissionAnswers.Add(submissionAnswer);
-            totalScore += submissionAnswer.PointsEarned;
+                PointsEarned = pointsEarned
+            });
+            totalScore += pointsEarned;
         }
 
         submission.Answers = submissionAnswers;
         submission.TotalScore = totalScore;
-        submission.Percentage = exam.Questions.Sum(q => q.Points) > 0 
-            ? (totalScore / exam.Questions.Sum(q => q.Points)) * 100m  // ← Fix decimal literal
+        submission.Percentage = exam.Questions.Sum(q => q.Points) > 0
+            ? (totalScore / exam.Questions.Sum(q => q.Points)) * 100m
             : 0m;
         submission.IsPassed = submission.Percentage >= exam.PassingScore;
 
+        // Essay exam: pending manual grading
+        bool hasEssay = exam.Questions.Any(q => q.QuestionType == "Essay" || q.QuestionType == "ShortAnswer");
+        if (hasEssay)
+            submission.Status = SubmissionStatus.Submitted; // tutor grades manually
+
         await _db.SaveChangesAsync();
 
-        // Anti-cheat: calculate suspicious score and update writing profile
         await _suspiciousScoreService.CalculateAndSaveAsync(submission.Id);
 
         var writtenAnswers = string.Join(" ",
@@ -746,6 +811,16 @@ public class StudentController : Controller
                 .Where(a => !string.IsNullOrWhiteSpace(a.TextAnswer))
                 .Select(a => a.TextAnswer!));
         await _writingStyleAnalyzer.UpdateProfileAsync(studentId, writtenAnswers, _db);
+
+        // AI Roadmap: create topic assessments from this submission
+        try
+        {
+            await _roadmapService.CreateTopicAssessmentsAsync(submission);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not create topic assessments — non-critical");
+        }
 
         TempData["Success"] = "✅ Nộp bài thành công!";
         return RedirectToAction("ExamResult", new { examId, subId = submission.Id });
@@ -1042,6 +1117,7 @@ public class StudentController : Controller
     {
         public int QuestionId { get; set; }
         public int? SelectedOptionId { get; set; }
+        public string? TextAnswer { get; set; }
     }
 
     public class StudentSubmissionHistoryViewModel

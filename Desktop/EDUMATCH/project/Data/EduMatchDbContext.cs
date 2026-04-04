@@ -65,6 +65,12 @@ public class EduMatchDbContext : IdentityDbContext<ApplicationUser, ApplicationR
     public DbSet<ExamSuspiciousScore> ExamSuspiciousScores { get; set; }
     public DbSet<StudentWritingProfile> StudentWritingProfiles { get; set; }
 
+    // AI Roadmap
+    public DbSet<TopicAssessment>     TopicAssessments     => Set<TopicAssessment>();
+    public DbSet<LearningRoadmap>     LearningRoadmaps     => Set<LearningRoadmap>();
+    public DbSet<RoadmapPhase>        RoadmapPhases        => Set<RoadmapPhase>();
+    public DbSet<LearningProgressLog> LearningProgressLogs => Set<LearningProgressLog>();
+
     // Email
     public DbSet<EmailTemplate> EmailTemplates { get; set; }
     public DbSet<EmailQueue> EmailQueue { get; set; }
@@ -165,6 +171,13 @@ public class EduMatchDbContext : IdentityDbContext<ApplicationUser, ApplicationR
             .HasForeignKey<StudentProfile>(x => x.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.Entity<StudentProfile>()
+            .HasOne<GradeLevel>()
+            .WithMany()
+            .HasForeignKey(x => x.GradeLevelId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Entity<Wallet>()
             .HasOne(x => x.User)
             .WithOne(x => x.Wallet)
@@ -262,6 +275,13 @@ public class EduMatchDbContext : IdentityDbContext<ApplicationUser, ApplicationR
             .IsRequired(false)
             .OnDelete(DeleteBehavior.SetNull);
 
+        builder.Entity<Exam>()
+            .HasOne(x => x.Subject)
+            .WithMany()
+            .HasForeignKey(x => x.SubjectId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Entity<SubmissionAnswer>()
             .HasOne(x => x.Question)
             .WithMany()
@@ -312,5 +332,64 @@ public class EduMatchDbContext : IdentityDbContext<ApplicationUser, ApplicationR
         builder.Entity<StudentWritingProfile>()
             .HasIndex(x => x.StudentId)
             .IsUnique();
+
+        // AI Roadmap
+        builder.Entity<TopicAssessment>()
+            .HasOne(x => x.Submission)
+            .WithMany()
+            .HasForeignKey(x => x.SubmissionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<TopicAssessment>()
+            .HasOne(x => x.Student)
+            .WithMany()
+            .HasForeignKey(x => x.StudentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<TopicAssessment>()
+            .HasOne(x => x.Subject)
+            .WithMany()
+            .HasForeignKey(x => x.SubjectId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<LearningRoadmap>()
+            .HasOne(x => x.Student)
+            .WithMany()
+            .HasForeignKey(x => x.StudentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<LearningRoadmap>()
+            .HasOne(x => x.Subject)
+            .WithMany()
+            .HasForeignKey(x => x.SubjectId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<LearningRoadmap>()
+            .HasIndex(r => new { r.StudentId, r.SubjectId, r.IsActive });
+
+        builder.Entity<RoadmapPhase>()
+            .HasOne(x => x.Roadmap)
+            .WithMany(x => x.Phases)
+            .HasForeignKey(x => x.RoadmapId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<LearningProgressLog>()
+            .HasOne(x => x.Student)
+            .WithMany()
+            .HasForeignKey(x => x.StudentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<LearningProgressLog>()
+            .HasOne(x => x.Subject)
+            .WithMany()
+            .HasForeignKey(x => x.SubjectId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<LearningProgressLog>()
+            .HasOne(x => x.Session)
+            .WithMany()
+            .HasForeignKey(x => x.SessionId)
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

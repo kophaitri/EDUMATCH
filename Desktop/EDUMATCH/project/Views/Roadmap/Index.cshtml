@@ -1,0 +1,95 @@
+@model EduMatch.ViewModels.RoadmapIndexViewModel
+@{
+    ViewData["Title"] = "Lộ trình học";
+}
+
+<div class="roadmap-index-page">
+    <div class="roadmap-index-header">
+        <h1 class="playfair-heading">Lộ trình học của bạn</h1>
+        <p class="section-tag">AI-powered learning path</p>
+    </div>
+
+    <div class="roadmap-grid">
+        @foreach (var subject in Model.Subjects)
+        {
+            <div class="roadmap-card">
+                <h2 class="roadmap-card-title">@subject.SubjectName</h2>
+
+                @if (subject.HasActiveRoadmap)
+                {
+                    <div class="roadmap-badge @(subject.GeneratedBy == "MLNet" ? "roadmap-badge-ml" : "roadmap-badge-rule")">
+                        @(subject.GeneratedBy == "MLNet" ? "AI + ML" : "Quy tắc")
+                    </div>
+
+                    <div class="roadmap-progress-bar">
+                        <div class="roadmap-progress-fill" style="width: @subject.ProgressPercent%"></div>
+                    </div>
+                    <p class="roadmap-progress-label">
+                        @subject.CompletedPhases / @subject.TotalPhases giai đoạn &mdash; @subject.ProgressPercent%
+                    </p>
+
+                    @if (subject.GeneratedAt.HasValue)
+                    {
+                        <p class="roadmap-card-meta">Tạo ngày @subject.GeneratedAt.Value.ToLocalTime().ToString("dd/MM/yyyy")</p>
+                    }
+
+                    <a asp-action="Detail" asp-route-subjectId="@subject.SubjectId" class="btn-solid roadmap-card-btn">
+                        Xem lộ trình
+                    </a>
+
+                    @if (subject.EntryExamId.HasValue)
+                    {
+                        <a asp-controller="Student" asp-action="TakeExam"
+                           asp-route-examId="@subject.EntryExamId"
+                           class="btn-ghost roadmap-card-btn mt-2">
+                            <i class="bi bi-arrow-repeat"></i> Làm lại bài kiểm tra
+                        </a>
+                    }
+                }
+                else
+                {
+                    @if (subject.EntryExamId.HasValue)
+                    {
+                        @if (subject.HasTakenEntryExam)
+                        {
+                            <p class="roadmap-card-empty">
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                                Đã hoàn thành bài kiểm tra đầu vào. Tạo lộ trình ngay!
+                            </p>
+                            <form asp-action="Generate" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="subjectId" value="@subject.SubjectId" />
+                                <button type="submit" class="btn-solid roadmap-card-btn">
+                                    <i class="bi bi-magic"></i> Tạo lộ trình AI
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <p class="roadmap-card-empty">
+                                Làm bài kiểm tra đầu vào để hệ thống AI tạo lộ trình phù hợp.
+                            </p>
+                            <a asp-controller="Student" asp-action="TakeExam"
+                               asp-route-examId="@subject.EntryExamId"
+                               class="btn-solid roadmap-card-btn">
+                                <i class="bi bi-pencil-square"></i> Làm bài kiểm tra đầu vào
+                            </a>
+                        }
+                    }
+                    else
+                    {
+                        <p class="roadmap-card-empty text-muted">
+                            <i class="bi bi-info-circle"></i>
+                            Chưa có bài kiểm tra đầu vào cho môn này.
+                        </p>
+                    }
+                }
+            </div>
+        }
+
+        @if (!Model.Subjects.Any())
+        {
+            <p class="roadmap-empty-state">Chưa có môn học nào. Vui lòng liên hệ quản trị viên.</p>
+        }
+    </div>
+</div>

@@ -398,6 +398,11 @@ public static class DatabaseSeeder
         }
 
         // ========================================
+        // 🎓 PHẦN 4: Bài thi Toán mẫu (có TopicTag cho AI Roadmap)
+        // ========================================
+        await SeedMathExamAsync(dbContext, userManager);
+
+        // ========================================
         // ✅ HOÀN TẤT
         // ========================================
     }
@@ -451,6 +456,110 @@ public static class DatabaseSeeder
             );
         }
 
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task SeedMathExamAsync(EduMatchDbContext db, UserManager<ApplicationUser> userManager)
+    {
+        // Idempotent: chỉ seed 1 lần
+        if (db.Exams.Any(e => e.Title == "Kiểm tra Toán đầu vào"))
+            return;
+
+        var admin = await userManager.FindByEmailAsync("admin@edumatch.vn");
+        if (admin == null) return;
+
+        // Lấy môn Toán học
+        var mathSubject = db.Subjects.FirstOrDefault(s => s.Name.Contains("Toán"));
+        if (mathSubject == null) return;
+
+        var exam = new Exam
+        {
+            TutorId         = admin.Id,
+            SubjectId       = mathSubject.Id,
+            IsEntryExam     = true,
+            Title           = "Kiểm tra Toán đầu vào",
+            Description     = "Bài kiểm tra đầu vào đánh giá kiến thức Toán lớp 10 — Đại số, Hình học, Giải tích",
+            DurationMinutes = 30,
+            PassingScore    = 50,
+            MaxRetakes      = 99,
+            IsOpen          = true,
+            Status          = ExamStatus.Published,
+            PublishedAt     = DateTime.UtcNow,
+            CreatedAt       = DateTime.UtcNow
+        };
+        db.Exams.Add(exam);
+        await db.SaveChangesAsync();
+
+        // ── Câu hỏi ──────────────────────────────────────────────────────
+        // TopicTag khớp với tên chủ đề để AI Roadmap groupby được
+        var questions = new List<(string Text, string Topic, string A, string B, string C, string D, string Key)>
+        {
+            // ── Đại số (4 câu) ──
+            ("Giải phương trình: 2x + 6 = 0",
+             "Đại số",
+             "x = 3", "x = -3", "x = 6", "x = -6", "B"),
+
+            ("Rút gọn biểu thức: (x + 2)(x - 2)",
+             "Đại số",
+             "x² - 2", "x² - 4", "x² + 4", "x² + 2x - 4", "B"),
+
+            ("Tập nghiệm của bất phương trình 3x - 9 > 0 là:",
+             "Đại số",
+             "x < 3", "x > 3", "x ≥ 3", "x ≤ 3", "B"),
+
+            ("Hàm số y = x² - 4x + 3 có giá trị nhỏ nhất là:",
+             "Đại số",
+             "3", "-1", "0", "1", "B"),
+
+            // ── Hinh hoc (3 cau) ──
+            ("Chu vi hình tròn bán kính r = 5 (lấy π ≈ 3.14) là:",
+             "Hình học",
+             "15.7", "31.4", "78.5", "25", "B"),
+
+            ("Tam giác ABC vuông tại A, AB = 3, AC = 4. Độ dài BC là:",
+             "Hình học",
+             "7", "5", "1", "12", "B"),
+
+            ("Diện tích hình thang có đáy lớn 8, đáy nhỏ 4, chiều cao 5 là:",
+             "Hình học",
+             "20", "30", "40", "60", "B"),
+
+            // ── Giai tich (3 cau) ──
+            ("Đạo hàm của hàm số f(x) = x³ - 3x là:",
+             "Giải tích",
+             "3x² + 3", "3x² - 3", "x² - 3", "3x - 3", "B"),
+
+            ("Giới hạn lim(x→2) của (x² - 4)/(x - 2) bằng:",
+             "Giải tích",
+             "0", "4", "2", "Không tồn tại", "B"),
+
+            ("Tích phân ∫₀¹ 2x dx bằng:",
+             "Giải tích",
+             "0", "1", "2", "0.5", "B"),
+        };
+
+        int order = 1;
+        foreach (var (text, topic, a, b, c, d, key) in questions)
+        {
+            var q = new ExamQuestion
+            {
+                ExamId        = exam.Id,
+                QuestionText  = text,
+                TopicTag      = topic,
+                QuestionType  = "MultipleChoice",
+                Points        = 10,
+                DisplayOrder  = order++
+            };
+            db.ExamQuestions.Add(q);
+            await db.SaveChangesAsync();
+
+            db.ExamAnswerOptions.AddRange(
+                new ExamAnswerOption { QuestionId = q.Id, OptionText = a, IsCorrect = key == "A", DisplayOrder = 1 },
+                new ExamAnswerOption { QuestionId = q.Id, OptionText = b, IsCorrect = key == "B", DisplayOrder = 2 },
+                new ExamAnswerOption { QuestionId = q.Id, OptionText = c, IsCorrect = key == "C", DisplayOrder = 3 },
+                new ExamAnswerOption { QuestionId = q.Id, OptionText = d, IsCorrect = key == "D", DisplayOrder = 4 }
+            );
+        }
         await db.SaveChangesAsync();
     }
 }

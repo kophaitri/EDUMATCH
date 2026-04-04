@@ -4,6 +4,7 @@ using EduMatch.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EduMatch.Migrations
 {
     [DbContext(typeof(EduMatchDbContext))]
-    partial class EduMatchDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260403160835_AddTopicTagAndStudentProfileFields")]
+    partial class AddTopicTagAndStudentProfileFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -537,9 +540,6 @@ namespace EduMatch.Migrations
                     b.Property<string>("ExamFileUrl")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<bool>("IsEntryExam")
-                        .HasColumnType("bit");
-
                     b.Property<bool>("IsOpen")
                         .HasColumnType("bit");
 
@@ -561,9 +561,6 @@ namespace EduMatch.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
-                    b.Property<int?>("SubjectId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -575,8 +572,6 @@ namespace EduMatch.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("SessionId");
-
-                    b.HasIndex("SubjectId");
 
                     b.HasIndex("TutorId");
 
@@ -2352,11 +2347,6 @@ namespace EduMatch.Migrations
                         .HasForeignKey("SessionId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("EduMatch.Models.Subject", "Subject")
-                        .WithMany()
-                        .HasForeignKey("SubjectId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("EduMatch.Models.ApplicationUser", "Tutor")
                         .WithMany()
                         .HasForeignKey("TutorId")
@@ -2364,8 +2354,6 @@ namespace EduMatch.Migrations
                         .IsRequired();
 
                     b.Navigation("Session");
-
-                    b.Navigation("Subject");
 
                     b.Navigation("Tutor");
                 });
