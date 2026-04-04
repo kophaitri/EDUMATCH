@@ -48,7 +48,14 @@ else
                                     break;
                             }
                         </td>
-                        <td><a asp-action="ContractDetail" asp-route-id="@c.Id" class="btn btn-sm btn-outline-primary">Chi tiết</a></td>
+                        <td>
+                            <a asp-action="ContractDetail" asp-route-id="@c.Id" class="btn btn-sm btn-outline-primary">Chi tiết</a>
+                            
+                            @if (c.Status == ContractStatus.Completed)
+                            {
+                                <a asp-action="CreateReview" asp-route-contractId="@c.Id" class="btn btn-sm btn-outline-warning">Đánh giá</a>
+                            }
+                        </td>
                     </tr>
                 }
             </tbody>
