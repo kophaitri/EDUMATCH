@@ -168,7 +168,8 @@
     const history = document.getElementById('aiChatHistory');
     const input   = document.getElementById('aiQuestion');
     const btn     = document.getElementById('askBtn');
-    let asking    = false;
+    let asking       = false;
+    let ollamaContext = null; // Ollama context token — nhớ toàn bộ hội thoại
 
     function appendMessage(text, role) {
         const msg = document.createElement('div');
@@ -198,17 +199,23 @@
         history.scrollTop = history.scrollHeight;
 
         try {
+            let body = `subjectId=${sid}&question=${encodeURIComponent(question)}`;
+            if (ollamaContext) body += `&contextToken=${encodeURIComponent(ollamaContext)}`;
+
             const res  = await fetch('@Url.Action("AskQuestion", "Roadmap")', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded',
                     'RequestVerificationToken': token
                 },
-                body: `subjectId=${sid}&question=${encodeURIComponent(question)}`
+                body
             });
             const data = await res.json();
             typing.remove();
-            appendMessage(data.answer || 'Không có câu trả lời.', 'ai');
+            const answer = data.answer || 'Không có câu trả lời.';
+            appendMessage(answer, 'ai');
+            // Cập nhật context token để Ollama nhớ xuyên suốt
+            if (data.contextToken) ollamaContext = data.contextToken;
         } catch {
             typing.remove();
             appendMessage('Lỗi kết nối. Vui lòng thử lại.', 'ai');

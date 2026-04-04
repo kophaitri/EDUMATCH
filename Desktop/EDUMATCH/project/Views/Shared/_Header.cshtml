@@ -32,6 +32,7 @@
             <div class="nav-logo-dot"></div>
             EduMatch
         </a>
+        <div class="nav-mobile-panel">
         <ul class="nav-links">
             @if (!User.IsInRole("Tutor") && !User.IsInRole("Admin"))
             {
@@ -203,8 +204,33 @@
                 <a asp-controller="Account" asp-action="Register" class="btn-solid" style="margin-left:8px;">Đăng ký miễn phí</a>
             }
         </div>
+        </div><!-- /.nav-mobile-panel -->
+
+        <button class="nav-hamburger" id="navHamburger" aria-label="Menu" aria-expanded="false">
+            <span></span><span></span><span></span>
+        </button>
     </nav>
 </header>
+<script>
+(function () {
+    var btn = document.getElementById('navHamburger');
+    var nav = btn && btn.closest('nav');
+    if (!btn || !nav) return;
+    btn.addEventListener('click', function () {
+        var open = nav.classList.toggle('nav-open');
+        btn.classList.toggle('open', open);
+        btn.setAttribute('aria-expanded', open);
+    });
+    // Đóng menu khi click ra ngoài
+    document.addEventListener('click', function (e) {
+        if (!nav.contains(e.target)) {
+            nav.classList.remove('nav-open');
+            btn.classList.remove('open');
+            btn.setAttribute('aria-expanded', 'false');
+        }
+    });
+})();
+</script>
 
 <style>
     /* Dropdown trong nav custom */

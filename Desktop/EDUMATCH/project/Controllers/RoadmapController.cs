@@ -162,7 +162,9 @@ public class RoadmapController : Controller
 
     // ── POST /Roadmap/AskQuestion ───────────────────────────────────────────
     [HttpPost("AskQuestion")]
-    public async Task<IActionResult> AskQuestion(int subjectId, string question)
+    public async Task<IActionResult> AskQuestion(
+        int subjectId, string question,
+        [FromForm] string? contextToken = null)
     {
         var userId  = GetUserId();
         var roadmap = await _roadmapService.GetActiveAsync(userId, subjectId);
@@ -171,7 +173,9 @@ public class RoadmapController : Controller
         var subject = await _db.Subjects.FindAsync(subjectId);
         var subjectName = subject?.Name ?? string.Empty;
 
-        var answer = await _ollama.AnswerQuestionAsync(question, subjectName, phases);
-        return Json(new { answer });
+        var (answer, newToken) = await _ollama.AnswerQuestionAsync(
+            question, subjectName, phases, contextToken);
+
+        return Json(new { answer, contextToken = newToken });
     }
 }

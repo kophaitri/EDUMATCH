@@ -18,7 +18,9 @@ public class OllamaService : IOllamaService
         List<RoadmapPhase> phases, string subjectName, string studentName)
     {
         var phaseList = string.Join("\n", phases.Select(p =>
-            $"- Tuần {p.WeekNumber}: {p.TopicName} ({p.SessionsPerWeek} buổi/tuần, ưu tiên {p.Priority})"));
+            $"- Tuần {p.WeekNumber}: {p.TopicName} | ưu tiên {p.Priority} | " +
+            $"dự kiến {p.EstimatedWeeks:F1} tuần | {p.SessionsPerWeek} buổi/tuần" +
+            (string.IsNullOrEmpty(p.Note) ? "" : $" | {p.Note}")));
 
         var prompt =
             $"Bạn là trợ lý học tập thân thiện.\n" +
@@ -27,40 +29,74 @@ public class OllamaService : IOllamaService
             $"Giải thích ngắn gọn 3-4 câu tại sao lộ trình được sắp xếp như vậy.\n" +
             $"Dùng ngôn ngữ thân thiện, động viên. Tiếng Việt, không bullet point.";
 
-        var result = await AskOllamaAsync(prompt);
+        var (result, _) = await AskOllamaAsync(prompt, context: null);
         return !string.IsNullOrEmpty(result)
             ? result
             : FallbackExplain(phases, subjectName, studentName);
     }
 
-    public async Task<string> AnswerQuestionAsync(
-        string question, string subjectName, List<RoadmapPhase> phases)
+    public async Task<(string Answer, string? ContextToken)> AnswerQuestionAsync(
+        string question, string subjectName, List<RoadmapPhase> phases,
+        string? contextToken = null)
     {
-        var topics = string.Join(", ", phases.Select(p => p.TopicName));
+        string prompt;
 
-        var prompt =
-            $"Bạn là trợ lý học tập môn {subjectName}.\n" +
-            $"Các topic trong lộ trình: {topics}.\n" +
-            $"Câu hỏi: {question}\n" +
-            $"Trả lời ngắn gọn, chính xác bằng tiếng Việt.";
+        if (contextToken is null)
+        {
+            // Lần đầu: nhúng toàn bộ thông tin roadmap từ Rule engine + ML
+            var sb = new StringBuilder();
+            sb.AppendLine($"Bạn là trợ lý học tập môn {subjectName}. Hãy nhớ thông tin này xuyên suốt cuộc trò chuyện.");
+            sb.AppendLine($"Lộ trình học được tạo bởi Rule-Based Engine + ML Model:");
+            foreach (var p in phases)
+            {
+                sb.AppendLine(
+                    $"- Tuần {p.WeekNumber}: {p.TopicName} | " +
+                    $"Ưu tiên: {p.Priority} | " +
+                    $"Dự kiến: {p.EstimatedWeeks:F1} tuần | " +
+                    $"{p.SessionsPerWeek} buổi/tuần" +
+                    (string.IsNullOrEmpty(p.Note) ? "" : $" | {p.Note}"));
+            }
+            sb.AppendLine($"Câu hỏi: {question}");
+            sb.AppendLine("Trả lời ngắn gọn, chính xác bằng tiếng Việt.");
+            prompt = sb.ToString();
+        }
+        else
+        {
+            // Lần sau: Ollama đã nhớ context, chỉ gửi câu hỏi mới
+            prompt = question;
+        }
 
-        var result = await AskOllamaAsync(prompt);
-        return !string.IsNullOrEmpty(result)
-            ? result
-            : FallbackAnswer(question, subjectName, phases);
+        int[]? ctx = null;
+        if (contextToken is not null)
+        {
+            try { ctx = JsonSerializer.Deserialize<int[]>(contextToken); }
+            catch { ctx = null; }
+        }
+
+        var (answer, newCtx) = await AskOllamaAsync(prompt, context: ctx);
+
+        if (!string.IsNullOrEmpty(answer))
+        {
+            string? newToken = newCtx is { Length: > 0 }
+                ? JsonSerializer.Serialize(newCtx)
+                : contextToken;
+            return (answer, newToken);
+        }
+
+        return (FallbackAnswer(question, subjectName, phases), null);
     }
 
     // ── Ollama call ────────────────────────────────────────────────────────────
-    private async Task<string> AskOllamaAsync(string prompt)
+    private async Task<(string Response, int[]? Context)> AskOllamaAsync(
+        string prompt, int[]? context)
     {
         try
         {
-            var body = JsonSerializer.Serialize(new
-            {
-                model  = "llama3.2",
-                prompt,
-                stream = false
-            });
+            object requestBody = context is { Length: > 0 }
+                ? new { model = "llama3.2", prompt, stream = false, context }
+                : new { model = "llama3.2", prompt, stream = false };
+
+            var body = JsonSerializer.Serialize(requestBody);
 
             var response = await _http.PostAsync(
                 "/api/generate",
@@ -69,19 +105,32 @@ public class OllamaService : IOllamaService
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogWarning("Ollama trả về {Status}", response.StatusCode);
-                return string.Empty;
+                return (string.Empty, null);
             }
 
             var json = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(json);
-            return doc.RootElement.TryGetProperty("response", out var val)
+            var root = doc.RootElement;
+
+            var answer = root.TryGetProperty("response", out var val)
                 ? val.GetString() ?? string.Empty
                 : string.Empty;
+
+            int[]? newContext = null;
+            if (root.TryGetProperty("context", out var ctxProp) &&
+                ctxProp.ValueKind == JsonValueKind.Array)
+            {
+                newContext = ctxProp.EnumerateArray()
+                    .Select(e => e.GetInt32())
+                    .ToArray();
+            }
+
+            return (answer, newContext);
         }
         catch (Exception ex)
         {
             _logger.LogInformation(ex, "Ollama không khả dụng — dùng fallback");
-            return string.Empty;
+            return (string.Empty, null);
         }
     }
 
@@ -89,9 +138,9 @@ public class OllamaService : IOllamaService
     private static string FallbackExplain(
         List<RoadmapPhase> phases, string subjectName, string studentName)
     {
-        var highCount   = phases.Count(p => p.Priority == "high");
-        var totalWeeks  = (int)Math.Ceiling(phases.Sum(p => p.EstimatedWeeks));
-        var firstTopic  = phases.OrderBy(p => p.WeekNumber).FirstOrDefault()?.TopicName ?? "kiến thức nền";
+        var highCount  = phases.Count(p => p.Priority == "high");
+        var totalWeeks = (int)Math.Ceiling(phases.Sum(p => p.EstimatedWeeks));
+        var firstTopic = phases.OrderBy(p => p.WeekNumber).FirstOrDefault()?.TopicName ?? "kiến thức nền";
 
         return $"Chào {studentName}! Lộ trình học môn {subjectName} của bạn được thiết kế trong khoảng {totalWeeks} tuần. " +
                $"Hệ thống bắt đầu từ \"{firstTopic}\" — đây là nền tảng quan trọng nhất. " +
@@ -104,10 +153,9 @@ public class OllamaService : IOllamaService
     private static string FallbackAnswer(
         string question, string subjectName, List<RoadmapPhase> phases)
     {
-        var q = question.ToLower();
+        var q      = question.ToLower();
         var topics = phases.Select(p => p.TopicName).ToList();
 
-        // Tìm topic liên quan trong câu hỏi
         var matchedTopic = topics.FirstOrDefault(t =>
             q.Contains(t.ToLower()) ||
             t.ToLower().Split(' ').Any(w => w.Length > 3 && q.Contains(w)));
