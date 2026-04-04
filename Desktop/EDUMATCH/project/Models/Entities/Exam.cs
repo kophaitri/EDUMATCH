@@ -19,7 +19,12 @@ public class Exam
     public DateTime? PublishedAt { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    // Entry exam (managed by Admin, linked to a Subject instead of a Session)
+    public bool IsEntryExam { get; set; } = false;
+    public int? SubjectId { get; set; }
+
     public Session? Session { get; set; }
+    public Subject? Subject { get; set; }
     public ApplicationUser Tutor { get; set; } = null!;
     public ICollection<ExamQuestion> Questions { get; set; } = new List<ExamQuestion>();
     public ICollection<ExamSubmission> Submissions { get; set; } = new List<ExamSubmission>();
@@ -33,6 +38,7 @@ public class ExamQuestion
     public string? PassageText { get; set; }
     public int PartNumber { get; set; } = 0;
     public string QuestionType { get; set; } = "MultipleChoice";
+    public string? TopicTag { get; set; }
     public int Points { get; set; }
     public int DisplayOrder { get; set; }
 

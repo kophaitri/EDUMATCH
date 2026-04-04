@@ -1,0 +1,158 @@
+@model List<EduMatch.Models.Exam>
+@using EduMatch.Models
+@{
+    ViewData["Title"] = "Bài kiểm tra đầu vào";
+    var subjects = ViewBag.Subjects as List<Subject> ?? new();
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <h2 class="mb-0"><i class="bi bi-journal-check me-2 text-primary"></i>Bài kiểm tra đầu vào</h2>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="row g-4">
+
+        @* ── Danh sách bài kiểm tra ── *@
+        <div class="col-lg-7">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white fw-semibold">
+                    Danh sách (@Model.Count bài)
+                </div>
+                <div class="card-body p-0">
+                    @if (!Model.Any())
+                    {
+                        <p class="text-muted text-center py-4">Chưa có bài kiểm tra đầu vào nào.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Tiêu đề</th>
+                                    <th>Môn học</th>
+                                    <th class="text-center">Câu hỏi</th>
+                                    <th class="text-center">Thời gian</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var exam in Model)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@exam.Title</strong>
+                                            @if (!string.IsNullOrEmpty(exam.Description))
+                                            {
+                                                <br /><small class="text-muted">@exam.Description</small>
+                                            }
+                                        </td>
+                                        <td>@(exam.Subject?.Name ?? "—")</td>
+                                        <td class="text-center">@exam.Questions.Count</td>
+                                        <td class="text-center">@exam.DurationMinutes phút</td>
+                                        <td class="text-end">
+                                            <form asp-action="DeleteEntryExam" method="post"
+                                                  onsubmit="return confirm('Xóa bài kiểm tra này?')">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@exam.Id" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* ── Form tạo mới ── *@
+        <div class="col-lg-5">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-plus-circle me-1 text-success"></i> Thêm bài kiểm tra đầu vào
+                </div>
+                <div class="card-body">
+                    <form asp-action="CreateEntryExam" method="post" enctype="multipart/form-data">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-3">
+                            <label class="form-label">Môn học <span class="text-danger">*</span></label>
+                            <select name="subjectId" class="form-select" required>
+                                <option value="">— Chọn môn học —</option>
+                                @foreach (var s in subjects)
+                                {
+                                    <option value="@s.Id">@s.Name</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">File đề thi (.docx) <span class="text-danger">*</span></label>
+                            <input type="file" name="examFile" class="form-control" accept=".docx" required />
+                            <div class="form-text">
+                                Hỗ trợ tag <code>[TOPICTAG:Tên chủ đề]</code> trong file để AI Roadmap phân tích chính xác.
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Tiêu đề (để trống = lấy từ file)</label>
+                            <input type="text" name="title" class="form-control" placeholder="Ví dụ: Kiểm tra Toán đầu vào" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Mô tả</label>
+                            <input type="text" name="description" class="form-control" />
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col">
+                                <label class="form-label">Thời gian (phút)</label>
+                                <input type="number" name="durationMinutes" class="form-control" min="5" value="30" />
+                            </div>
+                            <div class="col">
+                                <label class="form-label">Điểm đạt</label>
+                                <input type="number" name="passingScore" class="form-control" min="0" max="100" value="50" />
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-upload me-1"></i> Tạo bài kiểm tra
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm mt-3">
+                <div class="card-header bg-white fw-semibold">
+                    <i class="bi bi-info-circle me-1 text-info"></i> Hướng dẫn định dạng file
+                </div>
+                <div class="card-body">
+                    <pre class="mb-0" style="font-size:0.78rem; background:#f8f9fa; padding:10px; border-radius:6px;">[EXAM_TITLE] Kiểm tra Toán đầu vào
+[EXAM_TIME] 30
+[PASSING_SCORE] 50
+
+[Q:1] Giải phương trình: 2x + 6 = 0
+[TOPICTAG:Đại số]
+[A] x = 3
+[B] x = -3
+[C] x = 6
+[D] x = -6
+[KEY:B]
+[POINTS] 10</pre>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

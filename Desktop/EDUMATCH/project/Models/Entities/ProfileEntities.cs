@@ -46,6 +46,9 @@ public class StudentProfile
     public string? CurrentGrade { get; set; }
     public string? SchoolName { get; set; }
     public string? LearningGoals { get; set; }
+    public int WeeklyAvailableHours { get; set; } = 6;
+    public int? GradeLevelId { get; set; }
+    public int? TotalSessionsCompleted { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

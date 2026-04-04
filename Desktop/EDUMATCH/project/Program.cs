@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using EduMatch.Services;
+using EduMatch.Services.RoadmapEngine;
+using EduMatch.Services.ML;
 using Microsoft.AspNetCore.Http.Features;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -25,6 +27,18 @@ builder.Services.AddScoped<IAdminTicketService, AdminTicketService>();
 builder.Services.AddScoped<IAdminEmailService, AdminEmailService>();
 builder.Services.AddScoped<IAdminAuditService, AdminAuditService>();
 builder.Services.AddScoped<ITutorDashboardService, TutorDashboardService>();
+
+// AI Roadmap Services
+builder.Services.AddScoped<IRoadmapEngine, RuleBasedEngine>();
+builder.Services.AddScoped<SyntheticDataGenerator>();
+builder.Services.AddScoped<IRoadmapService, RoadmapService>();
+builder.Services.AddHttpClient<IOllamaService, OllamaService>(c =>
+{
+    c.BaseAddress = new Uri("http://localhost:11434");
+    c.Timeout     = TimeSpan.FromSeconds(30);
+});
+builder.Services.AddSingleton<MLModelService>();
+builder.Services.AddHostedService<MLStartupService>();
 
 // Anti-Cheat Services
 builder.Services.AddScoped<WritingStyleAnalyzer>();

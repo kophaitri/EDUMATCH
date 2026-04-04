@@ -64,7 +64,10 @@ public class ParsedQuestion
     public int PartNumber { get; set; }
     public int Points { get; set; } = 1;
     public bool ShuffleAnswers { get; set; } = true;
+    public string QuestionType { get; set; } = "MultipleChoice";
+    public string? ModelAnswer { get; set; }
     public string CorrectKey { get; set; } = string.Empty;
+    public string? TopicTag { get; set; }
     public List<ParsedOption> Options { get; set; } = new();
 }
 
@@ -88,10 +91,14 @@ public static class DocxExamParser
     private static readonly Regex PassageEndRegex   = new(@"\[PASSAGE_END\]", RegexOptions.IgnoreCase);
 
     // ── Tags mở rộng cho EduMatch (không có trong src) ──
-    private static readonly Regex PassingRegex  = new(@"\[PASSING_SCORE\]\s*(\d+)", RegexOptions.IgnoreCase);
-    private static readonly Regex RetakesRegex  = new(@"\[MAX_RETAKES\]\s*(\d+)", RegexOptions.IgnoreCase);
-    private static readonly Regex DescRegex     = new(@"\[DESCRIPTION\]\s*(.+)", RegexOptions.IgnoreCase);
-    private static readonly Regex PointsRegex   = new(@"\[POINTS\]\s*(\d+)", RegexOptions.IgnoreCase);
+    private static readonly Regex PassingRegex       = new(@"\[PASSING_SCORE\]\s*(\d+)", RegexOptions.IgnoreCase);
+    private static readonly Regex RetakesRegex       = new(@"\[MAX_RETAKES\]\s*(\d+)", RegexOptions.IgnoreCase);
+    private static readonly Regex DescRegex          = new(@"\[DESCRIPTION\]\s*(.+)", RegexOptions.IgnoreCase);
+    private static readonly Regex PointsRegex        = new(@"\[POINTS\]\s*(\d+)", RegexOptions.IgnoreCase);
+    private static readonly Regex TypeRegex          = new(@"\[TYPE:(Essay|ShortAnswer|MultipleChoice|TrueFalse)\]", RegexOptions.IgnoreCase);
+    private static readonly Regex ModelAnswerRegex   = new(@"\[MODEL_ANSWER\]", RegexOptions.IgnoreCase);
+    private static readonly Regex ModelAnswerEndRegex = new(@"\[MODEL_ANSWER_END\]", RegexOptions.IgnoreCase);
+    private static readonly Regex TopicTagRegex      = new(@"\[TOPICTAG:([^\]]+)\]", RegexOptions.IgnoreCase);
 
     // ──────────────────────────────────────────────────────────
     public static DocxExamParseResult ParseFromFile(IFormFile file)
@@ -121,7 +128,9 @@ public static class DocxExamParser
         var result = new DocxExamParseResult();
         ParsedQuestion? currentQ = null;
         bool inPassage = false;
+        bool inModelAnswer = false;
         var passageLines = new List<string>();
+        var modelAnswerLines = new List<string>();
         string? currentPassageText = null;
         int currentPartNumber = 0;
 
@@ -180,6 +189,23 @@ public static class DocxExamParser
 
             if (inPassage) { passageLines.Add(line); continue; }
 
+            // ── [MODEL_ANSWER] / [MODEL_ANSWER_END] ──────────
+            if (ModelAnswerRegex.IsMatch(line))
+            {
+                inModelAnswer = true;
+                modelAnswerLines.Clear();
+                continue;
+            }
+            if (ModelAnswerEndRegex.IsMatch(line))
+            {
+                inModelAnswer = false;
+                if (currentQ != null)
+                    currentQ.ModelAnswer = string.Join("\n", modelAnswerLines);
+                modelAnswerLines.Clear();
+                continue;
+            }
+            if (inModelAnswer) { modelAnswerLines.Add(line); continue; }
+
             // ── [Q:n] ────────────────────────────────────────
             m = QuestionRegex.Match(line);
             if (m.Success)
@@ -194,6 +220,14 @@ public static class DocxExamParser
                     shuffle = shuffleMatch.Groups[1].Value.Equals("TRUE", StringComparison.OrdinalIgnoreCase);
                     qText = ShuffleRegex.Replace(qText, "").Trim();
                 }
+                // [TYPE:Essay] inline with [Q:n]
+                var questionType = "MultipleChoice";
+                var typeMatch = TypeRegex.Match(qText);
+                if (typeMatch.Success)
+                {
+                    questionType = typeMatch.Groups[1].Value;
+                    qText = TypeRegex.Replace(qText, "").Trim();
+                }
                 currentQ = new ParsedQuestion
                 {
                     Number = int.Parse(m.Groups[1].Value),
@@ -201,12 +235,17 @@ public static class DocxExamParser
                     PassageText = currentPassageText,
                     PartNumber = currentPartNumber,
                     ShuffleAnswers = shuffle,
+                    QuestionType = questionType,
                     Points = 1
                 };
                 continue;
             }
 
             if (currentQ == null) continue;
+
+            // ── [TYPE:...] trên dòng riêng ───────────────────
+            m = TypeRegex.Match(line);
+            if (m.Success) { currentQ.QuestionType = m.Groups[1].Value; continue; }
 
             // ── [SHUFFLE] trên dòng riêng ─────────────────────
             m = ShuffleRegex.Match(line);
@@ -219,6 +258,10 @@ public static class DocxExamParser
             // ── [POINTS] ─────────────────────────────────────
             m = PointsRegex.Match(line);
             if (m.Success) { currentQ.Points = int.Parse(m.Groups[1].Value); continue; }
+
+            // ── [TOPICTAG:xxx] ────────────────────────────────
+            m = TopicTagRegex.Match(line);
+            if (m.Success) { currentQ.TopicTag = m.Groups[1].Value.Trim(); continue; }
 
             // ── [A]/[B]/[C]/[D] ──────────────────────────────
             m = AnswerRegex.Match(line);
@@ -286,9 +329,12 @@ public static class DocxExamParser
         foreach (var q in result.Questions)
         {
             // Part 6/7: QuestionText có thể trống nếu có passage (câu hỏi là blank trong passage)
-            bool hasPasasge = !string.IsNullOrEmpty(q.PassageText);
-            if (string.IsNullOrWhiteSpace(q.QuestionText) && !hasPasasge)
+            bool hasPassage = !string.IsNullOrEmpty(q.PassageText);
+            if (string.IsNullOrWhiteSpace(q.QuestionText) && !hasPassage)
                 result.Errors.Add($"Câu {q.Number}: Thiếu nội dung câu hỏi");
+
+            bool isEssay = q.QuestionType == "Essay" || q.QuestionType == "ShortAnswer";
+            if (isEssay) continue; // không cần A/B/C/D và KEY cho tự luận
 
             var labels = q.Options.Select(o => o.Label).ToHashSet();
             foreach (var l in new[] { "A", "B", "C", "D" })

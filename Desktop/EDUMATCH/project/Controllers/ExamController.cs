@@ -432,9 +432,12 @@ namespace EduMatch.Controllers.Tutor
             {
                 if (!exam.Questions.Any())
                     return BadRequest(new { error = "Bài thi chưa có câu hỏi" });
-                
-                if (exam.Questions.Any(q => !q.AnswerOptions.Any(o => o.IsCorrect)))
-                    return BadRequest(new { error = "Tất cả câu hỏi phải có ít nhất 1 đáp án đúng" });
+
+                // Chỉ kiểm tra đáp án đúng với câu trắc nghiệm, không áp dụng cho tự luận
+                var mcQuestions = exam.Questions
+                    .Where(q => q.QuestionType != "Essay" && q.QuestionType != "ShortAnswer");
+                if (mcQuestions.Any(q => !q.AnswerOptions.Any(o => o.IsCorrect)))
+                    return BadRequest(new { error = "Tất cả câu hỏi trắc nghiệm phải có ít nhất 1 đáp án đúng" });
 
                 exam.Status = ExamStatus.Published;
                 exam.PublishedAt = DateTime.UtcNow;

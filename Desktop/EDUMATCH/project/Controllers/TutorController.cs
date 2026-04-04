@@ -733,17 +733,34 @@ public class TutorController : Controller
                 PartNumber = q.PartNumber,
                 Points = q.Points,
                 DisplayOrder = q.Number,
-                QuestionType = "MultipleChoice"
+                QuestionType = q.QuestionType
             };
 
-            foreach (var opt in q.Options.OrderBy(o => o.Label))
+            bool isEssay = q.QuestionType == "Essay" || q.QuestionType == "ShortAnswer";
+            if (isEssay)
             {
-                question.AnswerOptions.Add(new ExamAnswerOption
+                // Lưu đáp án mẫu như một option (không tính điểm tự động)
+                if (!string.IsNullOrWhiteSpace(q.ModelAnswer))
                 {
-                    OptionText = opt.Text,
-                    IsCorrect = opt.Label == q.CorrectKey,
-                    DisplayOrder = opt.Label switch { "A" => 1, "B" => 2, "C" => 3, _ => 4 }
-                });
+                    question.AnswerOptions.Add(new ExamAnswerOption
+                    {
+                        OptionText = q.ModelAnswer,
+                        IsCorrect = true,
+                        DisplayOrder = 1
+                    });
+                }
+            }
+            else
+            {
+                foreach (var opt in q.Options.OrderBy(o => o.Label))
+                {
+                    question.AnswerOptions.Add(new ExamAnswerOption
+                    {
+                        OptionText = opt.Text,
+                        IsCorrect = opt.Label == q.CorrectKey,
+                        DisplayOrder = opt.Label switch { "A" => 1, "B" => 2, "C" => 3, _ => 4 }
+                    });
+                }
             }
 
             exam.Questions.Add(question);

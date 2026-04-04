@@ -1,0 +1,223 @@
+@model EduMatch.ViewModels.RoadmapDetailViewModel
+@{
+    ViewData["Title"] = "Lộ trình — " + Model.SubjectName;
+    var subjectId = int.TryParse(ViewContext.RouteData.Values["subjectId"]?.ToString(), out var _sid) ? _sid : 0;
+}
+
+<div class="roadmap-detail-page">
+
+    @* ── 1. Header ── *@
+    <div class="roadmap-detail-header">
+        <div>
+            <h1 class="playfair-heading">@Model.SubjectName</h1>
+            <p class="section-tag">Lộ trình học cá nhân hoá</p>
+        </div>
+        <div class="roadmap-detail-meta">
+            <span class="roadmap-badge @(Model.GeneratedBy == "MLNet" ? "roadmap-badge-ml" : "roadmap-badge-rule")">
+                @(Model.GeneratedBy == "MLNet" ? "AI + ML" : "Quy tắc")
+            </span>
+            <span class="roadmap-card-meta">
+                Tạo ngày @Model.GeneratedAt.ToLocalTime().ToString("dd/MM/yyyy")
+                &mdash; ~@Model.EstimatedWeeks tuần
+            </span>
+        </div>
+    </div>
+
+    @* ── 2. LLM Explanation ── *@
+    @if (!string.IsNullOrEmpty(Model.LlmExplanation))
+    {
+        <div class="roadmap-explanation-box">
+            <div class="roadmap-explanation-icon">
+                <i class="bi bi-stars"></i>
+            </div>
+            <p>@Model.LlmExplanation</p>
+        </div>
+    }
+
+    @* ── 3. Timeline ── *@
+    <h2 class="roadmap-section-title">Các giai đoạn học</h2>
+    <div class="roadmap-timeline">
+        @foreach (var phase in Model.Phases)
+        {
+            <div class="roadmap-phase roadmap-phase-@phase.Priority">
+                <div class="roadmap-week-circle @(phase.IsCompleted ? "roadmap-week-done" : "")">
+                    @if (phase.IsCompleted)
+                    {
+                        <i class="bi bi-check-lg"></i>
+                    }
+                    else
+                    {
+                        <span>T@phase.WeekNumber</span>
+                    }
+                </div>
+
+                <div class="roadmap-phase-body">
+                    <div class="roadmap-phase-top">
+                        <strong class="roadmap-phase-topic">@phase.TopicName</strong>
+                        <span class="roadmap-priority-badge roadmap-priority-@phase.Priority">
+                            @(phase.Priority == "high" ? "Ưu tiên cao"
+                              : phase.Priority == "medium" ? "Trung bình"
+                              : "Nâng cao")
+                        </span>
+                        @if (phase.IsCompleted)
+                        {
+                            <span class="roadmap-completed-mark">
+                                <i class="bi bi-check-circle-fill"></i> Hoàn thành
+                            </span>
+                        }
+                    </div>
+
+                    <div class="roadmap-phase-stats">
+                        <span><i class="bi bi-calendar-week"></i> @phase.SessionsPerWeek buổi/tuần</span>
+                        <span><i class="bi bi-clock"></i> ~@phase.EstimatedWeeks.ToString("F1") tuần</span>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(phase.Note))
+                    {
+                        <p class="roadmap-phase-note">@phase.Note</p>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    @* ── 4. Log Progress Form ── *@
+    <div class="roadmap-log-form">
+        <h2 class="roadmap-section-title">Ghi nhận tiến độ</h2>
+        <form asp-action="LogProgress" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="SubjectId" value="@subjectId" />
+
+            <div class="roadmap-log-row">
+                <div class="roadmap-log-field">
+                    <label>Chủ đề</label>
+                    <select name="TopicName" class="form-select">
+                        @foreach (var phase in Model.Phases)
+                        {
+                            <option value="@phase.TopicName">@phase.TopicName</option>
+                        }
+                    </select>
+                </div>
+                <div class="roadmap-log-field">
+                    <label>Điểm trước</label>
+                    <input type="number" name="ScoreBefore" min="0" max="100" class="form-control" required />
+                </div>
+                <div class="roadmap-log-field">
+                    <label>Điểm sau</label>
+                    <input type="number" name="ScoreAfter" min="0" max="100" class="form-control" required />
+                </div>
+                <div class="roadmap-log-field">
+                    <label>Số giờ học</label>
+                    <input type="number" name="HoursStudied" min="0" max="100" step="0.5" class="form-control" required />
+                </div>
+            </div>
+            <button type="submit" class="btn-solid mt-2">Ghi nhận</button>
+        </form>
+    </div>
+
+    @* ── 5. Progress History ── *@
+    @if (Model.Logs.Any())
+    {
+        <div class="roadmap-history-section">
+            <h2 class="roadmap-section-title">Lịch sử tiến độ</h2>
+            <table class="roadmap-history-table">
+                <thead>
+                    <tr>
+                        <th>Chủ đề</th>
+                        <th>Trước</th>
+                        <th>Sau</th>
+                        <th>Cải thiện</th>
+                        <th>Ngày</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model.Logs)
+                    {
+                        <tr>
+                            <td>@log.TopicName</td>
+                            <td>@log.ScoreBefore</td>
+                            <td>@log.ScoreAfter</td>
+                            <td class="@(log.Improvement >= 0 ? "roadmap-improve-pos" : "roadmap-improve-neg")">
+                                @(log.Improvement >= 0 ? "+" : "")@log.Improvement
+                            </td>
+                            <td>@log.LoggedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    @* ── 6. Ask AI ── *@
+    <div class="roadmap-ask-section">
+        <h2 class="roadmap-section-title">Hỏi AI về lộ trình</h2>
+        <div id="aiChatHistory" class="roadmap-chat-history"></div>
+        <div class="roadmap-ask-row">
+            <input type="text" id="aiQuestion" class="form-control"
+                   placeholder="Nhập câu hỏi của bạn..." autocomplete="off" />
+            <button class="btn-solid" id="askBtn">Hỏi</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    const sid   = @subjectId;
+    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '';
+    const history = document.getElementById('aiChatHistory');
+    const input   = document.getElementById('aiQuestion');
+    const btn     = document.getElementById('askBtn');
+
+    function appendMessage(text, role) {
+        const msg = document.createElement('div');
+        msg.className = role === 'user' ? 'roadmap-chat-bubble roadmap-chat-user'
+                                        : 'roadmap-chat-bubble roadmap-chat-ai';
+        msg.textContent = text;
+        history.appendChild(msg);
+        history.scrollTop = history.scrollHeight;
+    }
+
+    async function ask() {
+        const question = input.value.trim();
+        if (!question) return;
+
+        appendMessage(question, 'user');
+        input.value   = '';
+        btn.disabled  = true;
+        btn.textContent = 'Đang hỏi...';
+
+        // Typing indicator
+        const typing = document.createElement('div');
+        typing.className = 'roadmap-chat-bubble roadmap-chat-ai roadmap-chat-typing';
+        typing.textContent = '...';
+        history.appendChild(typing);
+        history.scrollTop = history.scrollHeight;
+
+        try {
+            const res  = await fetch('@Url.Action("AskQuestion", "Roadmap")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'RequestVerificationToken': token
+                },
+                body: `subjectId=${sid}&question=${encodeURIComponent(question)}`
+            });
+            const data = await res.json();
+            typing.remove();
+            appendMessage(data.answer || 'Không có câu trả lời.', 'ai');
+        } catch {
+            typing.remove();
+            appendMessage('Lỗi kết nối. Vui lòng thử lại.', 'ai');
+        } finally {
+            btn.disabled    = false;
+            btn.textContent = 'Hỏi';
+            input.focus();
+        }
+    }
+
+    btn.addEventListener('click', ask);
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') ask(); });
+})();
+</script>
+}

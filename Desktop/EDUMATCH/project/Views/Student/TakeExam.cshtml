@@ -5,84 +5,142 @@
     var examTitle = ViewBag.ExamTitle;
     var duration = ViewBag.Duration;
     var questionCount = ViewBag.QuestionCount;
+    var submissionId = ViewBag.SubmissionId;
 }
 
-<div class="container mt-4">
-    <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">📝 @examTitle</h5>
-            <div>
-                <span class="badge bg-light text-dark">
-                    <i class="bi bi-clock"></i> <span id="timer">@duration:00</span>
-                </span>
-                <span class="badge bg-light text-dark ms-2">
-                    <i class="bi bi-question-circle"></i> @questionCount câu
-                </span>
-            </div>
+<div class="exam-fullscreen-wrapper" id="examWrapper">
+    <!-- Header cố định -->
+    <div class="exam-fs-header">
+        <span class="exam-fs-title"><i class="bi bi-pencil-square"></i> @examTitle</span>
+        <div class="exam-fs-meta">
+            <span class="exam-timer-badge" id="timerBadge">
+                <i class="bi bi-clock"></i> <span id="timer">@duration:00</span>
+            </span>
+            <span class="exam-fs-badge ms-2">
+                <i class="bi bi-question-circle"></i> @questionCount câu
+            </span>
+            <button type="button" class="exam-fs-btn ms-3" id="btnFullscreen" title="Toàn màn hình">
+                <i class="bi bi-fullscreen" id="fsIcon"></i>
+            </button>
         </div>
-        <div class="card-body">
-            <form asp-action="SubmitExam" asp-route-examId="@examId" method="post" id="examForm">
-                @Html.AntiForgeryToken()
-                
-                @foreach (var question in Model)
-                {
-                    <div class="card mb-3">
-                        <div class="card-header bg-light">
-                            <strong>Câu @question.DisplayOrder:</strong> 
-                            <span class="badge bg-info float-end">@question.Points điểm</span>
-                        </div>
-                        <div class="card-body">
-                            <p class="mb-3">@question.QuestionText</p>
-                            
-                            @if (question.QuestionType == "MultipleChoice")
-                            {
-                                @foreach (var option in question.AnswerOptions)
-                                {
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="radio" 
-                                               name="answers[@(question.DisplayOrder-1)].QuestionId" 
-                                               value="@option.Id" 
-                                               id="q@question.Id_opt@option.Id">
-                                        <label class="form-check-label" for="q@question.Id_opt@option.Id">
-                                            @option.OptionText
-                                        </label>
-                                    </div>
-                                }
-                            }
-                        </div>
-                    </div>
-                }
+    </div>
 
-                <div class="d-flex justify-content-between mt-4">
-                    <a asp-action="Exams" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left"></i> Quay lại
-                    </a>
-                    <button type="submit" class="btn btn-success" onclick="return confirm('Bạn có chắc muốn nộp bài?');">
-                        <i class="bi bi-check-circle"></i> Nộp bài
-                    </button>
+    <!-- Nội dung bài thi -->
+    <div class="exam-fs-body">
+        <form asp-action="SubmitExam" asp-route-examId="@examId" method="post" id="examForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="isFraud" name="isFraud" value="false" />
+
+            @{ int idx = 0; }
+            @foreach (var question in Model)
+            {
+                <div class="exam-question-card">
+                    <div class="exam-question-header">
+                        <span class="exam-question-num">Câu @question.DisplayOrder</span>
+                        <span class="exam-question-pts">@question.Points điểm</span>
+                    </div>
+                    <div class="exam-question-body">
+                        <p class="exam-question-text">@question.QuestionText</p>
+
+                        <input type="hidden" name="answers[@idx].QuestionId" value="@question.Id" />
+
+                        @if (question.QuestionType == "MultipleChoice" || question.QuestionType == "TrueFalse")
+                        {
+                            @foreach (var option in question.AnswerOptions)
+                            {
+                                <label class="exam-option-label">
+                                    <input class="exam-option-radio" type="radio"
+                                           name="answers[@idx].SelectedOptionId"
+                                           value="@option.Id"
+                                           id="q@(question.Id)_opt@(option.Id)" />
+                                    <span class="exam-option-text">@option.OptionText</span>
+                                </label>
+                            }
+                        }
+                        else if (question.QuestionType == "Essay" || question.QuestionType == "ShortAnswer")
+                        {
+                            <textarea class="exam-essay-textarea"
+                                      name="answers[@idx].TextAnswer"
+                                      rows="6"
+                                      placeholder="Nhập câu trả lời của bạn..."></textarea>
+                        }
+                    </div>
                 </div>
-            </form>
-        </div>
+                idx++;
+            }
+
+            <div class="exam-fs-footer">
+                <button type="submit" class="btn-exam-submit" id="btnSubmit"
+                        onclick="return confirm('Bạn có chắc muốn nộp bài?');">
+                    <i class="bi bi-check-circle"></i> Nộp bài
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Toast notifications -->
+<div id="examToastContainer" class="exam-toast-container"></div>
+
+<!-- Tab-switch warning modal -->
+<div class="tab-warning-modal" id="tabWarningModal" style="display:none;">
+    <div class="tab-warning-box">
+        <div class="tab-warning-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+        <div id="tabWarningTitle"></div>
+        <div id="tabWarningMessage"></div>
+        <button class="tab-warning-btn" onclick="document.getElementById('tabWarningModal').style.display='none'">
+            Tôi đã hiểu
+        </button>
     </div>
 </div>
 
 @section Scripts {
     <script>
+        // ── Timer ──
         let timeRemaining = @duration * 60;
-        const timerElement = document.getElementById('timer');
+        const timerEl = document.getElementById('timer');
+        const timerBadge = document.getElementById('timerBadge');
 
-        const timer = setInterval(() => {
-            const minutes = Math.floor(timeRemaining / 60);
-            const seconds = timeRemaining % 60;
-            timerElement.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        const countdownTimer = setInterval(() => {
+            timeRemaining--;
+            const m = Math.floor(timeRemaining / 60);
+            const s = timeRemaining % 60;
+            timerEl.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+
+            if (timeRemaining <= 120) timerBadge.classList.add('exam-timer-warning');
             if (timeRemaining <= 0) {
-                clearInterval(timer);
-                alert('⏰ Hết giờ!');
+                clearInterval(countdownTimer);
                 document.getElementById('examForm').submit();
             }
-            timeRemaining--;
         }, 1000);
+
+        // ── Fullscreen toggle ──
+        const wrapper = document.getElementById('examWrapper');
+        const btnFs = document.getElementById('btnFullscreen');
+        const fsIcon = document.getElementById('fsIcon');
+
+        btnFs.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                wrapper.requestFullscreen().catch(() => {});
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            const isFs = !!document.fullscreenElement;
+            fsIcon.className = isFs ? 'bi bi-fullscreen-exit' : 'bi bi-fullscreen';
+            btnFs.title = isFs ? 'Thoát toàn màn hình' : 'Toàn màn hình';
+        });
+
+        // Auto request fullscreen on load
+        window.addEventListener('load', () => {
+            wrapper.requestFullscreen().catch(() => {});
+        });
     </script>
     <script src="~/js/exam-tracker.js"></script>
-    <script>new ExamTracker(@ViewBag.SubmissionId)</script>
+    <script>
+        const tracker = new ExamTracker(@submissionId);
+        window.addEventListener('beforeunload', () => tracker.flush());
+    </script>
 }
